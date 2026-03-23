@@ -1,0 +1,79 @@
+##################################################
+# Common (공통)
+
+.env
+.env.*
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+##################################################
+# Django / Python (BE)
+
+# Bytecode
+*.py[cod]
+__pycache__/
+
+# Virtual environment
+BE/.venv/
+BE/venv/
+BE/env/
+
+# Django
+BE/db.sqlite3
+BE/db.sqlite3-journal
+BE/media/
+BE/staticfiles/
+BE/static/
+
+# Logs
+BE/*.log
+
+# Migrations cache (선택)
+BE/**/migrations/*.py
+BE/**/migrations/__init__.py
+
+##################################################
+# React (FE)
+
+# Dependencies
+FE/node_modules/
+
+# Build output
+FE/build/
+FE/dist/
+
+# Logs
+FE/npm-debug.log*
+FE/yarn-debug.log*
+FE/yarn-error.log*
+FE/pnpm-debug.log*
+
+# Env files (React)
+FE/.env
+FE/.env.local
+FE/.env.development.local
+FE/.env.test.local
+FE/.env.production.local
+
+##################################################
+# Testing / Coverage
+
+coverage/
+*.coverage
+htmlcov/
+
+##################################################
+#  IDE / Editor
+
+.vscode/
+.idea/
+*.iml
+
+##################################################
+# Secrets
+
+*.pem
+*.key
