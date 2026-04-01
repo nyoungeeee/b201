@@ -17,6 +17,7 @@ try:
 except:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.base")
 
+
 def main():
     """Run administrative tasks."""
     try:
