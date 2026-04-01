@@ -5,15 +5,17 @@ import os
 import sys
 from pathlib import Path
 
-import dotenv
+try:
+    import dotenv
 
-dotenv.load_dotenv(".env")
+    dotenv.load_dotenv(".env")
 
-if os.getenv("DJANGO_SETTINGS_MODULE") is None:
-    raise Exception(
-        "DJANGO_SETTINGS_MODULE environment variable is not set. Please set it in the .env file."
-    )
-
+    if os.getenv("DJANGO_SETTINGS_MODULE") is None:
+        raise Exception(
+            "DJANGO_SETTINGS_MODULE environment variable is not set. Please set it in the .env file."
+        )
+except:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.base")
 
 def main():
     """Run administrative tasks."""
