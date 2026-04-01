@@ -44,6 +44,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "rest_framework_simplejwt",
+    "accounts",
+    "bands",
+    "studios",
+    "bookings",
+    "auth_tokens",
 ]
 
 MIDDLEWARE = [
@@ -58,6 +63,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+AUTH_USER_MODEL = "accounts.User"  # Custom User Model
 
 TEMPLATES = [
     {
