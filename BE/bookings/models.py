@@ -1,3 +1,84 @@
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
-# Create your models here.
+from bands.models import Band
+from studios.models import StudioRoom
+
+
+class BookingType(models.TextChoices):
+    PRIVATE = "PRIVATE", "PRIVATE"
+    TEAM = "TEAM", "TEAM"
+
+
+class BookingStatus(models.TextChoices):
+    RESERVED = "RESERVED", "RESERVED"
+    CANCELED = "CANCELED", "CANCELED"
+    PENDING = "PENDING", "PENDING"  # 예약 확정 대기 상태 (관리자 승인 필요)
+
+
+class Booking(models.Model):
+    reservation_number = models.BigIntegerField(unique=True)
+
+    room = models.ForeignKey(
+        StudioRoom,
+        on_delete=models.PROTECT,
+        related_name="bookings",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="bookings",
+    )
+    band = models.ForeignKey(
+        Band,
+        on_delete=models.PROTECT,
+        related_name="bookings",
+        blank=True,
+        null=True,
+    )
+
+    booking_type = models.CharField(
+        max_length=20,
+        choices=BookingType.choices,
+    )
+    reservation_date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    display_name = models.CharField(max_length=50)
+    color = models.CharField(max_length=6)
+
+    status = models.CharField(
+        max_length=20,
+        choices=BookingStatus.choices,
+        default=BookingStatus.RESERVED,
+    )
+    canceled_at = models.DateTimeField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "reservations"
+        indexes = [
+            models.Index(fields=["room", "reservation_date", "status"]),
+            models.Index(fields=["room", "reservation_date", "start_time", "end_time"]),
+            models.Index(fields=["user", "status", "reservation_date"]),
+            models.Index(fields=["band", "status", "reservation_date"]),
+            models.Index(fields=["reservation_date", "status"]),
+        ]
+        ordering = ["reservation_date", "start_time", "id"]
+
+    def clean(self):
+        if self.start_time >= self.end_time:
+            raise ValidationError("start_time must be earlier than end_time")
+
+        if self.booking_type == BookingType.PRIVATE and self.band_id is not None:
+            raise ValidationError("private booking must not have band")
+
+        if self.booking_type == BookingType.TEAM and self.band_id is None:
+            raise ValidationError("team booking must have band")
+
+    def __str__(self):
+        return f"{self.reservation_number}"
