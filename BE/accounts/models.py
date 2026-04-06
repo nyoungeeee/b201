@@ -9,6 +9,7 @@ from django.db import models
 class UserStatus(models.TextChoices):
     ACTIVE = "ACTIVE", "ACTIVE"
     WITHDRAWN = "WITHDRAWN", "WITHDRAWN"
+    BLOCKED = "BLOCKED", "BLOCKED"
 
 
 class UserManager(BaseUserManager):

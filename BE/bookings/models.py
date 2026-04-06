@@ -46,8 +46,8 @@ class Booking(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
-    display_name = models.CharField(max_length=50)
-    color = models.CharField(max_length=6)
+    # display_name = models.CharField(max_length=50)
+    # color = models.CharField(max_length=6)
 
     status = models.CharField(
         max_length=20,

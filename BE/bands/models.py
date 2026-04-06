@@ -8,7 +8,7 @@ class BandStatus(models.TextChoices):
 
 
 class BandMemberRole(models.TextChoices):
-    OWNER = "OWNER", "OWNER"
+    LEADER = "LEADER", "LEADER"
     MEMBER = "MEMBER", "MEMBER"
 
 
