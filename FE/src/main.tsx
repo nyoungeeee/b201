@@ -7,9 +7,12 @@ import "./styles/layout.css";
 import "./styles/timeline.css";
 
 import ReservationStatusPage from './pages/ReservationStatusPage';
+import { QueryProvider } from './providers/QueryProvider';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ReservationStatusPage />
+    <QueryProvider>
+      <ReservationStatusPage />
+    </QueryProvider>
   </StrictMode>,
 )
