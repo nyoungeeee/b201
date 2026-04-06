@@ -1,54 +1,97 @@
+import React from 'react';
+import { useRoomDay } from '../../hooks/queries/useRoomDay';
 import {
-    timelineHours,
-    timelineReservations,
-    type TimelineReservation,
-} from "../../utils/timelineMock";
+    getSegmentsByHour,
+    getTimelineHours,
+    mapSlotsToTimelineSegments,
+    type TimelineRowSegment,
+} from '../../utils/timelineUtils';
 
-const getHourKey = (hourLabel: string) => Number(hourLabel.split(":")[0]);
+interface TimelineBarProps {
+    segment: TimelineRowSegment;
+    isFirst: boolean;
+    isLast: boolean;
+}
 
-const getReservationsByHour = (hourLabel: string) => {
-    const hourKey = getHourKey(hourLabel);
+const TimelineBar = ({ segment, isFirst, isLast }: TimelineBarProps) => {
+    const leftPercent = (segment.startMinute / 60) * 100;
+    const widthPercent = ((segment.endMinute - segment.startMinute) / 60) * 100;
 
-    return timelineReservations.filter((reservation) => reservation.rowHour === hourKey);
-};
+    const gapPx = 6;
+    const leftOffset = isFirst ? 0 : gapPx / 2;
+    const rightOffset = isLast ? 0 : gapPx / 2;
+    const widthOffset = leftOffset + rightOffset;
 
-const TimelineBar = ({ reservation }: { reservation: TimelineReservation }) => {
     return (
         <div
             className="timeline-bar"
             style={
                 {
-                    "--team-color": reservation.color,
-                    flex: reservation.span ?? 1,
+                    '--team-color': segment.color,
+                    left: `calc(${leftPercent}% + ${leftOffset}px)`,
+                    width: `calc(${widthPercent}% - ${widthOffset}px)`,
                 } as React.CSSProperties
             }
         >
-            {reservation.title}
+            <span className="timeline-bar__label">{segment.title}</span>
         </div>
     );
 };
 
 const TimelineSection = () => {
+    const { data, isLoading, isError, error } = useRoomDay({
+        date: '2026-05-23',
+    });
+
+    if (isLoading) {
+        return <section className="timeline-section">로딩 중...</section>;
+    }
+
+    if (isError) {
+        return (
+            <section className="timeline-section">
+                에러가 발생했습니다: {error.message}
+            </section>
+        );
+    }
+
+    if (!data) {
+        return <section className="timeline-section">데이터가 없습니다.</section>;
+    }
+
+    const hours = getTimelineHours(
+        data.date,
+        data.openTime,
+        data.closeTime,
+    );
+
+    const segments = mapSlotsToTimelineSegments(
+        data.slots,
+        data.date,
+        data.openTime,
+    );
     return (
         <section className="timeline-section">
             <div className="calendar-section-divider" />
-            <div className="timeline-section__date">5월 23일(금)</div>
+            <div className="timeline-section__date">{data.date}</div>
             <div className="calendar-section-divider" />
 
             <div className="timeline-list">
-                {timelineHours.map((hour) => {
-                    const reservations = getReservationsByHour(hour);
+                {hours.map((hour) => {
+                    const rowSegments = getSegmentsByHour(segments, hour);
 
                     return (
-                        <div key={hour} className="timeline-row">
-                            <div className="timeline-row__time">{hour}</div>
+                        <div key={hour.key} className="timeline-row">
+                            <div className="timeline-row__time">{hour.label}</div>
 
                             <div className="timeline-row__track">
-                                {reservations.length > 0 ? (
-                                    reservations.map((reservation) => (
+                                {rowSegments.length > 0 ? (
+                                    rowSegments.map((segment, index) => (
                                         <TimelineBar
-                                            key={reservation.id}
-                                            reservation={reservation}
+                                            key={`${hour.key}-${segment.id}`}
+                                            segment={segment}
+                                            isFirst={index === 0}
+                                            isLast={index === rowSegments.length - 1}
                                         />
                                     ))
                                 ) : (

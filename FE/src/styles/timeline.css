@@ -37,10 +37,8 @@
 }
 
 .timeline-row__track {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-height: 24px;
+  position: relative;
+  height: 24px;
   width: 100%;
 }
 
@@ -50,11 +48,14 @@
 }
 
 .timeline-bar {
+  position: absolute;
+  top: 0;
   min-width: 0;
   height: 24px;
   padding: 0 var(--space-8);
   border-radius: 4px;
-
+  box-sizing: border-box;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,7 +63,6 @@
   font-family: var(--font-calendar);
   font-size: var(--text-mm);
   font-weight: var(--weight-medium);
-
   color: var(--text-secondary);
 
   background:
@@ -72,18 +72,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  position: relative;
 }
 
 .timeline-bar::before {
   content: "";
   position: absolute;
-
   left: 0;
   top: 0;
-
   width: 5px;
   height: 100%;
   background: var(--team-color);
   border-radius: 4px 0 0 4px;
+}
+
+.timeline-bar__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
