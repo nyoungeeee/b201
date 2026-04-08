@@ -1,7 +1,7 @@
 import { roomDayResponseSchema } from '../types/calendarSchemas';
 import type { DaySchedule } from '../types/calendarTypes';
 import { mapRoomDayResponse } from '../utils/calendarMapper';
-import { roomDayMock } from '../utils/roomDayMock';
+import { roomDayMock } from '../utils/roomMock';
 
 export interface GetRoomDayParams {
     roomId: number;

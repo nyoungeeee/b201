@@ -7,6 +7,10 @@ import {
     type TimelineRowSegment,
 } from '../../utils/timelineUtils';
 
+interface TimelineSectionProps {
+    date: string;
+}
+
 interface TimelineBarProps {
     segment: TimelineRowSegment;
     isFirst: boolean;
@@ -38,9 +42,9 @@ const TimelineBar = ({ segment, isFirst, isLast }: TimelineBarProps) => {
     );
 };
 
-const TimelineSection = () => {
+const TimelineSection = ({ date }: TimelineSectionProps) => {
     const { data, isLoading, isError, error } = useRoomDay({
-        date: '2026-05-23',
+        date,
     });
 
     if (isLoading) {
@@ -70,6 +74,7 @@ const TimelineSection = () => {
         data.date,
         data.openTime,
     );
+
     return (
         <section className="timeline-section">
             <div className="calendar-section-divider" />

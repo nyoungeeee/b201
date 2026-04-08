@@ -34,6 +34,21 @@ export const roomDayResponseSchema = z.object({
     slot: z.array(roomDaySlotSchema).nullable(),
 });
 
+export const roomMonthDaySchema = z.object({
+    date: dateStringSchema,
+    colors: z.array(hexColorSchema),
+});
+
+export const roomMonthSchema = z.object({
+    room_id: z.number(),
+    room_name: z.string(),
+    year: z.number(),
+    month: z.number().min(1).max(12),
+    days: z.array(roomMonthDaySchema),
+});
+
 export type RoomDayState = z.infer<typeof roomDayStateSchema>;
 export type RoomDaySlotApiResponse = z.infer<typeof roomDaySlotSchema>;
 export type RoomDayApiResponse = z.infer<typeof roomDayResponseSchema>;
+export type RoomMonthDay = z.infer<typeof roomMonthDaySchema>;
+export type RoomMonthApiResponse = z.infer<typeof roomMonthSchema>;
