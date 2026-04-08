@@ -39,3 +39,22 @@ export interface RoomDayApiResponse {
     state: string;
     slot: RoomDaySlotApi[];
 }
+
+export interface CalendarDotDisplay {
+    visibleColors: string[];
+    extraCount: number;
+}
+
+export interface MonthScheduleDay {
+    date: string;
+    colors: string[];
+    dotDisplay: CalendarDotDisplay;
+}
+
+export interface MonthSchedule {
+    roomId: number;
+    roomName: string;
+    year: number;
+    month: number;
+    days: MonthScheduleDay[];
+}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import BottomHero from "../components/branding/BottomHero";
 import CalendarSection from "../components/calendar/CalendarSection";
 import MobilePageLayout from "../components/layout/MobilePageLayout";
@@ -6,13 +7,19 @@ import ReservationApplyButton from "../components/reservation/ReservationApplyBu
 import TimelineSection from "../components/timeline/TimelineSection";
 
 const ReservationStatusPage = () => {
+    const today = new Date();
+    const defaultDate = today.toISOString().slice(0, 10);
+    const [selectedDate, setSelectedDate] = useState(defaultDate);
     return (
         <MobilePageLayout>
             <PageHeader title="예약 현황" />
 
             <div className="reservation-status-page">
-                <CalendarSection />
-                <TimelineSection />
+                <CalendarSection
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                />
+                <TimelineSection date={selectedDate} />
                 <BottomHero />
             </div>
 

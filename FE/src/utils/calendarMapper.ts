@@ -1,10 +1,13 @@
 import type {
     RoomDayApiResponse,
     RoomDaySlotApiResponse,
+    RoomMonthApiResponse
 } from '../types/calendarSchemas';
 import type {
+    CalendarDotDisplay,
     DaySchedule,
     DayScheduleSlot,
+    MonthSchedule
 } from '../types/calendarTypes';
 
 const normalizeHexColor = (color: string): string => {
@@ -35,5 +38,35 @@ export const mapRoomDayResponse = (
         state: response.state,
         slots,
         hasReservation: slots.length > 0,
+    };
+};
+
+export const mapCalendarDotDisplay = (colors: string[]): CalendarDotDisplay => {
+    if (colors.length <= 4) {
+        return {
+            visibleColors: colors,
+            extraCount: 0,
+        };
+    }
+
+    return {
+        visibleColors: colors.slice(0, 3),
+        extraCount: colors.length - 3,
+    };
+};
+
+export const mapRoomMonthResponse = (
+    response: RoomMonthApiResponse,
+): MonthSchedule => {
+    return {
+        roomId: response.room_id,
+        roomName: response.room_name,
+        year: response.year,
+        month: response.month,
+        days: response.days.map((day) => ({
+            date: day.date,
+            colors: day.colors,
+            dotDisplay: mapCalendarDotDisplay(day.colors),
+        })),
     };
 };
