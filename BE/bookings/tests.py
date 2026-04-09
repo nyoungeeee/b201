@@ -287,6 +287,20 @@ class BookingAPITestCase(APITestCase):
             [BookingStatus.PENDING, BookingStatus.CANCELED],
         )
 
+    # 존재하지 않는 룸의 일별 조회는 404를 반환하는지 검증한다.
+    def test_day_booking_view_returns_404_for_missing_room(self):
+        response = self.client.get("/api/v1/rooms/999999/day/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "NOT_FOUND_STUDIO_ROOM")
+
+    # 존재하지 않는 룸의 월별 조회는 404를 반환하는지 검증한다.
+    def test_month_booking_view_returns_404_for_missing_room(self):
+        response = self.client.get("/api/v1/rooms/999999/month/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "NOT_FOUND_STUDIO_ROOM")
+
     # 소속되지 않은 팀으로 팀 예약 조회를 시도하면 금지되는지 검증한다.
     def test_get_team_reservations_rejects_non_member_team_filter(self):
         response = self.client.get(
@@ -433,6 +447,13 @@ class BookingAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["code"], "FORBIDDEN_TEAM_BOOKING")
+
+    # 존재하지 않는 예약 번호 취소 시 404를 반환하는지 검증한다.
+    def test_cancel_reservation_returns_404_for_missing_booking(self):
+        response = self.client.delete("/api/v1/reservations/number/999999")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "NOT_FOUND_BOOKING")
 
     # 일별 조회는 예약과 휴무 슬롯을 시간순으로 함께 반환하는지 검증한다.
     def test_day_booking_view_returns_reservations_and_closures(self):
