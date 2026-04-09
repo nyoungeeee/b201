@@ -11,9 +11,17 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import importlib.util
 from datetime import timedelta
 from pathlib import Path
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+
+    def load_dotenv(*args, **kwargs):
+        return False
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -33,6 +41,8 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 # Application definition
 
+HAS_CORSHEADERS = importlib.util.find_spec("corsheaders") is not None
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -40,7 +50,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
     "rest_framework",
     "drf_spectacular",
     "rest_framework_simplejwt",
@@ -51,8 +60,10 @@ INSTALLED_APPS = [
     "auth_tokens",
 ]
 
+if HAS_CORSHEADERS:
+    INSTALLED_APPS.insert(6, "corsheaders")
+
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -61,6 +72,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if HAS_CORSHEADERS:
+    MIDDLEWARE.insert(0, "corsheaders.middleware.CorsMiddleware")
 
 ROOT_URLCONF = "config.urls"
 AUTH_USER_MODEL = "accounts.User"  # Custom User Model

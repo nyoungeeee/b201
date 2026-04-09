@@ -94,7 +94,7 @@ class KakaoAuthService:
 
     @staticmethod
     @transaction.atomic
-    def get_user_id_from_kakao_auth_code(kakao_auth_code: str) -> tuple[int, bool]:
+    def get_user_from_kakao_auth_code(kakao_auth_code: str) -> tuple[User, bool]:
         new_user_created = False
         access_token = KakaoAuthService._get_access_token(kakao_auth_code)
         kakao_user_id = KakaoAuthService._get_kakao_user_id(access_token)
@@ -109,25 +109,27 @@ class KakaoAuthService:
                     new_user_created = True
             except IntegrityError:
                 raise UserAlreadyExistsError()
-            new_user_created = True
-        return user.id, new_user_created
+        return user, new_user_created
 
     @staticmethod
     def _get_access_token(kakao_auth_code: str) -> str:
-        response = requests.post(
-            KakaoAuthService.TOKEN_URL,
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-            },
-            data={
-                "grant_type": "authorization_code",
-                "client_id": settings.KAKAO_REST_API_KEY,
-                "redirect_uri": settings.KAKAO_REDIRECT_URI,
-                "code": kakao_auth_code,
-                "client_secret": settings.KAKAO_CLIENT_SECRET,
-            },
-            timeout=5,
-        )
+        try:
+            response = requests.post(
+                KakaoAuthService.TOKEN_URL,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+                },
+                data={
+                    "grant_type": "authorization_code",
+                    "client_id": settings.KAKAO_REST_API_KEY,
+                    "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                    "code": kakao_auth_code,
+                    "client_secret": settings.KAKAO_CLIENT_SECRET,
+                },
+                timeout=5,
+            )
+        except requests.RequestException as e:
+            raise KakaoAPIError() from e
 
         if response.status_code != 200:
             raise KakaoAPIError()
@@ -142,14 +144,17 @@ class KakaoAuthService:
 
     @staticmethod
     def _get_kakao_user_id(access_token: str) -> int:
-        response = requests.get(
-            KakaoAuthService.USER_ME_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-            },
-            timeout=5,
-        )
+        try:
+            response = requests.get(
+                KakaoAuthService.USER_ME_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+                },
+                timeout=5,
+            )
+        except requests.RequestException as e:
+            raise KakaoAPIError() from e
 
         if response.status_code != 200:
             raise KakaoAPIError()
@@ -166,20 +171,9 @@ class KakaoAuthService:
 class AuthService:
     @staticmethod
     def signin(kakao_auth_code: str) -> tuple[SigninResponse, bool]:
-        user_id, new_user_created = KakaoAuthService.get_user_id_from_kakao_auth_code(
+        user, new_user_created = KakaoAuthService.get_user_from_kakao_auth_code(
             kakao_auth_code
         )
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            # 신규 사용자 생성
-            try:
-                with transaction.atomic():
-                    user = User.objects.create_user(kakao_id=user_id)
-                    new_user_created = True
-            except IntegrityError:
-                raise UserAlreadyExistsError()
 
         if user.status == UserStatus.BLOCKED:
             raise UserBlockedError()
@@ -197,7 +191,7 @@ class AuthService:
                     {"name": team_member.team.name, "id": team_member.team.id}
                     for team_member in user.team_memberships.filter(
                         status=TeamMemberStatus.ACTIVE, team__status=TeamStatus.ACTIVE
-                    )
+                    ).select_related("team")
                 ],
                 token=token_status,
             ),

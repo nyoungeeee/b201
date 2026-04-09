@@ -1,31 +1,31 @@
 import logging
 
 from rest_framework import serializers, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from accounts.exceptions import NicknameAlreadyExistsError, UserNotFoundError
 from accounts.services import UserInfoService
-from common.service_exceptions import BaseServiceError
-from common.swagger import openapi_exception_response
 from common.api_exceptions import (
-    BadRequestException,
     ConflictException,
     ForbiddenException,
-    InternalServerErrorException,
 )
+from common.service_exceptions import BaseServiceError
+from common.swagger import openapi_exception_response
 
 logger = logging.getLogger(__name__)
 
 
 class UserInfoSerializer(serializers.Serializer):
+    class TeamSerializer(serializers.Serializer):
+        id = serializers.IntegerField(required=True)
+        name = serializers.CharField(required=True)
+
     id = serializers.IntegerField(required=True)
     nickname = serializers.CharField(allow_null=True)
-    team = serializers.ListField(
-        child=serializers.DictField(child=serializers.CharField())
-    )
+    team = TeamSerializer(many=True, required=True)
 
 
 class UserInfoView(APIView):

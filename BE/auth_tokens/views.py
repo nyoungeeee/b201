@@ -33,9 +33,9 @@ class TokenStatusSerializer(serializers.Serializer):
 
 class SigninResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)
-    nickname = serializers.CharField(required=False)
+    nickname = serializers.CharField(required=False, allow_null=True)
     team = serializers.ListField(
-        child=serializers.DictField(child=serializers.CharField())
+        child=serializers.DictField(),
     )
     token = TokenStatusSerializer()
 

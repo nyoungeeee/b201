@@ -20,14 +20,7 @@ class UserInfoService:
         return UserInfo(
             id=user.id,
             nickname=user.nickname,
-            team=[
-                {"id": team_membership.team.id, "name": team_membership.team.name}
-                for team_membership in user.team_memberships.filter(
-                    status=TeamMemberStatus.ACTIVE, team__status=TeamStatus.ACTIVE
-                )
-                .select_related("team")
-                .all()
-            ],
+            team=UserInfoService._get_active_teams(user),
         )
 
     @staticmethod
@@ -41,12 +34,17 @@ class UserInfoService:
         return UserInfo(
             id=user.id,
             nickname=user.nickname,
-            team=[
-                {"id": team_membership.team.id, "name": team_membership.team.name}
-                for team_membership in user.team_memberships.filter(
-                    status=TeamMemberStatus.ACTIVE, team__status=TeamStatus.ACTIVE
-                )
-                .select_related("team")
-                .all()
-            ],
+            team=UserInfoService._get_active_teams(user),
         )
+
+    @staticmethod
+    def _get_active_teams(user) -> list[dict[str, int | str]]:
+        return [
+            {"id": team_membership.team.id, "name": team_membership.team.name}
+            for team_membership in user.team_memberships.filter(
+                status=TeamMemberStatus.ACTIVE,
+                team__status=TeamStatus.ACTIVE,
+            )
+            .select_related("team")
+            .all()
+        ]

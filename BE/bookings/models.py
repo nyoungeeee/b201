@@ -18,7 +18,7 @@ class BookingStatus(models.TextChoices):
 
 
 class Booking(models.Model):
-    reservation_number = models.BigIntegerField(unique=True)
+    reservation_number = models.BigAutoField(primary_key=True)
 
     room = models.ForeignKey(
         StudioRoom,
@@ -68,7 +68,7 @@ class Booking(models.Model):
             models.Index(fields=["team", "status", "reservation_date"]),
             models.Index(fields=["reservation_date", "status"]),
         ]
-        ordering = ["reservation_date", "start_time", "id"]
+        ordering = ["reservation_date", "start_time", "reservation_number"]
 
     def clean(self):
         if self.start_time >= self.end_time:
