@@ -32,8 +32,8 @@ BE/static/
 BE/*.log
 
 # Migrations cache (선택)
-BE/**/migrations/*.py
-BE/**/migrations/__init__.py
+# BE/**/migrations/*.py
+# BE/**/migrations/__init__.py
 
 ##################################################
 # React (FE)
