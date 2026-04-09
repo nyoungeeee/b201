@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rest_framework_simplejwt",
     "accounts",
-    "bands",
+    "teams",
     "studios",
     "bookings",
     "auth_tokens",
@@ -144,6 +144,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "common.exception_handler.local_exception_handler",
 }
 
 # Spectacular Settings

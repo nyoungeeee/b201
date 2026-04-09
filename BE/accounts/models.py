@@ -4,6 +4,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 from django.db import models
+from django.db.models import Q
 
 
 class UserStatus(models.TextChoices):
@@ -13,15 +14,12 @@ class UserStatus(models.TextChoices):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, kakao_id, nickname, password=None, **extra_fields):
+    def create_user(self, kakao_id, password=None, **extra_fields):
         if not kakao_id:
             raise ValueError("kakao_id is required")
-        if not nickname:
-            raise ValueError("nickname is required")
 
         user = self.model(
             kakao_id=kakao_id,
-            nickname=nickname,
             **extra_fields,
         )
         if password:
@@ -31,14 +29,13 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, kakao_id, nickname, password=None, **extra_fields):
+    def create_superuser(self, kakao_id, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("status", UserStatus.ACTIVE)
 
         return self.create_user(
             kakao_id=kakao_id,
-            nickname=nickname,
             password=password,
             **extra_fields,
         )
@@ -46,7 +43,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     kakao_id = models.BigIntegerField(unique=True)
-    nickname = models.CharField(max_length=30, unique=True)
+    nickname = models.CharField(max_length=30, null=True)
 
     status = models.CharField(
         max_length=20,
@@ -64,7 +61,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = "kakao_id"
-    REQUIRED_FIELDS = ["nickname"]
 
     class Meta:
         db_table = "users"
@@ -72,6 +68,10 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
-
-    def __str__(self):
-        return f"{self.id}:{self.nickname}"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["nickname"],
+                condition=Q(nickname__isnull=False),
+                name="unique_nickname_when_not_null",
+            )
+        ]

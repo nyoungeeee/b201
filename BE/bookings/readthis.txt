@@ -1,0 +1,1225 @@
+me : 내 예약 조회
+Method: GET
+
+URL: /api/v1/reservations/me
+
+설명: 로그인한 사용자의 예약 목록 조회
+
+인증: 필요 (Bearer Token)
+
+작성자: 민수
+
+생성일: 2026-04-02
+
+2. Request
+2.1 Header
+이름
+
+값
+
+필수
+
+설명
+
+Authorization
+
+Bearer {access_token}
+
+Y
+
+엑세스 토큰
+
+2.2 Path Parameter
+없음
+
+2.3 Query Parameter
+이름
+
+타입
+
+필수
+
+설명
+
+예시
+
+date
+
+string(YYYY-MM-DD)
+
+N
+
+특정 날짜 기준 조회
+
+2026-04-01
+
+status
+
+string
+
+N
+
+예약 상태 필터
+
+RESERVED
+
+page
+
+int
+
+N
+
+페이지 번호
+
+1
+
+size
+
+int
+
+N
+
+페이지 크기
+
+20
+
+2.4 Request Body
+없음
+
+3. Response
+3.1 Success (200)
+
+
+{
+  "reservations": [
+    {
+      "reservation_number": 101,
+      "room_id": 1,
+      "room_name": "b201",
+      "date": "2026-04-01",
+      "start_time": "09:00",
+      "end_time": "10:00",
+      "type": "PRIVATE",
+      "name": "민수",
+      "color": "FF6A2A",
+      "status": "RESERVED"
+    },
+    {
+      "reservation_number": 102,
+      "room_id": 1,
+      "room_name": "b201",
+      "date": "2026-04-03",
+      "start_time": "18:00",
+      "end_time": "20:00",
+      "type": "TEAM",
+      "name": "밴드A",
+      "color": "000000",
+      "status": "RESERVED"
+    }
+  ]
+}
+필드
+
+타입
+
+nullable
+
+설명
+
+reservations
+
+[reservation_object]
+
+N
+
+예약 목록
+
+reservation_object
+필드
+
+타입
+
+nullable
+
+설명
+
+reservation_number
+
+long
+
+N
+
+예약 번호
+
+room_id
+
+long
+
+N
+
+룸 id
+
+room_name
+
+string
+
+N
+
+합주실 이름
+
+date
+
+string
+
+N
+
+예약 날짜
+
+start_time
+
+string
+
+N
+
+시작 시간
+
+end_time
+
+string
+
+N
+
+종료 시간
+
+type
+
+string
+
+N
+
+PRIVATE / TEAM
+
+name
+
+string
+
+N
+
+개인명 또는 팀명
+
+color
+
+string
+
+N
+
+색상코드
+
+status
+
+string
+
+N
+
+RESERVED / CANCELED
+
+3.2 Error
+HTTP Status
+
+Code
+
+설명
+
+400
+
+INVALID_INPUT
+
+요청값 오류
+
+401
+
+UNAUTHORIZED
+
+권한 없음
+
+500
+
+INTERNAL_ERROR
+
+서버 오류
+
+4. 비즈니스 규칙 / 정책
+ 본인 예약만 조회 가능 
+
+ date를 넣지 않으면 전체 예약 조회 
+
+ status를 넣지 않으면 취소되지 않은 예약만 조회 
+
+5. 비고
+ 추후 최신순 정렬 기본 적용 추천 
+
+team : 내 팀 예약 조회
+Method: GET
+
+URL: /api/v1/reservations/team
+
+설명: 로그인한 사용자가 속한 팀의 예약 목록 조회
+
+인증: 필요 (Bearer Token)
+
+작성자: 민수
+
+생성일: 2026-04-02
+
+2. Request
+2.1 Header
+이름
+
+값
+
+필수
+
+설명
+
+Authorization
+
+Bearer {access_token}
+
+Y
+
+엑세스 토큰
+
+2.2 Path Parameter
+없음
+
+2.3 Query Parameter
+이름
+
+타입
+
+필수
+
+설명
+
+예시
+
+team_id
+
+long
+
+N
+
+특정 팀 예약만 조회
+
+1
+
+date
+
+string(YYYY-MM-DD)
+
+N
+
+특정 날짜 기준 조회
+
+2026-04-01
+
+status
+
+string
+
+N
+
+예약 상태 필터
+
+RESERVED
+
+page
+
+int
+
+N
+
+페이지 번호
+
+1
+
+size
+
+int
+
+N
+
+페이지 크기
+
+20
+
+2.4 Request Body
+없음
+
+3. Response
+3.1 Success (200)
+
+
+{
+  "reservations": [
+    {
+      "reservation_number": 201,
+      "team_id": 1,
+      "team_name": "밴드A",
+      "room_id": 1,
+      "room_name": "b201",
+      "date": "2026-04-01",
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "type": "TEAM",
+      "name": "밴드A",
+      "color": "000000",
+      "status": "RESERVED"
+    }
+  ]
+}
+필드
+
+타입
+
+nullable
+
+설명
+
+reservations
+
+[team_reservation_object]
+
+N
+
+팀 예약 목록
+
+team_reservation_object
+필드
+
+타입
+
+nullable
+
+설명
+
+reservation_number
+
+long
+
+N
+
+예약 번호
+
+team_id
+
+long
+
+N
+
+팀 id
+
+team_name
+
+string
+
+N
+
+팀 이름
+
+room_id
+
+long
+
+N
+
+룸 id
+
+room_name
+
+string
+
+N
+
+합주실 이름
+
+date
+
+string
+
+N
+
+예약 날짜
+
+start_time
+
+string
+
+N
+
+시작 시간
+
+end_time
+
+string
+
+N
+
+종료 시간
+
+type
+
+string
+
+N
+
+TEAM
+
+name
+
+string
+
+N
+
+팀명
+
+color
+
+string
+
+N
+
+색상코드
+
+status
+
+string
+
+N
+
+RESERVED / CANCELED
+
+3.2 Error
+HTTP Status
+
+Code
+
+설명
+
+400
+
+INVALID_INPUT
+
+요청값 오류
+
+401
+
+UNAUTHORIZED
+
+권한 없음
+
+404
+
+NOT_FOUND
+
+팀 정보를 찾을 수 없음
+
+500
+
+INTERNAL_ERROR
+
+서버 오류
+
+4. 비즈니스 규칙 / 정책
+ 사용자가 속한 팀의 예약만 조회 가능 
+
+ team_id 미입력 시 사용자가 속한 전체 팀 예약 조회 
+
+ status 미입력 시 취소되지 않은 예약만 조회 
+
+5. 비고
+ 팀 기능 상세 정책 확정 필요 
+
+private : 개인 예약 생성
+Method: POST
+
+URL: /api/v1/reservations/{room_id}/private
+
+설명: 해당 방에 개인 예약 생성
+
+인증: 필요 (Bearer Token)
+
+작성자: 민수
+
+생성일: 2026-04-02
+
+2. Request
+2.1 Header
+이름
+
+값
+
+필수
+
+설명
+
+Authorization
+
+Bearer {access_token}
+
+Y
+
+엑세스 토큰
+
+Content-Type
+
+application/json
+
+Y
+
+body json
+
+2.2 Path Parameter
+이름
+
+타입
+
+필수
+
+설명
+
+room_name
+
+string
+
+Y
+
+합주실 방이름
+
+2.3 Query Parameter
+없음
+
+2.4 Request Body
+
+
+{
+  "date": "2026-04-01",
+  "start_time": "09:00",
+  "end_time": "10:00",
+  "name": "민수",
+  "color": "FF6A2A"
+}
+필드
+
+타입
+
+필수
+
+설명
+
+date
+
+string(YYYY-MM-DD)
+
+Y
+
+예약 날짜
+
+start_time
+
+string(HH:mm)
+
+Y
+
+시작 시간
+
+end_time
+
+string(HH:mm)
+
+Y
+
+종료 시간
+
+name
+
+string
+
+Y
+
+예약자명
+
+color
+
+string
+
+Y
+
+색상코드
+
+3. Response
+3.1 Success (200)
+
+
+{
+  "reservation_number": 301,
+  "room_id": 1,
+  "room_name": "b201",
+  "date": "2026-04-01",
+  "start_time": "09:00",
+  "end_time": "10:00",
+  "type": "PRIVATE",
+  "name": "민수",
+  "color": "FF6A2A",
+  "status": "RESERVED"
+}
+필드
+
+타입
+
+nullable
+
+설명
+
+reservation_number
+
+long
+
+N
+
+예약 번호
+
+room_id
+
+long
+
+N
+
+룸 id
+
+room_name
+
+string
+
+N
+
+합주실 이름
+
+date
+
+string
+
+N
+
+예약 날짜
+
+start_time
+
+string
+
+N
+
+시작 시간
+
+end_time
+
+string
+
+N
+
+종료 시간
+
+type
+
+string
+
+N
+
+PRIVATE
+
+name
+
+string
+
+N
+
+예약자명
+
+color
+
+string
+
+N
+
+색상코드
+
+status
+
+string
+
+N
+
+RESERVED
+
+3.2 Error
+HTTP Status
+
+Code
+
+설명
+
+400
+
+INVALID_INPUT
+
+요청값 오류
+
+401
+
+UNAUTHORIZED
+
+권한 없음
+
+409
+
+DUPLICATED_RESERVATION
+
+이미 예약된 시간
+
+404
+
+NOT_FOUND
+
+방 정보를 찾을 수 없음
+
+500
+
+INTERNAL_ERROR
+
+서버 오류
+
+4. 비즈니스 규칙 / 정책
+ 예약 시간은 운영 시간 내여야 함 
+
+ 시작 시간은 종료 시간보다 빨라야 함 
+
+ 동일 방, 동일 날짜 기준으로 시간 겹침 예약 불가 
+
+ 개인 예약은 로그인한 사용자 기준으로 생성됨 
+
+5. 비고
+name을 직접 받을지, 서버에서 사용자 닉네임으로 고정할지 결정 필요 
+
+team : 팀 예약 생성
+Method: POST
+
+URL: /api/v1/reservations/{room_id}/team
+
+설명: 해당 방에 팀 예약 생성
+
+인증: 필요 (Bearer Token)
+
+작성자: 민수
+
+생성일: 2026-04-02
+
+2. Request
+2.1 Header
+이름
+
+값
+
+필수
+
+설명
+
+Authorization
+
+Bearer {access_token}
+
+Y
+
+엑세스 토큰
+
+Content-Type
+
+application/json
+
+Y
+
+body json
+
+2.2 Path Parameter
+이름
+
+타입
+
+필수
+
+설명
+
+room_id
+
+long
+
+Y
+
+합주실 방 id
+
+2.3 Query Parameter
+없음
+
+2.4 Request Body
+
+
+{
+  "team_id": 1,
+  "date": "2026-04-01",
+  "start_time": "19:00",
+  "end_time": "21:00",
+  "name": "밴드A",
+  "color": "000000"
+}
+필드
+
+타입
+
+필수
+
+설명
+
+team_id
+
+long
+
+Y
+
+팀 id
+
+date
+
+string(YYYY-MM-DD)
+
+Y
+
+예약 날짜
+
+start_time
+
+string(HH:mm)
+
+Y
+
+시작 시간
+
+end_time
+
+string(HH:mm)
+
+Y
+
+종료 시간
+
+name
+
+string
+
+Y
+
+팀명
+
+color
+
+string
+
+Y
+
+색상코드
+
+3. Response
+3.1 Success (200)
+
+
+{
+  "reservation_number": 302,
+  "team_id": 1,
+  "team_name": "밴드A",
+  "room_id": 1,
+  "room_name": "b201",
+  "date": "2026-04-01",
+  "start_time": "19:00",
+  "end_time": "21:00",
+  "type": "TEAM",
+  "name": "밴드A",
+  "color": "000000",
+  "status": "RESERVED"
+}
+필드
+
+타입
+
+nullable
+
+설명
+
+reservation_number
+
+long
+
+N
+
+예약 번호
+
+team_id
+
+long
+
+N
+
+팀 id
+
+team_name
+
+string
+
+N
+
+팀 이름
+
+room_id
+
+long
+
+N
+
+룸 id
+
+room_name
+
+string
+
+N
+
+합주실 이름
+
+date
+
+string
+
+N
+
+예약 날짜
+
+start_time
+
+string
+
+N
+
+시작 시간
+
+end_time
+
+string
+
+N
+
+종료 시간
+
+type
+
+string
+
+N
+
+TEAM
+
+name
+
+string
+
+N
+
+팀명
+
+color
+
+string
+
+N
+
+색상코드
+
+status
+
+string
+
+N
+
+RESERVED
+
+3.2 Error
+HTTP Status
+
+Code
+
+설명
+
+400
+
+INVALID_INPUT
+
+요청값 오류
+
+401
+
+UNAUTHORIZED
+
+권한 없음
+
+403
+
+FORBIDDEN
+
+해당 팀에 속하지 않음
+
+404
+
+NOT_FOUND
+
+방 또는 팀 정보를 찾을 수 없음
+
+409
+
+DUPLICATED_RESERVATION
+
+이미 예약된 시간
+
+500
+
+INTERNAL_ERROR
+
+서버 오류
+
+4. 비즈니스 규칙 / 정책
+ 예약 시간은 운영 시간 내여야 함 
+
+ 시작 시간은 종료 시간보다 빨라야 함 
+
+ 동일 방, 동일 날짜 기준으로 시간 겹침 예약 불가 
+
+ 로그인한 사용자가 해당 팀 소속일 때만 예약 가능 
+
+5. 비고
+name은 team_id로 대체 가능해서 없어도 될 수 있음 
+
+delete : 예약 취소
+Method: DELETE
+
+URL: /api/v1/reservations/number/{reservation_number}
+
+설명: 예약 번호로 예약 취소
+
+인증: 필요 (Bearer Token)
+
+작성자: 민수
+
+생성일: 2026-04-02
+
+2. Request
+2.1 Header
+이름
+
+값
+
+필수
+
+설명
+
+Authorization
+
+Bearer {access_token}
+
+Y
+
+엑세스 토큰
+
+2.2 Path Parameter
+이름
+
+타입
+
+필수
+
+설명
+
+reservation_number
+
+long
+
+Y
+
+예약 번호
+
+2.3 Query Parameter
+없음
+
+2.4 Request Body
+없음
+
+3. Response
+3.1 Success (200)
+바디 없음
+
+3.2 Error
+HTTP Status
+
+Code
+
+설명
+
+400
+
+INVALID_INPUT
+
+요청값 오류
+
+401
+
+UNAUTHORIZED
+
+권한 없음
+
+403
+
+FORBIDDEN
+
+본인 또는 본인 팀 예약이 아님
+
+404
+
+NOT_FOUND
+
+예약 정보를 찾을 수 없음
+
+409
+
+ALREADY_CANCELED
+
+이미 취소된 예약
+
+500
+
+INTERNAL_ERROR
+
+서버 오류
+
+4. 비즈니스 규칙 / 정책
+ 본인 개인 예약 또는 본인 소속 팀 예약만 취소 가능 
+
+ 실제 삭제 대신 상태를 CANCELED로 변경하는 soft delete 방식 권장 
+
+ 이미 지난 예약은 취소 불가 정책 추가 검토 필요 
+
+5. 비고
+ URL은 나중에 /api/v1/reservation/{reservation_number} 로 단순화 추천

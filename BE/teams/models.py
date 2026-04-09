@@ -2,33 +2,38 @@ from django.conf import settings
 from django.db import models
 
 
-class BandStatus(models.TextChoices):
+class TeamStatus(models.TextChoices):
     ACTIVE = "ACTIVE", "ACTIVE"
     DELETED = "DELETED", "DELETED"
 
 
-class BandMemberRole(models.TextChoices):
+class TeamMemberRole(models.TextChoices):
     LEADER = "LEADER", "LEADER"
     MEMBER = "MEMBER", "MEMBER"
 
 
-class BandMemberStatus(models.TextChoices):
+class TeamMemberStatus(models.TextChoices):
     ACTIVE = "ACTIVE", "ACTIVE"
     LEFT = "LEFT", "LEFT"
 
 
-class Band(models.Model):
+class Team(models.Model):
     name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=6)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name="owned_bands",
+        related_name="owned_teams",
+    )
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through="TeamMember",
+        related_name="teams",
     )
     status = models.CharField(
         max_length=20,
-        choices=BandStatus.choices,
-        default=BandStatus.ACTIVE,
+        choices=TeamStatus.choices,
+        default=TeamStatus.ACTIVE,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -44,26 +49,26 @@ class Band(models.Model):
         return self.name
 
 
-class BandMember(models.Model):
-    band = models.ForeignKey(
-        Band,
+class TeamMember(models.Model):
+    team = models.ForeignKey(
+        Team,
         on_delete=models.CASCADE,
-        related_name="members",
+        related_name="team_members",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="band_memberships",
+        related_name="team_memberships",
     )
     role = models.CharField(
         max_length=20,
-        choices=BandMemberRole.choices,
-        default=BandMemberRole.MEMBER,
+        choices=TeamMemberRole.choices,
+        default=TeamMemberRole.MEMBER,
     )
     status = models.CharField(
         max_length=20,
-        choices=BandMemberStatus.choices,
-        default=BandMemberStatus.ACTIVE,
+        choices=TeamMemberStatus.choices,
+        default=TeamMemberStatus.ACTIVE,
     )
     joined_at = models.DateTimeField(auto_now_add=True)
 
@@ -71,14 +76,14 @@ class BandMember(models.Model):
         db_table = "team_members"
         constraints = [
             models.UniqueConstraint(
-                fields=["band", "user"],
-                name="uq_team_members_band_user",
+                fields=["team", "user"],
+                name="uq_team_members_team_user",
             )
         ]
         indexes = [
             models.Index(fields=["user", "status"]),
-            models.Index(fields=["band", "status"]),
+            models.Index(fields=["team", "status"]),
         ]
 
     def __str__(self):
-        return f"{self.band_id}:{self.user_id}"
+        return f"{self.team_id}:{self.user_id}"
