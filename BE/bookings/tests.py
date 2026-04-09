@@ -99,6 +99,84 @@ class BookingAPITestCase(APITestCase):
             [BookingStatus.RESERVED, BookingStatus.CANCELED],
         )
 
+    # 내 예약 조회 시 status 하나를 지정하면 해당 상태 예약만 반환되는지 검증한다.
+    def test_get_my_reservations_filters_single_status(self):
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+            status=BookingStatus.CANCELED,
+        )
+        reserved = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get("/api/v1/reservations/me?status=RESERVED")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 1)
+        self.assertEqual(
+            response.data["reservations"][0]["reservation_number"],
+            reserved.reservation_number,
+        )
+        self.assertEqual(
+            response.data["reservations"][0]["status"],
+            BookingStatus.RESERVED,
+        )
+
+    # 내 예약 조회 시 status를 두 개 넘기면 둘 다 포함해서 반환되는지 검증한다.
+    def test_get_my_reservations_filters_multiple_statuses(self):
+        canceled = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+            status=BookingStatus.CANCELED,
+        )
+        pending = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(11, 0),
+            end_time=time(12, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get(
+            "/api/v1/reservations/me?status=CANCELED&status=PENDING"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["reservation_number"] for item in response.data["reservations"]],
+            [pending.reservation_number, canceled.reservation_number],
+        )
+        self.assertEqual(
+            [item["status"] for item in response.data["reservations"]],
+            [BookingStatus.PENDING, BookingStatus.CANCELED],
+        )
+
     # 내 예약 조회 시 page/size가 적용되는지 검증한다.
     def test_get_my_reservations_applies_pagination(self):
         first = Booking.objects.create(
@@ -161,6 +239,53 @@ class BookingAPITestCase(APITestCase):
             own_booking.reservation_number,
         )
         self.assertEqual(response.data["reservations"][0]["team_id"], self.team.id)
+
+    # 팀 예약 조회 시 status를 두 개 넘기면 해당 상태의 팀 예약만 반환되는지 검증한다.
+    def test_get_team_reservations_filters_multiple_statuses(self):
+        canceled = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(19, 0),
+            end_time=time(20, 0),
+            status=BookingStatus.CANCELED,
+        )
+        pending = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(20, 0),
+            end_time=time(21, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get(
+            "/api/v1/reservations/team?status=CANCELED&status=PENDING"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["reservation_number"] for item in response.data["reservations"]],
+            [pending.reservation_number, canceled.reservation_number],
+        )
+        self.assertEqual(
+            [item["status"] for item in response.data["reservations"]],
+            [BookingStatus.PENDING, BookingStatus.CANCELED],
+        )
 
     # 소속되지 않은 팀으로 팀 예약 조회를 시도하면 금지되는지 검증한다.
     def test_get_team_reservations_rejects_non_member_team_filter(self):

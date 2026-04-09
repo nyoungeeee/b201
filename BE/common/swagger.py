@@ -20,6 +20,5 @@ def openapi_exception_response(
         )
 
     return OpenApiResponse(
-        # response=APIExceptionSerializer,
         description=full_description,
     )

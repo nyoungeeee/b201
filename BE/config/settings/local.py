@@ -20,7 +20,10 @@ DATABASES = {
     }
 }
 
-REST_FRAMEWORK["EXCEPTION_HANDLER"] = "common.exception_handler.local_exception_handler"
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "EXCEPTION_HANDLER": "common.exception_handler.local_exception_handler",
+}
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")

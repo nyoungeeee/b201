@@ -137,6 +137,30 @@ class AuthTokenAPITestCase(APITestCase):
         self.assertIsNotNone(self.user.deleted_at)
         self.assertEqual(RefreshToken.objects.filter(user=self.user).count(), 0)
 
+    @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_id")
+    @patch("auth_tokens.services.KakaoAuthService._get_access_token")
+    # 탈퇴한 사용자가 같은 카카오 계정으로 다시 로그인하면 거부되는지 검증한다.
+    def test_signin_rejects_withdrawn_user_relogin(
+        self,
+        mock_get_access_token,
+        mock_get_kakao_user_id,
+    ):
+        self.user.is_active = False
+        self.user.status = "WITHDRAWN"
+        self.user.save(update_fields=["is_active", "status"])
+        mock_get_access_token.return_value = "kakao-access-token"
+        mock_get_kakao_user_id.return_value = self.user.kakao_id
+
+        response = self.client.post(
+            "/api/v1/auth/signin",
+            {"kakao_auth_code": "code-123"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "USER_NOT_FOUND")
+        self.assertEqual(RefreshToken.objects.count(), 0)
+
     def _authenticate(self, user):
         refresh = JWTRefreshToken.for_user(user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")

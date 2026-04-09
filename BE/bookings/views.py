@@ -189,6 +189,15 @@ class ReservationStatusField(serializers.ChoiceField):
         super().__init__(choices=BookingStatus.choices, **kwargs)
 
 
+class ReservationStatusListField(serializers.ListField):
+    child = ReservationStatusField()
+
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            data = [data]
+        return super().to_internal_value(data)
+
+
 class ReservationItemSerializer(serializers.Serializer):
     reservation_number = serializers.IntegerField(required=True)
     room_id = serializers.IntegerField(required=True)
@@ -217,7 +226,7 @@ class TeamReservationListSerializer(serializers.Serializer):
 
 class ReservationListQueryParamsSerializer(serializers.Serializer):
     date = serializers.DateField(required=False, format="%Y-%m-%d")
-    status = ReservationStatusField(required=False)
+    status = ReservationStatusListField(required=False)
     page = serializers.IntegerField(required=False, min_value=1, default=1)
     size = serializers.IntegerField(required=False, min_value=1, default=20)
 

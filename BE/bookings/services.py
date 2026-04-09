@@ -198,7 +198,7 @@ class ReservationQueryService:
     def get_my_reservations(
         user,
         target_date: date | None,
-        status: str | None,
+        status: list[str] | None,
         page: int,
         size: int,
     ) -> ReservationList:
@@ -220,7 +220,7 @@ class ReservationQueryService:
         user,
         team_id: int | None,
         target_date: date | None,
-        status: str | None,
+        status: list[str] | None,
         page: int,
         size: int,
     ) -> ReservationList:
@@ -290,7 +290,11 @@ class ReservationQueryService:
         )
 
     @staticmethod
-    def _apply_common_filters(queryset, target_date: date | None, status: str | None):
+    def _apply_common_filters(
+        queryset,
+        target_date: date | None,
+        status: list[str] | None,
+    ):
         queryset = queryset.select_related("room", "user", "team").order_by(
             "-reservation_date",
             "-start_time",
@@ -299,7 +303,7 @@ class ReservationQueryService:
         if target_date is not None:
             queryset = queryset.filter(reservation_date=target_date)
         if status is not None:
-            queryset = queryset.filter(status=status)
+            queryset = queryset.filter(status__in=status)
         return queryset
 
     @staticmethod
