@@ -1,6 +1,5 @@
 import logging
 
-from rest_framework import serializers, status
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -14,18 +13,10 @@ from common.api_exceptions import (
 )
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
+from accounts.serializers import PatchUserInfoRequestSerializer, UserInfoSerializer
+from rest_framework import status
 
 logger = logging.getLogger(__name__)
-
-
-class UserInfoSerializer(serializers.Serializer):
-    class TeamSerializer(serializers.Serializer):
-        id = serializers.IntegerField(required=True)
-        name = serializers.CharField(required=True)
-
-    id = serializers.IntegerField(required=True)
-    nickname = serializers.CharField(allow_null=True)
-    team = TeamSerializer(many=True, required=True)
 
 
 class UserInfoView(APIView):
@@ -50,9 +41,6 @@ class UserInfoView(APIView):
             raise ForbiddenException(code=e.code, message=e.message)
         return Response(UserInfoSerializer(user_info).data, status=status.HTTP_200_OK)
 
-    class PatchUserInfoRequestSerializer(serializers.Serializer):
-        nickname = serializers.CharField(required=True)
-
     @extend_schema(
         request=PatchUserInfoRequestSerializer,
         responses={
@@ -68,7 +56,7 @@ class UserInfoView(APIView):
     )
     def patch(self, request):
         user = request.user
-        serializer = self.PatchUserInfoRequestSerializer(data=request.data)
+        serializer = PatchUserInfoRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         nickname = serializer.validated_data["nickname"]
         try:

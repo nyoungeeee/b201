@@ -13,7 +13,7 @@ User = get_user_model()
 class AccountAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(kakao_id=2001, nickname="tester")
-        self.other_user = User.objects.create_user(kakao_id=2002, nickname="taken-name")
+        self.other_user = User.objects.create_user(kakao_id=2002, nickname="takenname")
         self.team = Team.objects.create(
             name="team-a",
             color="112233",
@@ -76,14 +76,14 @@ class AccountAPITestCase(APITestCase):
     def test_patch_user_info_updates_nickname(self):
         response = self.client.patch(
             "/api/v1/me/",
-            {"nickname": "new-nickname"},
+            {"nickname": "newnickname"},
             format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
-        self.assertEqual(self.user.nickname, "new-nickname")
-        self.assertEqual(response.data["nickname"], "new-nickname")
+        self.assertEqual(self.user.nickname, "newnickname")
+        self.assertEqual(response.data["nickname"], "newnickname")
 
     # 이미 사용 중인 닉네임으로 수정하면 충돌 응답이 반환되는지 검증한다.
     def test_patch_user_info_rejects_duplicate_nickname(self):
@@ -120,6 +120,51 @@ class AccountAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["code"], "INVALID_INPUT")
+
+    # 닉네임은 영문 대소문자를 구분하지 않고 중복 검증하는지 확인한다.
+    def test_patch_user_info_rejects_case_insensitive_duplicate_nickname(self):
+        response = self.client.patch(
+            "/api/v1/me/",
+            {"nickname": "TAKENNAME"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "NICKNAME_ALREADY_EXISTS")
+
+    # 닉네임은 특수문자와 공백을 허용하지 않는지 검증한다.
+    def test_patch_user_info_rejects_nickname_with_special_characters(self):
+        response = self.client.patch(
+            "/api/v1/me/",
+            {"nickname": "new-name"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_INPUT")
+
+    # 닉네임은 한글 8자 또는 영문/숫자 16자를 초과할 수 없는지 검증한다.
+    def test_patch_user_info_rejects_too_long_nickname(self):
+        response = self.client.patch(
+            "/api/v1/me/",
+            {"nickname": "abcdefghijklmno12"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_INPUT")
+
+    # 닉네임은 한글 8자까지 허용되는지 검증한다.
+    def test_patch_user_info_accepts_eight_korean_characters(self):
+        response = self.client.patch(
+            "/api/v1/me/",
+            {"nickname": "가나다라마바사아"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.nickname, "가나다라마바사아")
 
     def _authenticate(self, user):
         refresh = JWTRefreshToken.for_user(user)

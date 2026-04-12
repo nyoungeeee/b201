@@ -5,6 +5,7 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 
 
 class UserStatus(models.TextChoices):
@@ -70,8 +71,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=["nickname"],
+                Lower("nickname"),
                 condition=Q(nickname__isnull=False),
-                name="unique_nickname_when_not_null",
+                name="unique_nickname_case_insensitive_when_not_null",
             )
         ]

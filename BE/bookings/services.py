@@ -1,7 +1,7 @@
 import calendar
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from django.db import transaction
 from django.db.models import Q
@@ -29,6 +29,7 @@ class Slot:
     end_time: time
     name: str
     color: str
+    status: str | None = None
 
 
 @dataclass
@@ -46,6 +47,7 @@ class DayBookingCheck:
 class MonthDateColor:
     date: date
     color: list[str]
+    disabled: bool
 
 
 @dataclass
@@ -89,7 +91,7 @@ class BookingCheckService:
         booking_query = (
             room.bookings.filter(
                 reservation_date=target_date,
-                status=BookingStatus.RESERVED,
+                status__in=[BookingStatus.RESERVED, BookingStatus.PENDING],
             )
             .select_related("user", "team")
             .order_by("start_time")
@@ -110,6 +112,7 @@ class BookingCheckService:
                     end_time=booking.end_time,
                     name=name,
                     color=color,
+                    status=booking.status,
                 )
             )
 
@@ -121,6 +124,7 @@ class BookingCheckService:
                     end_time=closure.end_time,
                     name=closure.reason or "휴무",
                     color="#DADADA",
+                    status=None,
                 )
             )
 
@@ -154,13 +158,20 @@ class BookingCheckService:
             room.bookings.filter(
                 reservation_date__year=target_date.year,
                 reservation_date__month=target_date.month,
-                status=BookingStatus.RESERVED,
             )
+            .exclude(status=BookingStatus.CANCELED)
             .select_related("user", "team")
             .order_by("reservation_date", "start_time")
         )
+        closures = room.closures.filter(
+            closure_date__year=target_date.year,
+            closure_date__month=target_date.month,
+            start_time__lte=room.open_time,
+            end_time__gte=room.close_time,
+        ).values_list("closure_date", flat=True)
 
         booking_map: dict[str, list[str]] = defaultdict(list)
+        disabled_dates = {closure_date.isoformat() for closure_date in closures}
 
         for booking in bookings:
             booking_date = booking.reservation_date.isoformat()
@@ -175,7 +186,16 @@ class BookingCheckService:
         for day in range(1, month_last_day + 1):
             current_date = date(target_date.year, target_date.month, day)
             colors = booking_map.get(current_date.isoformat(), [])
-            days.append(MonthDateColor(date=current_date, color=colors))
+            days.append(
+                MonthDateColor(
+                    date=current_date,
+                    color=colors,
+                    disabled=(
+                        room.status != StudioRoomStatus.ACTIVE
+                        or current_date.isoformat() in disabled_dates
+                    ),
+                )
+            )
 
         return MonthBookingCheck(
             room_id=room.id,
@@ -319,28 +339,42 @@ class ReservationCommandService:
     def create_private_reservation(
         user,
         room_id: int,
-        target_date: date,
+        start_date: date,
+        count: int,
         start_time: time,
         end_time: time,
-    ) -> ReservationItem:
+    ) -> ReservationList:
         room = ReservationCommandService._get_active_room(room_id)
-        ReservationCommandService._validate_time_range(
-            room=room,
-            target_date=target_date,
-            start_time=start_time,
-            end_time=end_time,
-        )
+        bookings: list[Booking] = []
+        for target_date in ReservationCommandService._build_recurring_dates(
+            start_date=start_date,
+            count=count,
+        ):
+            ReservationCommandService._validate_time_range(
+                room=room,
+                target_date=target_date,
+                start_time=start_time,
+                end_time=end_time,
+            )
 
-        booking = Booking.objects.create(
-            room=room,
-            user=user,
-            booking_type=BookingType.PRIVATE,
-            reservation_date=target_date,
-            start_time=start_time,
-            end_time=end_time,
-            status=BookingStatus.RESERVED,
+            bookings.append(
+                Booking.objects.create(
+                    room=room,
+                    user=user,
+                    booking_type=BookingType.PRIVATE,
+                    reservation_date=target_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    status=BookingStatus.PENDING,
+                )
+            )
+
+        return ReservationList(
+            reservations=[
+                ReservationQueryService._build_reservation_item(booking)
+                for booking in bookings
+            ]
         )
-        return ReservationQueryService._build_reservation_item(booking)
 
     @staticmethod
     @transaction.atomic
@@ -348,30 +382,44 @@ class ReservationCommandService:
         user,
         room_id: int,
         team_id: int,
-        target_date: date,
+        start_date: date,
+        count: int,
         start_time: time,
         end_time: time,
-    ) -> ReservationItem:
+    ) -> ReservationList:
         room = ReservationCommandService._get_active_room(room_id)
         team = ReservationCommandService._get_user_team(user=user, team_id=team_id)
-        ReservationCommandService._validate_time_range(
-            room=room,
-            target_date=target_date,
-            start_time=start_time,
-            end_time=end_time,
-        )
+        bookings: list[Booking] = []
+        for target_date in ReservationCommandService._build_recurring_dates(
+            start_date=start_date,
+            count=count,
+        ):
+            ReservationCommandService._validate_time_range(
+                room=room,
+                target_date=target_date,
+                start_time=start_time,
+                end_time=end_time,
+            )
 
-        booking = Booking.objects.create(
-            room=room,
-            user=user,
-            team=team,
-            booking_type=BookingType.TEAM,
-            reservation_date=target_date,
-            start_time=start_time,
-            end_time=end_time,
-            status=BookingStatus.RESERVED,
+            bookings.append(
+                Booking.objects.create(
+                    room=room,
+                    user=user,
+                    team=team,
+                    booking_type=BookingType.TEAM,
+                    reservation_date=target_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    status=BookingStatus.PENDING,
+                )
+            )
+
+        return ReservationList(
+            reservations=[
+                ReservationQueryService._build_reservation_item(booking)
+                for booking in bookings
+            ]
         )
-        return ReservationQueryService._build_reservation_item(booking)
 
     @staticmethod
     @transaction.atomic
@@ -436,6 +484,12 @@ class ReservationCommandService:
         start_time: time,
         end_time: time,
     ) -> None:
+        if not ReservationCommandService._is_half_hour_unit(start_time):
+            raise InvalidBookingTimeError()
+
+        if not ReservationCommandService._is_half_hour_unit(end_time):
+            raise InvalidBookingTimeError()
+
         if start_time >= end_time:
             raise InvalidBookingTimeError()
 
@@ -447,7 +501,7 @@ class ReservationCommandService:
         duplicated_booking_exists = (
             room.bookings.filter(
                 reservation_date=target_date,
-                status=BookingStatus.RESERVED,
+                status__in=[BookingStatus.RESERVED, BookingStatus.PENDING],
             )
             .filter(overlap_filter)
             .exists()
@@ -462,3 +516,11 @@ class ReservationCommandService:
         )
         if closure_exists:
             raise DuplicatedReservationError()
+
+    @staticmethod
+    def _build_recurring_dates(start_date: date, count: int) -> list[date]:
+        return [start_date + timedelta(days=7 * index) for index in range(count)]
+
+    @staticmethod
+    def _is_half_hour_unit(target_time: time) -> bool:
+        return target_time.minute in (0, 30) and target_time.second == 0

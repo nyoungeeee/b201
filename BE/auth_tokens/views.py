@@ -1,10 +1,10 @@
 import logging
 
-from rest_framework import serializers, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
@@ -21,30 +21,19 @@ from .exceptions import (
     UserBlockedError,
     UserNotFoundError,
 )
+from .serializers import (
+    SigninRequestSerializer,
+    SigninResponseSerializer,
+    TokenRefreshRequestSerializer,
+    TokenStatusSerializer,
+)
 from .services import AuthService, TokenRefreshService
 
 logger = logging.getLogger(__name__)
 
 
-class TokenStatusSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-
-
-class SigninResponseSerializer(serializers.Serializer):
-    id = serializers.IntegerField(required=True)
-    nickname = serializers.CharField(required=False, allow_null=True)
-    team = serializers.ListField(
-        child=serializers.DictField(),
-    )
-    token = TokenStatusSerializer()
-
-
 class SigninView(APIView):
     permission_classes = [AllowAny]
-
-    class SigninRequestSerializer(serializers.Serializer):
-        kakao_auth_code = serializers.CharField(required=True)
 
     @extend_schema(
         request=SigninRequestSerializer,
@@ -64,7 +53,7 @@ class SigninView(APIView):
         description="사용자 로그인 및 토큰 발급",
     )
     def post(self, request):
-        serializer = self.SigninRequestSerializer(data=request.data)
+        serializer = SigninRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
@@ -95,9 +84,6 @@ class SigninView(APIView):
 class TokenRefreshView(APIView):
     permission_classes = [AllowAny]
 
-    class TokenRefreshRequestSerializer(serializers.Serializer):
-        refresh = serializers.CharField(required=True)
-
     @extend_schema(
         request=TokenRefreshRequestSerializer,
         responses={
@@ -107,7 +93,7 @@ class TokenRefreshView(APIView):
         },
     )
     def post(self, request):
-        serializer = self.TokenRefreshRequestSerializer(data=request.data)
+        serializer = TokenRefreshRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:

@@ -315,7 +315,7 @@ class BookingAPITestCase(APITestCase):
         response = self.client.post(
             f"/api/v1/reservations/{self.room.id}/private",
             {
-                "date": self.today.isoformat(),
+                "start_date": self.today.isoformat(),
                 "start_time": "09:00:00",
                 "end_time": "10:00:00",
             },
@@ -323,22 +323,22 @@ class BookingAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["type"], BookingType.PRIVATE)
-        self.assertEqual(response.data["name"], self.user.nickname)
-        self.assertEqual(response.data["color"], "#DADADA")
-        self.assertTrue(
-            Booking.objects.filter(
-                reservation_number=response.data["reservation_number"],
-                user=self.user,
-            ).exists()
+        self.assertEqual(len(response.data["reservations"]), 1)
+        self.assertEqual(response.data["reservations"][0]["type"], BookingType.PRIVATE)
+        self.assertEqual(response.data["reservations"][0]["name"], self.user.nickname)
+        self.assertEqual(response.data["reservations"][0]["color"], "#DADADA")
+        booking = Booking.objects.get(
+            reservation_number=response.data["reservations"][0]["reservation_number"],
+            user=self.user,
         )
+        self.assertEqual(booking.status, BookingStatus.PENDING)
 
     # 비활성 룸에는 개인 예약을 생성할 수 없는지 검증한다.
     def test_create_private_reservation_rejects_inactive_room(self):
         response = self.client.post(
             f"/api/v1/reservations/{self.inactive_room.id}/private",
             {
-                "date": self.today.isoformat(),
+                "start_date": self.today.isoformat(),
                 "start_time": "09:00:00",
                 "end_time": "10:00:00",
             },
@@ -362,7 +362,7 @@ class BookingAPITestCase(APITestCase):
         response = self.client.post(
             f"/api/v1/reservations/{self.room.id}/private",
             {
-                "date": self.today.isoformat(),
+                "start_date": self.today.isoformat(),
                 "start_time": "09:30:00",
                 "end_time": "10:30:00",
             },
@@ -372,13 +372,28 @@ class BookingAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
 
+    # 개인 예약 생성 시 예약 시간은 30분 단위만 허용되는지 검증한다.
+    def test_create_private_reservation_rejects_non_half_hour_time(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "09:15:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_BOOKING_TIME")
+
     # 팀 예약 생성 시 소속 팀 정보와 색상이 정상 반환되는지 검증한다.
     def test_create_team_reservation_succeeds(self):
         response = self.client.post(
             f"/api/v1/reservations/{self.room.id}/team",
             {
                 "team_id": self.team.id,
-                "date": self.today.isoformat(),
+                "start_date": self.today.isoformat(),
                 "start_time": "19:00:00",
                 "end_time": "20:00:00",
             },
@@ -386,10 +401,16 @@ class BookingAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["type"], BookingType.TEAM)
-        self.assertEqual(response.data["team_id"], self.team.id)
-        self.assertEqual(response.data["team_name"], self.team.name)
-        self.assertEqual(response.data["color"], self.team.color)
+        self.assertEqual(len(response.data["reservations"]), 1)
+        self.assertEqual(response.data["reservations"][0]["type"], BookingType.TEAM)
+        self.assertEqual(response.data["reservations"][0]["team_id"], self.team.id)
+        self.assertEqual(response.data["reservations"][0]["team_name"], self.team.name)
+        self.assertEqual(response.data["reservations"][0]["color"], self.team.color)
+        booking = Booking.objects.get(
+            reservation_number=response.data["reservations"][0]["reservation_number"],
+            user=self.user,
+        )
+        self.assertEqual(booking.status, BookingStatus.PENDING)
 
     # 소속되지 않은 팀으로 팀 예약 생성 시 금지되는지 검증한다.
     def test_create_team_reservation_rejects_non_member_team(self):
@@ -397,7 +418,7 @@ class BookingAPITestCase(APITestCase):
             f"/api/v1/reservations/{self.room.id}/team",
             {
                 "team_id": self.other_team.id,
-                "date": self.today.isoformat(),
+                "start_date": self.today.isoformat(),
                 "start_time": "19:00:00",
                 "end_time": "20:00:00",
             },
@@ -406,6 +427,55 @@ class BookingAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["code"], "FORBIDDEN_TEAM_BOOKING")
+
+    # 팀 예약 생성 시 예약 시간은 30분 단위만 허용되는지 검증한다.
+    def test_create_team_reservation_rejects_non_half_hour_time(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/team",
+            {
+                "team_id": self.team.id,
+                "start_date": self.today.isoformat(),
+                "start_time": "19:10:00",
+                "end_time": "20:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_BOOKING_TIME")
+
+    # 개인 예약 생성 시 count만큼 1주 간격 반복 예약이 생성되는지 검증한다.
+    def test_create_private_reservation_creates_weekly_recurring_bookings(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "count": 3,
+                "start_time": "09:00:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 3)
+        self.assertEqual(
+            [item["date"] for item in response.data["reservations"]],
+            [
+                self.today.isoformat(),
+                (self.today + timedelta(days=7)).isoformat(),
+                (self.today + timedelta(days=14)).isoformat(),
+            ],
+        )
+        self.assertEqual(
+            Booking.objects.filter(
+                user=self.user,
+                room=self.room,
+                booking_type=BookingType.PRIVATE,
+                status=BookingStatus.PENDING,
+            ).count(),
+            3,
+        )
 
     # 팀 예약은 같은 팀의 다른 활성 멤버도 취소할 수 있는지 검증한다.
     def test_cancel_team_reservation_allows_active_team_member(self):
@@ -481,7 +551,29 @@ class BookingAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["slot"]), 2)
         self.assertEqual(response.data["slot"][0]["name"], self.user.nickname)
+        self.assertEqual(response.data["slot"][0]["status"], BookingStatus.RESERVED)
         self.assertEqual(response.data["slot"][1]["name"], "점검")
+        self.assertIsNone(response.data["slot"][1]["status"])
+
+    # 일별 조회는 승인 대기 예약도 함께 반환하는지 검증한다.
+    def test_day_booking_view_includes_pending_reservations(self):
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["slot"]), 1)
+        self.assertEqual(response.data["slot"][0]["status"], BookingStatus.PENDING)
 
     # 월별 조회는 예약이 있는 날짜에만 색상이 채워지는지 검증한다.
     def test_month_booking_view_returns_colors_for_booked_days(self):
@@ -504,6 +596,37 @@ class BookingAPITestCase(APITestCase):
             item for item in response.data["days"] if item["date"].endswith("-01")
         )
         self.assertEqual(booked_day["color"], [self.team.color])
+        self.assertFalse(booked_day["disabled"])
+
+    # 월별 조회는 운영시간 전체가 막힌 날짜를 예약 불가로 반환하는지 검증한다.
+    def test_month_booking_view_marks_fully_closed_days_as_disabled(self):
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today.replace(day=2),
+            start_time=self.room.open_time,
+            end_time=self.room.close_time,
+            closure_type=ClosureType.HOLIDAY,
+            reason="휴무",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        blocked_day = next(
+            item for item in response.data["days"] if item["date"].endswith("-02")
+        )
+        self.assertTrue(blocked_day["disabled"])
+
+    # 비활성 룸의 월별 조회는 모든 날짜를 예약 불가로 반환하는지 검증한다.
+    def test_month_booking_view_marks_all_days_disabled_for_inactive_room(self):
+        response = self.client.get(
+            f"/api/v1/rooms/{self.inactive_room.id}/month/?year={self.today.year}&month={self.today.month}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(all(item["disabled"] for item in response.data["days"]))
 
     def _authenticate(self, user):
         refresh = JWTRefreshToken.for_user(user)

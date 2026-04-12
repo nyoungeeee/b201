@@ -52,7 +52,7 @@ class Booking(models.Model):
     status = models.CharField(
         max_length=20,
         choices=BookingStatus.choices,
-        default=BookingStatus.RESERVED,
+        default=BookingStatus.PENDING,
     )
     canceled_at = models.DateTimeField(blank=True, null=True)
 

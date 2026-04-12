@@ -27,7 +27,7 @@ class UserInfoService:
     def patch_user_info(user, nickname):
         if not user.is_active or user.status != UserStatus.ACTIVE:
             raise UserNotFoundError()
-        if User.objects.filter(nickname=nickname).exclude(id=user.id).exists():
+        if User.objects.filter(nickname__iexact=nickname).exclude(id=user.id).exists():
             raise NicknameAlreadyExistsError()
         user.nickname = nickname
         user.save(update_fields=["nickname"])

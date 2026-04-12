@@ -2,7 +2,7 @@ import logging
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +19,20 @@ from bookings.exceptions import (
     OutsideOperatingHoursError,
 )
 from bookings.models import BookingStatus
+from bookings.serializers import (
+    DayBookingCheckSerializer,
+    DayBookingQueryParamsSerializer,
+    MonthBookingQueryParamsSerializer,
+    MonthBookingSerializer,
+    MyReservationListSerializer,
+    PrivateReservationCreateRequestSerializer,
+    PrivateReservationCreateResponseSerializer,
+    TeamReservationCreateRequestSerializer,
+    TeamReservationCreateResponseSerializer,
+    TeamReservationListQueryParamsSerializer,
+    TeamReservationListSerializer,
+    ReservationListQueryParamsSerializer,
+)
 from bookings.services import (
     BookingCheckService,
     ReservationCommandService,
@@ -35,27 +49,6 @@ from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
 
 logger = logging.getLogger(__name__)
-
-
-class SlotSerializer(serializers.Serializer):
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
-    name = serializers.CharField(required=True)
-    color = serializers.CharField(required=True)
-
-
-class DayBookingCheckSerializer(serializers.Serializer):
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    date = serializers.DateField(required=True)
-    open_time = serializers.TimeField(required=True)
-    close_time = serializers.TimeField(required=True)
-    status = serializers.CharField(required=True)
-    slot = SlotSerializer(many=True, required=True)
-
-
-class DayBookingQueryParamsSerializer(serializers.Serializer):
-    date = serializers.DateField(required=False, format="%Y-%m-%d")
 
 
 class DayBookingView(APIView):
@@ -106,24 +99,6 @@ class DayBookingView(APIView):
             DayBookingCheckSerializer(day_booking_check).data,
             status=status.HTTP_200_OK,
         )
-
-
-class MonthDateColorSerializer(serializers.Serializer):
-    date = serializers.DateField(required=True)
-    color = serializers.ListField(child=serializers.CharField())
-
-
-class MonthBookingSerializer(serializers.Serializer):
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    year = serializers.IntegerField(required=True)
-    month = serializers.IntegerField(required=True)
-    days = MonthDateColorSerializer(many=True, required=True)
-
-
-class MonthBookingQueryParamsSerializer(serializers.Serializer):
-    month = serializers.IntegerField(required=False, min_value=1, max_value=12)
-    year = serializers.IntegerField(required=False, min_value=1)
 
 
 class MonthBookingView(APIView):
@@ -182,75 +157,6 @@ class MonthBookingView(APIView):
             MonthBookingSerializer(month_booking_check).data,
             status=status.HTTP_200_OK,
         )
-
-
-class ReservationStatusField(serializers.ChoiceField):
-    def __init__(self, **kwargs):
-        super().__init__(choices=BookingStatus.choices, **kwargs)
-
-
-class ReservationStatusListField(serializers.ListField):
-    child = ReservationStatusField()
-
-    def to_internal_value(self, data):
-        if isinstance(data, str):
-            data = [data]
-        return super().to_internal_value(data)
-
-
-class ReservationItemSerializer(serializers.Serializer):
-    reservation_number = serializers.IntegerField(required=True)
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    date = serializers.DateField(required=True)
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
-    type = serializers.CharField(required=True)
-    name = serializers.CharField(required=True)
-    color = serializers.CharField(required=True)
-    status = serializers.CharField(required=True)
-
-
-class TeamReservationItemSerializer(ReservationItemSerializer):
-    team_id = serializers.IntegerField(required=True)
-    team_name = serializers.CharField(required=True)
-
-
-class MyReservationListSerializer(serializers.Serializer):
-    reservations = ReservationItemSerializer(many=True, required=True)
-
-
-class TeamReservationListSerializer(serializers.Serializer):
-    reservations = TeamReservationItemSerializer(many=True, required=True)
-
-
-class ReservationListQueryParamsSerializer(serializers.Serializer):
-    date = serializers.DateField(required=False, format="%Y-%m-%d")
-    status = ReservationStatusListField(required=False)
-    page = serializers.IntegerField(required=False, min_value=1, default=1)
-    size = serializers.IntegerField(required=False, min_value=1, default=20)
-
-
-class TeamReservationListQueryParamsSerializer(ReservationListQueryParamsSerializer):
-    team_id = serializers.IntegerField(required=False, min_value=1)
-
-
-class PrivateReservationCreateRequestSerializer(serializers.Serializer):
-    date = serializers.DateField(required=True, format="%Y-%m-%d")
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
-
-
-class TeamReservationCreateRequestSerializer(PrivateReservationCreateRequestSerializer):
-    team_id = serializers.IntegerField(required=True, min_value=1)
-
-
-class PrivateReservationCreateResponseSerializer(ReservationItemSerializer):
-    pass
-
-
-class TeamReservationCreateResponseSerializer(TeamReservationItemSerializer):
-    pass
 
 
 class MyReservationView(APIView):
@@ -419,7 +325,8 @@ class PrivateReservationCreateView(APIView):
             reservation = ReservationCommandService.create_private_reservation(
                 user=request.user,
                 room_id=room_id,
-                target_date=serializer.validated_data["date"],
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
                 start_time=serializer.validated_data["start_time"],
                 end_time=serializer.validated_data["end_time"],
             )
@@ -472,7 +379,8 @@ class TeamReservationCreateView(APIView):
                 user=request.user,
                 room_id=room_id,
                 team_id=serializer.validated_data["team_id"],
-                target_date=serializer.validated_data["date"],
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
                 start_time=serializer.validated_data["start_time"],
                 end_time=serializer.validated_data["end_time"],
             )
