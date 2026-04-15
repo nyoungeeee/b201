@@ -1,5 +1,9 @@
 from .base import *
 
+DEBUG = True
+
+ALLOWED_HOSTS = ["*"]
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite
     "http://127.0.0.1:5173",
@@ -15,3 +19,12 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT"),
     }
 }
+
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "EXCEPTION_HANDLER": "common.exception_handler.local_exception_handler",
+}
+
+KAKAO_REST_API_KEY = "test-key"
+KAKAO_REDIRECT_URI = "http://localhost/test-callback"
+KAKAO_CLIENT_SECRET = "test-secret"

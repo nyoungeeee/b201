@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from bands.models import Band
+from teams.models import Team
 from studios.models import StudioRoom
 
 
@@ -18,7 +18,7 @@ class BookingStatus(models.TextChoices):
 
 
 class Booking(models.Model):
-    reservation_number = models.BigIntegerField(unique=True)
+    reservation_number = models.BigAutoField(primary_key=True)
 
     room = models.ForeignKey(
         StudioRoom,
@@ -30,8 +30,8 @@ class Booking(models.Model):
         on_delete=models.PROTECT,
         related_name="bookings",
     )
-    band = models.ForeignKey(
-        Band,
+    team = models.ForeignKey(
+        Team,
         on_delete=models.PROTECT,
         related_name="bookings",
         blank=True,
@@ -52,7 +52,7 @@ class Booking(models.Model):
     status = models.CharField(
         max_length=20,
         choices=BookingStatus.choices,
-        default=BookingStatus.RESERVED,
+        default=BookingStatus.PENDING,
     )
     canceled_at = models.DateTimeField(blank=True, null=True)
 
@@ -65,20 +65,20 @@ class Booking(models.Model):
             models.Index(fields=["room", "reservation_date", "status"]),
             models.Index(fields=["room", "reservation_date", "start_time", "end_time"]),
             models.Index(fields=["user", "status", "reservation_date"]),
-            models.Index(fields=["band", "status", "reservation_date"]),
+            models.Index(fields=["team", "status", "reservation_date"]),
             models.Index(fields=["reservation_date", "status"]),
         ]
-        ordering = ["reservation_date", "start_time", "id"]
+        ordering = ["reservation_date", "start_time", "reservation_number"]
 
     def clean(self):
         if self.start_time >= self.end_time:
             raise ValidationError("start_time must be earlier than end_time")
 
-        if self.booking_type == BookingType.PRIVATE and self.band_id is not None:
-            raise ValidationError("private booking must not have band")
+        if self.booking_type == BookingType.PRIVATE and self.team_id is not None:
+            raise ValidationError("private booking must not have team")
 
-        if self.booking_type == BookingType.TEAM and self.band_id is None:
-            raise ValidationError("team booking must have band")
+        if self.booking_type == BookingType.TEAM and self.team_id is None:
+            raise ValidationError("team booking must have team")
 
     def __str__(self):
         return f"{self.reservation_number}"

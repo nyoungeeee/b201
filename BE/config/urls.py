@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -48,6 +48,8 @@ urlpatterns += [
 
 # JWT auth
 urlpatterns += [
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/v1/auth/", include("auth_tokens.urls")),
+    path("api/v1/me/", include("accounts.urls")),
+    path("api/v1/rooms/", include("bookings.rooms_urls")),
+    path("api/v1/reservations/", include("bookings.reservations_urls")),
 ]
