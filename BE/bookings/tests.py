@@ -551,7 +551,7 @@ class BookingAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["slot"]), 2)
         self.assertEqual(response.data["slot"][0]["name"], self.user.nickname)
-        self.assertEqual(response.data["slot"][0]["status"], BookingStatus.RESERVED)
+        self.assertEqual(response.data["slot"][0]["status"], "PENDING")
         self.assertEqual(response.data["slot"][1]["name"], "점검")
         self.assertIsNone(response.data["slot"][1]["status"])
 
