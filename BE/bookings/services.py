@@ -1,7 +1,7 @@
 import calendar
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.db import transaction
 from django.db.models import Q
@@ -128,7 +128,13 @@ class BookingCheckService:
                 )
             )
 
-        slots.sort(key=lambda x: x.start_time)
+        slots.sort(
+            key=lambda x: BookingCheckService._build_slot_sort_key(
+                room=room,
+                target_date=target_date,
+                start_time=x.start_time,
+            )
+        )
 
         return DayBookingCheck(
             room_id=room.id,
@@ -166,12 +172,19 @@ class BookingCheckService:
         closures = room.closures.filter(
             closure_date__year=target_date.year,
             closure_date__month=target_date.month,
-            start_time__lte=room.open_time,
-            end_time__gte=room.close_time,
-        ).values_list("closure_date", flat=True)
+        )
 
         booking_map: dict[str, list[str]] = defaultdict(list)
-        disabled_dates = {closure_date.isoformat() for closure_date in closures}
+        disabled_dates = {
+            closure.closure_date.isoformat()
+            for closure in closures
+            if BookingCheckService._covers_full_operating_window(
+                room=room,
+                target_date=closure.closure_date,
+                start_time=closure.start_time,
+                end_time=closure.end_time,
+            )
+        }
 
         for booking in bookings:
             booking_date = booking.reservation_date.isoformat()
@@ -211,6 +224,42 @@ class BookingCheckService:
             return StudioRoom.objects.get(id=room_id)
         except StudioRoom.DoesNotExist:
             raise NotFoundStudioRoomError()
+
+    @staticmethod
+    def _build_slot_sort_key(room: StudioRoom, target_date: date, start_time: time):
+        return ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=start_time,
+        )
+
+    @staticmethod
+    def _covers_full_operating_window(
+        room: StudioRoom,
+        target_date: date,
+        start_time: time,
+        end_time: time,
+    ) -> bool:
+        closure_start_at = ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=start_time,
+        )
+        closure_end_at = ReservationCommandService._normalize_end_time(
+            room=room,
+            target_date=target_date,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        room_open_at = ReservationCommandService._get_room_open_datetime(
+            room=room,
+            target_date=target_date,
+        )
+        room_close_at = ReservationCommandService._get_room_close_datetime(
+            room=room,
+            target_date=target_date,
+        )
+        return closure_start_at <= room_open_at and closure_end_at >= room_close_at
 
 
 class ReservationQueryService:
@@ -490,32 +539,47 @@ class ReservationCommandService:
         if not ReservationCommandService._is_half_hour_unit(end_time):
             raise InvalidBookingTimeError()
 
-        if start_time >= end_time:
+        if start_time == end_time:
             raise InvalidBookingTimeError()
 
-        if start_time < room.open_time or end_time > room.close_time:
+        start_at = ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=start_time,
+        )
+        end_at = ReservationCommandService._normalize_end_time(
+            room=room,
+            target_date=target_date,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        room_open_at = ReservationCommandService._get_room_open_datetime(
+            room=room,
+            target_date=target_date,
+        )
+        room_close_at = ReservationCommandService._get_room_close_datetime(
+            room=room,
+            target_date=target_date,
+        )
+
+        if start_at >= end_at:
+            raise InvalidBookingTimeError()
+
+        if not room.is_24_hours and (start_at < room_open_at or end_at > room_close_at):
             raise OutsideOperatingHoursError()
 
-        overlap_filter = Q(start_time__lt=end_time, end_time__gt=start_time)
-
-        duplicated_booking_exists = (
-            room.bookings.filter(
-                reservation_date=target_date,
-                status__in=[BookingStatus.RESERVED, BookingStatus.PENDING],
-            )
-            .filter(overlap_filter)
-            .exists()
+        ReservationCommandService._validate_no_overlap_with_bookings(
+            room=room,
+            target_date=target_date,
+            start_at=start_at,
+            end_at=end_at,
         )
-        if duplicated_booking_exists:
-            raise DuplicatedReservationError()
-
-        closure_exists = (
-            room.closures.filter(closure_date=target_date)
-            .filter(overlap_filter)
-            .exists()
+        ReservationCommandService._validate_no_overlap_with_closures(
+            room=room,
+            target_date=target_date,
+            start_at=start_at,
+            end_at=end_at,
         )
-        if closure_exists:
-            raise DuplicatedReservationError()
 
     @staticmethod
     def _build_recurring_dates(start_date: date, count: int) -> list[date]:
@@ -524,3 +588,98 @@ class ReservationCommandService:
     @staticmethod
     def _is_half_hour_unit(target_time: time) -> bool:
         return target_time.minute in (0, 30) and target_time.second == 0
+
+    @staticmethod
+    def _get_room_open_datetime(room: StudioRoom, target_date: date):
+        return datetime.combine(target_date, room.open_time)
+
+    @staticmethod
+    def _get_room_close_datetime(room: StudioRoom, target_date: date):
+        close_at = datetime.combine(target_date, room.close_time)
+        if room.is_24_hours:
+            return ReservationCommandService._get_room_open_datetime(
+                room=room,
+                target_date=target_date,
+            ) + timedelta(days=1)
+        if room.close_time < room.open_time:
+            close_at += timedelta(days=1)
+        return close_at
+
+    @staticmethod
+    def _normalize_time(room: StudioRoom, target_date: date, target_time: time):
+        normalized_at = datetime.combine(target_date, target_time)
+        if (room.is_24_hours or room.close_time < room.open_time) and (
+            target_time < room.open_time
+        ):
+            normalized_at += timedelta(days=1)
+        return normalized_at
+
+    @staticmethod
+    def _normalize_end_time(
+        room: StudioRoom,
+        target_date: date,
+        start_time: time,
+        end_time: time,
+    ):
+        start_at = ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=start_time,
+        )
+        end_at = ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=end_time,
+        )
+        if (
+            room.is_24_hours or room.close_time < room.open_time
+        ) and end_at <= start_at:
+            end_at += timedelta(days=1)
+        return end_at
+
+    @staticmethod
+    def _validate_no_overlap_with_bookings(
+        room: StudioRoom,
+        target_date: date,
+        start_at,
+        end_at,
+    ) -> None:
+        for booking in room.bookings.filter(
+            reservation_date=target_date,
+            status__in=[BookingStatus.RESERVED, BookingStatus.PENDING],
+        ):
+            booking_start_at = ReservationCommandService._normalize_time(
+                room=room,
+                target_date=target_date,
+                target_time=booking.start_time,
+            )
+            booking_end_at = ReservationCommandService._normalize_end_time(
+                room=room,
+                target_date=target_date,
+                start_time=booking.start_time,
+                end_time=booking.end_time,
+            )
+            if start_at < booking_end_at and end_at > booking_start_at:
+                raise DuplicatedReservationError()
+
+    @staticmethod
+    def _validate_no_overlap_with_closures(
+        room: StudioRoom,
+        target_date: date,
+        start_at,
+        end_at,
+    ) -> None:
+        for closure in room.closures.filter(closure_date=target_date):
+            closure_start_at = ReservationCommandService._normalize_time(
+                room=room,
+                target_date=target_date,
+                target_time=closure.start_time,
+            )
+            closure_end_at = ReservationCommandService._normalize_end_time(
+                room=room,
+                target_date=target_date,
+                start_time=closure.start_time,
+                end_time=closure.end_time,
+            )
+            if start_at < closure_end_at and end_at > closure_start_at:
+                raise DuplicatedReservationError()

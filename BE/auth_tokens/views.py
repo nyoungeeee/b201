@@ -121,7 +121,7 @@ class LogoutView(APIView):
             500: openapi_exception_response(BaseServiceError),
         },
     )
-    def post(self, request):
+    def get(self, request):
         try:
             AuthService.logout(request.user)
         except BaseServiceError as e:
@@ -141,7 +141,7 @@ class WithdrawView(APIView):
             500: openapi_exception_response(BaseServiceError),
         },
     )
-    def post(self, request):
+    def get(self, request):
         try:
             AuthService.withdraw(request.user)
         except BaseServiceError as e:
