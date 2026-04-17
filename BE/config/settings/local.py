@@ -25,6 +25,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "common.exception_handler.local_exception_handler",
 }
 
-KAKAO_REST_API_KEY = "test-key"
-KAKAO_REDIRECT_URI = "http://localhost/test-callback"
-KAKAO_CLIENT_SECRET = "test-secret"
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")

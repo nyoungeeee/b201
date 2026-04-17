@@ -17,6 +17,7 @@ class StudioRoom(models.Model):
     description = models.CharField(max_length=500, blank=True, null=True)
     open_time = models.TimeField()
     close_time = models.TimeField()
+    is_24_hours = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
         choices=StudioRoomStatus.choices,
