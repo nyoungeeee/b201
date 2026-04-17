@@ -23,6 +23,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from django.http import HttpResponse
 
+from django.conf import settings
+
 # API root view
 urlpatterns = [
     path(
@@ -53,3 +55,7 @@ urlpatterns += [
     path("api/v1/rooms/", include("bookings.rooms_urls")),
     path("api/v1/reservations/", include("bookings.reservations_urls")),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += [path("test_api/v1/", include("test_server.urls"))]
