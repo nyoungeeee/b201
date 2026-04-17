@@ -165,6 +165,8 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "B201 API",
     "DESCRIPTION": "API documentation for B201 project",
     "VERSION": "1.0.0",
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SCHEMA_PATH_PREFIX_TRIM": True,
 }
 
 # Simple JWT Settings
