@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { WEEK_DAYS } from '../../constants/global';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
 import { queryClient } from '../../lib/queryClient';
@@ -128,21 +128,18 @@ const CalendarSection = ({
     selectedDate,
     onSelectDate,
 }: CalendarSectionProps) => {
-    const parsedSelectedDate = parseDateString(selectedDate);
+    const parsedSelectedDate = useMemo(
+        () => parseDateString(selectedDate),
+        [selectedDate],
+    );
 
-    const [currentYear, setCurrentYear] = useState(parsedSelectedDate.year);
-    const [currentMonth, setCurrentMonth] = useState(parsedSelectedDate.month);
-
-    useEffect(() => {
-        const next = parseDateString(selectedDate);
-        setCurrentYear(next.year);
-        setCurrentMonth(next.month);
-    }, [selectedDate]);
+    const [displayYear, setDisplayYear] = useState(parsedSelectedDate.year);
+    const [displayMonth, setDisplayMonth] = useState(parsedSelectedDate.month);
 
     const { data } = useRoomMonth({
         roomId: 1,
-        year: currentYear,
-        month: currentMonth,
+        year: displayYear,
+        month: displayMonth,
     });
 
     const calendarDays = useMemo(() => {
@@ -150,8 +147,8 @@ const CalendarSection = ({
             return [];
         }
 
-        return getCalendarDays(currentYear, currentMonth, selectedDate, data.days);
-    }, [currentYear, currentMonth, selectedDate, data]);
+        return getCalendarDays(displayYear, displayMonth, selectedDate, data.days);
+    }, [displayYear, displayMonth, selectedDate, data]);
 
     const getSelectedDateByGridPosition = (
         targetYear: number,
@@ -188,7 +185,7 @@ const CalendarSection = ({
     };
 
     const handleMoveMonth = (direction: -1 | 1) => {
-        const movedDate = new Date(currentYear, currentMonth - 1 + direction, 1);
+        const movedDate = new Date(displayYear, displayMonth - 1 + direction, 1);
         const nextYear = movedDate.getFullYear();
         const nextMonth = movedDate.getMonth() + 1;
 
@@ -207,8 +204,8 @@ const CalendarSection = ({
             nextMonthQueryData?.days ?? [],
         );
 
-        setCurrentYear(nextYear);
-        setCurrentMonth(nextMonth);
+        setDisplayYear(nextYear);
+        setDisplayMonth(nextMonth);
         onSelectDate(nextSelectedDate);
     };
 
@@ -220,32 +217,13 @@ const CalendarSection = ({
         handleMoveMonth(1);
     };
 
-    const handleSelectDay = (fullDate: string, isCurrentMonth: boolean) => {
+    const handleSelectDay = (fullDate: string) => {
+        const nextDate = parseDateString(fullDate);
+
+        setDisplayYear(nextDate.year);
+        setDisplayMonth(nextDate.month);
         onSelectDate(fullDate);
-
-        if (!isCurrentMonth) {
-            const nextDate = parseDateString(fullDate);
-            setCurrentYear(nextDate.year);
-            setCurrentMonth(nextDate.month);
-        }
     };
-
-    // if (isLoading) {
-    //     return <section className="calendar-section">로딩 중...</section>;
-    // }
-
-    // if (isError) {
-    //     return (
-    //         <section className="calendar-section">
-    //             캘린더 데이터를 불러오지 못했습니다.
-    //             {error instanceof Error ? ` (${error.message})` : null}
-    //         </section>
-    //     );
-    // }
-
-    // if (!data) {
-    //     return <section className="calendar-section">캘린더 데이터가 없습니다.</section>;
-    // }
 
     return (
         <section className="calendar-section">
@@ -260,7 +238,7 @@ const CalendarSection = ({
                 </button>
 
                 <div className="calendar-month-header__title">
-                    {formatMonthTitle(currentYear, currentMonth)}
+                    {formatMonthTitle(displayYear, displayMonth)}
                 </div>
 
                 <button
@@ -307,7 +285,7 @@ const CalendarSection = ({
                         ]
                             .filter(Boolean)
                             .join(' ')}
-                        onClick={() => handleSelectDay(day.fullDate, day.isCurrentMonth)}
+                        onClick={() => handleSelectDay(day.fullDate)}
                     >
                         <span className="calendar-day__label">{day.date}</span>
 
