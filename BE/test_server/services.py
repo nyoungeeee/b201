@@ -27,6 +27,7 @@ class TestSigninService:
             )
         return user
 
+    @staticmethod
     def signin(nickname: str, is_staff: bool) -> SigninResponse:
         user = TestSigninService._signin_from_nickname(nickname)
         user.is_staff = is_staff
