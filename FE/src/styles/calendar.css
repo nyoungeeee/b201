@@ -175,3 +175,9 @@
   0 0 0 1px rgba(255, 106, 42, 0.1),
   0 0 14px rgba(255, 106, 42, 0.18);
 }
+
+.calendar-day__dot-count {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-secondary);
+}

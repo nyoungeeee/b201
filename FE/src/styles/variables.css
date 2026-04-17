@@ -103,6 +103,7 @@
   --reservation-me: #00e5ff;
   --reservation-pending: rgba(255, 106, 42, 0.45);
   --reservation-dimmed: rgba(255, 255, 255, 0.12);
+  --state-inactive: #5C5650;
 
   /* =========================================================
    * Spacing
