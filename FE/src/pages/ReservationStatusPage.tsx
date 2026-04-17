@@ -5,11 +5,11 @@ import MobilePageLayout from "../components/layout/MobilePageLayout";
 import PageHeader from "../components/layout/PageHeader";
 import ReservationApplyButton from "../components/reservation/ReservationApplyButton";
 import TimelineSection from "../components/timeline/TimelineSection";
+import { getTodayInSeoul } from "../utils/timelineUtils";
 
 const ReservationStatusPage = () => {
-    const today = new Date();
-    const defaultDate = today.toISOString().slice(0, 10);
-    const [selectedDate, setSelectedDate] = useState(defaultDate);
+    const today = getTodayInSeoul();
+    const [selectedDate, setSelectedDate] = useState(today);
     return (
         <MobilePageLayout>
             <PageHeader title="예약 현황" />

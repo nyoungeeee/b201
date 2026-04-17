@@ -185,3 +185,17 @@ export const formatTimelineDate = (dateStr: string) => {
 
     return `${month} ${dayNum} · ${weekday}`;
 };
+
+export const getTodayInSeoul = () => {
+    const now = new Date();
+
+    const seoulDate = new Date(
+        now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }),
+    );
+
+    const yyyy = seoulDate.getFullYear();
+    const mm = String(seoulDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(seoulDate.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}`;
+}

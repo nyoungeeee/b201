@@ -77,17 +77,6 @@ export const getRoomDay = async ({
 
     const rawData: unknown = await response.json();
 
-    console.log('ROOM DAY RAW DATA:', rawData);
-    console.log(
-        'RAW SLOT STATUSES:',
-        Array.isArray((rawData as any)?.slot)
-            ? (rawData as any).slot.map((slot: any) => ({
-                name: slot.name,
-                status: slot.status,
-            }))
-            : rawData,
-    );
-
     const parsedResult = roomDayResponseSchema.safeParse(rawData);
 
     if (!parsedResult.success) {

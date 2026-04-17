@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getRoomDay } from '../../apis/roomApi';
 import { DEFAULT_ROOM_ID } from '../../constants/global';
 import type { DaySchedule } from '../../types/calendarTypes';
+import { getTodayInSeoul } from '../../utils/timelineUtils';
+
 
 interface UseRoomDayParams {
     date?: string;
@@ -9,10 +11,12 @@ interface UseRoomDayParams {
     enabled?: boolean;
 }
 
+const today = getTodayInSeoul();
+
 export const roomDayQueryKeys = {
     all: ['roomDay'] as const,
     detail: ({ roomId, date }: { roomId: number; date?: string }) =>
-        ['roomDay', roomId, date ?? 'today'] as const,
+        ['roomDay', roomId, date ?? today] as const,
 };
 
 export const useRoomDay = ({
