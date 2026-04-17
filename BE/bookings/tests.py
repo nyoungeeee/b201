@@ -24,13 +24,29 @@ class BookingAPITestCase(APITestCase):
             name="b201",
             open_time=time(9, 0),
             close_time=time(22, 0),
+            is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
         self.inactive_room = StudioRoom.objects.create(
             name="b202",
             open_time=time(9, 0),
             close_time=time(22, 0),
+            is_24_hours=False,
             status=StudioRoomStatus.INACTIVE,
+        )
+        self.overnight_room = StudioRoom.objects.create(
+            name="b203",
+            open_time=time(9, 0),
+            close_time=time(3, 0),
+            is_24_hours=False,
+            status=StudioRoomStatus.ACTIVE,
+        )
+        self.full_day_room = StudioRoom.objects.create(
+            name="b204",
+            open_time=time(9, 0),
+            close_time=time(9, 0),
+            is_24_hours=True,
+            status=StudioRoomStatus.ACTIVE,
         )
 
         self.team = Team.objects.create(
@@ -574,6 +590,145 @@ class BookingAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["slot"]), 1)
         self.assertEqual(response.data["slot"][0]["status"], BookingStatus.PENDING)
+
+    # 다음날 새벽까지 운영하는 룸은 자정을 넘는 예약을 허용하는지 검증한다.
+    def test_create_private_reservation_allows_cross_midnight_booking(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "23:00:00",
+                "end_time": "01:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 1)
+        booking = Booking.objects.get(
+            reservation_number=response.data["reservations"][0]["reservation_number"]
+        )
+        self.assertEqual(booking.room_id, self.overnight_room.id)
+        self.assertEqual(booking.start_time, time(23, 0))
+        self.assertEqual(booking.end_time, time(1, 0))
+
+    # 다음날 새벽 운영 시간도 같은 운영일 예약으로 허용되는지 검증한다.
+    def test_create_private_reservation_allows_next_day_early_morning_booking(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "01:00:00",
+                "end_time": "02:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 1)
+
+    # 다음날 새벽 운영 룸은 운영 시간 밖 예약을 거부하는지 검증한다.
+    def test_create_private_reservation_rejects_time_outside_overnight_hours(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "04:00:00",
+                "end_time": "05:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "OUTSIDE_OPERATING_HOURS")
+
+    # 다음날 새벽 운영 룸은 자정을 넘는 예약 충돌도 감지하는지 검증한다.
+    def test_create_private_reservation_rejects_overlapping_cross_midnight_booking(
+        self,
+    ):
+        Booking.objects.create(
+            room=self.overnight_room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(23, 30),
+            end_time=time(1, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "00:30:00",
+                "end_time": "01:30:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
+
+    # 다음날 새벽 슬롯은 일별 조회에서 자정 이후 순서로 정렬되는지 검증한다.
+    def test_day_booking_view_sorts_overnight_slots_after_late_night_slots(self):
+        Booking.objects.create(
+            room=self.overnight_room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(1, 0),
+            end_time=time(2, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.create(
+            room=self.overnight_room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(23, 0),
+            end_time=time(23, 30),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.overnight_room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["start_time"] for item in response.data["slot"]],
+            ["23:00:00", "01:00:00"],
+        )
+
+    # 24시간 운영 룸은 운영 종료 직전 시간 예약을 허용하는지 검증한다.
+    def test_create_private_reservation_allows_last_hour_in_full_day_room(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.full_day_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "08:00:00",
+                "end_time": "09:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 1)
+
+    # 24시간 운영 룸도 다음 운영일로 넘어가는 예약은 허용하지 않는지 검증한다.
+    def test_create_private_reservation_rejects_cross_boundary_in_full_day_room(self):
+        response = self.client.post(
+            f"/api/v1/reservations/{self.full_day_room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "08:00:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 1)
 
     # 월별 조회는 예약이 있는 날짜에만 색상이 채워지는지 검증한다.
     def test_month_booking_view_returns_colors_for_booked_days(self):
