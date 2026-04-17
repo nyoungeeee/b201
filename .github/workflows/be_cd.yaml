@@ -25,4 +25,5 @@ jobs:
             git fetch origin
             git checkout dev
             git reset --hard origin/dev
+            . venv/bin/activate
             python manage.py migrate
