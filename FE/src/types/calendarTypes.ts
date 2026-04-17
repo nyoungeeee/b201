@@ -15,29 +15,6 @@ export interface DaySchedule {
     closeTime: string;
     state: ScheduleState;
     slots: DayScheduleSlot[];
-    hasReservation: boolean;
-}
-
-export interface RoomDaySlotApi {
-    id?: number | string;
-    start_time: string; // "09:00"
-    end_time: string;   // "11:00"
-    team_name?: string;
-    user_name?: string;
-    title?: string;
-    name?: string;
-    color?: string;
-    team_color?: string;
-}
-
-export interface RoomDayApiResponse {
-    room_id: number;
-    room_name: string;
-    date: string;       // "2026-05-23"
-    open_time: string;  // "09:00"
-    close_time: string; // "08:00"
-    state: string;
-    slot: RoomDaySlotApi[];
 }
 
 export interface CalendarDotDisplay {
@@ -49,6 +26,7 @@ export interface MonthScheduleDay {
     date: string;
     colors: string[];
     dotDisplay: CalendarDotDisplay;
+    disabled: boolean;
 }
 
 export interface MonthSchedule {

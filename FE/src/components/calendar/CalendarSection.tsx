@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
 import { queryClient } from '../../lib/queryClient';
 import type { MonthSchedule } from '../../types/calendarTypes';
@@ -14,6 +14,7 @@ interface CalendarGridDay {
     isSelected: boolean;
     visibleColors: string[];
     extraCount: number;
+    disabled: boolean;
 }
 
 interface CalendarSectionProps {
@@ -29,17 +30,16 @@ const formatDateString = (year: number, month: number, date: number) => {
     return `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
 };
 
+const parseDateString = (dateString: string) => {
+    const [year, month, date] = dateString.split('-').map(Number);
+    return { year, month, date };
+};
+
 const getCalendarDays = (
     year: number,
     month: number,
     selectedDate: string,
-    monthDays: Array<{
-        date: string;
-        dotDisplay: {
-            visibleColors: string[];
-            extraCount: number;
-        };
-    }>,
+    monthDays: MonthSchedule['days'],
 ): CalendarGridDay[] => {
     const firstDay = new Date(year, month - 1, 1);
     const firstDayWeek = firstDay.getDay();
@@ -52,6 +52,7 @@ const getCalendarDays = (
             {
                 visibleColors: day.dotDisplay.visibleColors,
                 extraCount: day.dotDisplay.extraCount,
+                disabled: day.disabled,
             },
         ]),
     );
@@ -76,6 +77,7 @@ const getCalendarDays = (
             isSelected: fullDate === selectedDate,
             visibleColors: [],
             extraCount: 0,
+            disabled: false,
         });
     }
 
@@ -92,8 +94,10 @@ const getCalendarDays = (
             isSelected: fullDate === selectedDate,
             visibleColors: dotInfo?.visibleColors ?? [],
             extraCount: dotInfo?.extraCount ?? 0,
+            disabled: dotInfo?.disabled ?? false,
         });
     }
+
     const totalCells = days.length <= 35 ? 35 : 42;
     const remaining = totalCells - days.length;
 
@@ -114,6 +118,7 @@ const getCalendarDays = (
             isSelected: fullDate === selectedDate,
             visibleColors: [],
             extraCount: 0,
+            disabled: false,
         });
     }
 
@@ -124,12 +129,18 @@ const CalendarSection = ({
     selectedDate,
     onSelectDate,
 }: CalendarSectionProps) => {
+    const parsedSelectedDate = parseDateString(selectedDate);
 
-    const initialDate = new Date(selectedDate);
-    const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
-    const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth() + 1);
+    const [currentYear, setCurrentYear] = useState(parsedSelectedDate.year);
+    const [currentMonth, setCurrentMonth] = useState(parsedSelectedDate.month);
 
-    const { data, isLoading, isError } = useRoomMonth({
+    useEffect(() => {
+        const next = parseDateString(selectedDate);
+        setCurrentYear(next.year);
+        setCurrentMonth(next.month);
+    }, [selectedDate]);
+
+    const { data, isLoading, isError, error } = useRoomMonth({
         roomId: 1,
         year: currentYear,
         month: currentMonth,
@@ -148,13 +159,7 @@ const CalendarSection = ({
         targetMonth: number,
         sourceDays: CalendarGridDay[],
         sourceSelectedDate: string,
-        targetMonthDays: Array<{
-            date: string;
-            dotDisplay: {
-                visibleColors: string[];
-                extraCount: number;
-            };
-        }>,
+        targetMonthDays: MonthSchedule['days'],
     ) => {
         const selectedIndex = sourceDays.findIndex(
             (day) => day.fullDate === sourceSelectedDate,
@@ -216,14 +221,13 @@ const CalendarSection = ({
         handleMoveMonth(1);
     };
 
-
     const handleSelectDay = (fullDate: string, isCurrentMonth: boolean) => {
         onSelectDate(fullDate);
 
         if (!isCurrentMonth) {
-            const nextDate = new Date(fullDate);
-            setCurrentYear(nextDate.getFullYear());
-            setCurrentMonth(nextDate.getMonth() + 1);
+            const nextDate = parseDateString(fullDate);
+            setCurrentYear(nextDate.year);
+            setCurrentMonth(nextDate.month);
         }
     };
 
@@ -231,8 +235,17 @@ const CalendarSection = ({
         return <section className="calendar-section">로딩 중...</section>;
     }
 
-    if (isError || !data) {
-        return <section className="calendar-section">캘린더 데이터를 불러오지 못했습니다.</section>;
+    if (isError) {
+        return (
+            <section className="calendar-section">
+                캘린더 데이터를 불러오지 못했습니다.
+                {error instanceof Error ? ` (${error.message})` : null}
+            </section>
+        );
+    }
+
+    if (!data) {
+        return <section className="calendar-section">캘린더 데이터가 없습니다.</section>;
     }
 
     return (
@@ -291,6 +304,7 @@ const CalendarSection = ({
                             day.isSunday ? 'calendar-day--sun' : '',
                             day.isSaturday ? 'calendar-day--sat' : '',
                             day.isSelected ? 'calendar-day--selected' : '',
+                            day.disabled ? 'calendar-day--disabled' : '',
                         ]
                             .filter(Boolean)
                             .join(' ')}
@@ -303,7 +317,7 @@ const CalendarSection = ({
                                 <span
                                     key={`${day.fullDate}-dot-${dotIndex}`}
                                     className="calendar-day__dot"
-                                    style={{ backgroundColor: `#${dotColor}` }}
+                                    style={{ backgroundColor: dotColor }}
                                 />
                             ))}
 
@@ -319,7 +333,5 @@ const CalendarSection = ({
         </section>
     );
 };
-
-
 
 export default CalendarSection;

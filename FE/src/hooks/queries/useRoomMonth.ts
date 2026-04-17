@@ -1,34 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import type { RoomMonthApiResponse } from '../../types/calendarSchemas';
+import { getRoomMonth } from '../../apis/roomApi';
+import { DEFAULT_ROOM_ID } from '../../constants/global';
 import type { MonthSchedule } from '../../types/calendarTypes';
-import { mapRoomMonthResponse } from '../../utils/calendarMapper';
-import { roomMonthMock } from '../../utils/roomMock';
 
 interface UseRoomMonthParams {
+    year?: number;
+    month?: number;
     roomId?: number;
-    year: number;
-    month: number;
+    enabled?: boolean;
 }
 
-const getRoomMonthFromDummy = async ({
-    roomId,
-    year,
-    month,
-}: UseRoomMonthParams): Promise<MonthSchedule> => {
-    console.log('getRoomMonth params:', { roomId, year, month });
-
-    const response: RoomMonthApiResponse = roomMonthMock();
-
-    return mapRoomMonthResponse(response);
+export const roomMonthQueryKeys = {
+    all: ['roomMonth'] as const,
+    detail: ({
+        roomId,
+        year,
+        month,
+    }: {
+        roomId: number;
+        year?: number;
+        month?: number;
+    }) => ['roomMonth', roomId, year ?? 'currentYear', month ?? 'currentMonth'] as const,
 };
 
 export const useRoomMonth = ({
-    roomId,
     year,
     month,
-}: UseRoomMonthParams) => {
-    return useQuery({
-        queryKey: ['roomMonth', roomId, year, month],
-        queryFn: () => getRoomMonthFromDummy({ roomId, year, month }),
+    roomId = DEFAULT_ROOM_ID,
+    enabled = true,
+}: UseRoomMonthParams = {}) => {
+    return useQuery<MonthSchedule, Error>({
+        queryKey: roomMonthQueryKeys.detail({ roomId, year, month }),
+        queryFn: () => {
+            if (!year || !month) {
+                throw new Error('year와 month는 필수입니다.');
+            }
+
+            return getRoomMonth({ roomId, year, month });
+        },
+        enabled: enabled && !!roomId && !!year && !!month,
+        staleTime: 1000 * 60 * 5,
     });
 };

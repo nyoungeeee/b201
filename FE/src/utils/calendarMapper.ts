@@ -1,18 +1,21 @@
+import { PRIVATE_DEFAULT_COLOR } from '../constants/global';
 import type {
     RoomDayApiResponse,
     RoomDaySlotApiResponse,
-    RoomMonthApiResponse
+    RoomMonthApiResponse,
 } from '../types/calendarSchemas';
 import type {
     CalendarDotDisplay,
     DaySchedule,
     DayScheduleSlot,
-    MonthSchedule
+    MonthSchedule,
 } from '../types/calendarTypes';
 
-const normalizeHexColor = (color: string): string => {
-    if (!color) return '#000000';
-    return color.startsWith('#') ? color : `#${color}`;
+const normalizeHexColor = (color?: string): string => {
+    if (!color || !color.trim()) return PRIVATE_DEFAULT_COLOR;
+
+    const trimmed = color.trim();
+    return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
 };
 
 const mapRoomDaySlot = (
@@ -20,8 +23,13 @@ const mapRoomDaySlot = (
 ): DayScheduleSlot => ({
     startTime: slot.start_time,
     endTime: slot.end_time,
-    label: slot.name,
-    color: normalizeHexColor(slot.color),
+    label:
+        slot.title ??
+        slot.name ??
+        slot.team_name ??
+        slot.user_name ??
+        '예약',
+    color: normalizeHexColor(slot.color ?? slot.team_color),
 });
 
 export const mapRoomDayResponse = (
@@ -37,21 +45,22 @@ export const mapRoomDayResponse = (
         closeTime: response.close_time,
         state: response.state,
         slots,
-        hasReservation: slots.length > 0,
     };
 };
 
 export const mapCalendarDotDisplay = (colors: string[]): CalendarDotDisplay => {
-    if (colors.length <= 4) {
+    const uniqueColors = Array.from(new Set(colors));
+
+    if (uniqueColors.length <= 4) {
         return {
-            visibleColors: colors,
+            visibleColors: uniqueColors,
             extraCount: 0,
         };
     }
 
     return {
-        visibleColors: colors.slice(0, 3),
-        extraCount: colors.length - 3,
+        visibleColors: uniqueColors.slice(0, 3),
+        extraCount: uniqueColors.length - 3,
     };
 };
 
@@ -63,10 +72,15 @@ export const mapRoomMonthResponse = (
         roomName: response.room_name,
         year: response.year,
         month: response.month,
-        days: response.days.map((day) => ({
-            date: day.date,
-            colors: day.colors,
-            dotDisplay: mapCalendarDotDisplay(day.colors),
-        })),
+        days: response.days.map((day) => {
+            const normalizedColors = (day.color ?? []).map(normalizeHexColor);
+
+            return {
+                date: day.date,
+                colors: normalizedColors,
+                dotDisplay: mapCalendarDotDisplay(normalizedColors),
+                disabled: day.disabled,
+            };
+        }),
     };
 };

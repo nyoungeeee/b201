@@ -1,1 +1,0 @@
-export const DEFAULT_ROOM_ID = 1;

@@ -13,15 +13,20 @@ const timeStringSchema = z
 
 const hexColorSchema = z
     .string()
-    .regex(/^([0-9A-Fa-f]{6})$/, '색상은 6자리 HEX 문자열이어야 합니다.');
+    .regex(/^#?([0-9A-Fa-f]{6})$/, '색상은 6자리 HEX 문자열이어야 합니다.');
 
 export const roomDayStateSchema = z.enum(['RESERVED', 'BLOCKED']);
 
 export const roomDaySlotSchema = z.object({
+    id: z.union([z.number(), z.string()]).optional(),
     start_time: timeStringSchema,
     end_time: timeStringSchema,
-    name: z.string().min(1),
-    color: hexColorSchema,
+    team_name: z.string().optional(),
+    user_name: z.string().optional(),
+    title: z.string().optional(),
+    name: z.string().optional(),
+    color: hexColorSchema.optional(),
+    team_color: hexColorSchema.optional(),
 });
 
 export const roomDayResponseSchema = z.object({
@@ -36,10 +41,11 @@ export const roomDayResponseSchema = z.object({
 
 export const roomMonthDaySchema = z.object({
     date: dateStringSchema,
-    colors: z.array(hexColorSchema),
+    color: z.array(hexColorSchema),
+    disabled: z.boolean(),
 });
 
-export const roomMonthSchema = z.object({
+export const roomMonthResponseSchema = z.object({
     room_id: z.number(),
     room_name: z.string(),
     year: z.number(),
@@ -50,5 +56,5 @@ export const roomMonthSchema = z.object({
 export type RoomDayState = z.infer<typeof roomDayStateSchema>;
 export type RoomDaySlotApiResponse = z.infer<typeof roomDaySlotSchema>;
 export type RoomDayApiResponse = z.infer<typeof roomDayResponseSchema>;
-export type RoomMonthDay = z.infer<typeof roomMonthDaySchema>;
-export type RoomMonthApiResponse = z.infer<typeof roomMonthSchema>;
+export type RoomMonthDayApiResponse = z.infer<typeof roomMonthDaySchema>;
+export type RoomMonthApiResponse = z.infer<typeof roomMonthResponseSchema>;
