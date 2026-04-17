@@ -2,7 +2,7 @@ name: FE CI
 
 on:
   pull_request:
-    branches: ["main", "develop"]
+    branches: ["main", "dev"]
     paths:
       - "FE/**"
       - ".github/workflows/fe-ci.yml"
