@@ -22,7 +22,8 @@ jobs:
           script: |
             set -e
             cd /home/ms/b201/BE
-            git pull origin dev
+            git fetch origin
+            git checkout dev
+            git reset --hard origin/dev
             . venv/bin/activate
-            python manage.py showmigrations
             python manage.py migrate
