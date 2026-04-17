@@ -58,4 +58,4 @@ urlpatterns += [
 
 
 if settings.DEBUG:
-    urlpatterns += [path("test_api/v1/", include("test_server.urls"))]
+    urlpatterns += [path("api/v1/test/", include("test_server.urls"))]
