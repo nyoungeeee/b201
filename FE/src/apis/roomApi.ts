@@ -23,8 +23,6 @@ export interface GetRoomMonthParams {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ACCESS_TOKEN_KEY =
-    import.meta.env.VITE_ACCESS_TOKEN_KEY ?? 'accessToken';
 
 const buildRoomDayUrl = ({ roomId, date }: GetRoomDayParams): string => {
     const baseUrl = `${API_BASE_URL}/rooms/${roomId}/day/`;
@@ -53,22 +51,12 @@ const buildRoomMonthUrl = ({
     return `${baseUrl}?${searchParams.toString()}`;
 };
 
-const createAuthHeaders = (): HeadersInit => {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-
-    return {
-        accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-};
-
 export const getRoomDay = async ({
     roomId,
     date,
 }: GetRoomDayParams): Promise<DaySchedule> => {
     const response = await fetch(buildRoomDayUrl({ roomId, date }), {
-        method: 'GET',
-        headers: createAuthHeaders(),
+        method: 'GET'
     });
 
     if (!response.ok) {
@@ -96,8 +84,7 @@ export const getRoomMonth = async ({
     month,
 }: GetRoomMonthParams): Promise<MonthSchedule> => {
     const response = await fetch(buildRoomMonthUrl({ roomId, year, month }), {
-        method: 'GET',
-        headers: createAuthHeaders(),
+        method: 'GET'
     });
 
     if (!response.ok) {
