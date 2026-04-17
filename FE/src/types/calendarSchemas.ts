@@ -7,26 +7,29 @@ const dateStringSchema = z
 const timeStringSchema = z
     .string()
     .regex(
-        /^(?:([01]\d|2[0-3]):[0-5]\d|24:00)$/,
-        '시간 형식은 HH:mm 이어야 하며 24시는 24:00만 가능합니다.',
+        /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/,
+        '시간 형식은 HH:mm 또는 HH:mm:ss 이어야 합니다.',
     );
 
 const hexColorSchema = z
     .string()
     .regex(/^#?([0-9A-Fa-f]{6})$/, '색상은 6자리 HEX 문자열이어야 합니다.');
 
-export const roomDayStateSchema = z.enum(['RESERVED', 'BLOCKED']);
+export const roomDayStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
+
+export const reservationStatusSchema = z.enum([
+    'PENDING',
+    'RESERVED',
+    'CANCELLED',
+]);
 
 export const roomDaySlotSchema = z.object({
     id: z.union([z.number(), z.string()]).optional(),
     start_time: timeStringSchema,
     end_time: timeStringSchema,
-    team_name: z.string().optional(),
-    user_name: z.string().optional(),
-    title: z.string().optional(),
-    name: z.string().optional(),
+    name: z.string(),
     color: hexColorSchema.optional(),
-    team_color: hexColorSchema.optional(),
+    status: reservationStatusSchema,
 });
 
 export const roomDayResponseSchema = z.object({
@@ -35,8 +38,8 @@ export const roomDayResponseSchema = z.object({
     date: dateStringSchema,
     open_time: timeStringSchema,
     close_time: timeStringSchema,
-    state: roomDayStateSchema,
-    slot: z.array(roomDaySlotSchema).nullable(),
+    status: roomDayStatusSchema,
+    slot: z.array(roomDaySlotSchema).default([]),
 });
 
 export const roomMonthDaySchema = z.object({
@@ -53,7 +56,8 @@ export const roomMonthResponseSchema = z.object({
     days: z.array(roomMonthDaySchema),
 });
 
-export type RoomDayState = z.infer<typeof roomDayStateSchema>;
+export type RoomDayStatus = z.infer<typeof roomDayStatusSchema>;
+export type ReservationStatus = z.infer<typeof reservationStatusSchema>;
 export type RoomDaySlotApiResponse = z.infer<typeof roomDaySlotSchema>;
 export type RoomDayApiResponse = z.infer<typeof roomDayResponseSchema>;
 export type RoomMonthDayApiResponse = z.infer<typeof roomMonthDaySchema>;

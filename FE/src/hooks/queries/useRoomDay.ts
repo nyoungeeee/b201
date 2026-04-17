@@ -23,7 +23,7 @@ export const useRoomDay = ({
     return useQuery<DaySchedule, Error>({
         queryKey: roomDayQueryKeys.detail({ roomId, date }),
         queryFn: () => getRoomDay({ roomId, date }),
-        enabled: enabled && !!roomId,
-        staleTime: 1000 * 60 * 5
+        enabled: enabled && Number.isFinite(roomId) && roomId > 0,
+        staleTime: 1000 * 60 * 5,
     });
 };

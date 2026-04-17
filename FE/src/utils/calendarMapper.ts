@@ -20,22 +20,27 @@ const normalizeHexColor = (color?: string): string => {
 
 const mapRoomDaySlot = (
     slot: RoomDaySlotApiResponse,
-): DayScheduleSlot => ({
-    startTime: slot.start_time,
-    endTime: slot.end_time,
-    label:
-        slot.title ??
-        slot.name ??
-        slot.team_name ??
-        slot.user_name ??
-        '예약',
-    color: normalizeHexColor(slot.color ?? slot.team_color),
-});
+): DayScheduleSlot => {
+    const isPending = slot.status === 'PENDING';
+
+    return {
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        label: slot.name,
+        color: normalizeHexColor(slot.color),
+        status: slot.status,
+        isPending,
+    };
+};
 
 export const mapRoomDayResponse = (
     response: RoomDayApiResponse,
 ): DaySchedule => {
-    const slots = (response.slot ?? []).map(mapRoomDaySlot);
+    const visibleSlots = response.slot.filter(
+        (slot) => slot.status === 'PENDING' || slot.status === 'RESERVED',
+    );
+
+    const slots = visibleSlots.map(mapRoomDaySlot);
 
     return {
         roomId: response.room_id,
@@ -43,7 +48,7 @@ export const mapRoomDayResponse = (
         date: response.date,
         openTime: response.open_time,
         closeTime: response.close_time,
-        state: response.state,
+        status: response.status,
         slots,
     };
 };

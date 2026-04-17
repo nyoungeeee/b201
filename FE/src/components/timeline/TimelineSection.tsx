@@ -1,10 +1,11 @@
 import React from 'react';
 import { useRoomDay } from '../../hooks/queries/useRoomDay';
 import {
+    formatTimelineDate,
     getSegmentsByHour,
     getTimelineHours,
     mapSlotsToTimelineSegments,
-    type TimelineRowSegment,
+    type TimelineRowSegment
 } from '../../utils/timelineUtils';
 
 interface TimelineSectionProps {
@@ -37,7 +38,18 @@ const TimelineBar = ({ segment, isFirst, isLast }: TimelineBarProps) => {
                 } as React.CSSProperties
             }
         >
-            <span className="timeline-bar__label">{segment.title}</span>
+            <div className="timeline-bar__content">
+                <span
+                    className={`timeline-bar__label ${segment.isPending ? 'is-pending' : ''
+                        }`}
+                >
+                    {segment.title}
+                </span>
+
+                {segment.isPending && (
+                    <span className="timeline-bar__badge">신청중</span>
+                )}
+            </div>
         </div>
     );
 };
@@ -78,7 +90,7 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
     return (
         <section className="timeline-section">
             <div className="calendar-section-divider" />
-            <div className="timeline-section__date">{data.date}</div>
+            <div className="timeline-section__date">{formatTimelineDate(data.date)}</div>
             <div className="calendar-section-divider" />
 
             <div className="timeline-list">

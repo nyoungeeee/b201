@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { WEEK_DAYS } from '../../constants/global';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
 import { queryClient } from '../../lib/queryClient';
 import type { MonthSchedule } from '../../types/calendarTypes';
-
-const weekLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
 interface CalendarGridDay {
     fullDate: string;
@@ -231,22 +230,22 @@ const CalendarSection = ({
         }
     };
 
-    if (isLoading) {
-        return <section className="calendar-section">로딩 중...</section>;
-    }
+    // if (isLoading) {
+    //     return <section className="calendar-section">로딩 중...</section>;
+    // }
 
-    if (isError) {
-        return (
-            <section className="calendar-section">
-                캘린더 데이터를 불러오지 못했습니다.
-                {error instanceof Error ? ` (${error.message})` : null}
-            </section>
-        );
-    }
+    // if (isError) {
+    //     return (
+    //         <section className="calendar-section">
+    //             캘린더 데이터를 불러오지 못했습니다.
+    //             {error instanceof Error ? ` (${error.message})` : null}
+    //         </section>
+    //     );
+    // }
 
-    if (!data) {
-        return <section className="calendar-section">캘린더 데이터가 없습니다.</section>;
-    }
+    // if (!data) {
+    //     return <section className="calendar-section">캘린더 데이터가 없습니다.</section>;
+    // }
 
     return (
         <section className="calendar-section">
@@ -275,7 +274,7 @@ const CalendarSection = ({
             </div>
 
             <div className="calendar-weekdays">
-                {weekLabels.map((label, index) => (
+                {WEEK_DAYS.map((label, index) => (
                     <div
                         key={label}
                         className={[

@@ -7,6 +7,7 @@ export interface TimelineRowSegment {
     color: string;
     startMinute: number;
     endMinute: number;
+    isPending: boolean;
 }
 
 export interface TimelineHour {
@@ -16,9 +17,25 @@ export interface TimelineHour {
     hour: number;
 }
 
+const normalizeTimeString = (time: string): string => {
+    const parts = time.trim().split(':');
+
+    if (parts.length === 2) {
+        return `${parts[0]}:${parts[1]}:00`;
+    }
+
+    if (parts.length === 3) {
+        return `${parts[0]}:${parts[1]}:${parts[2]}`;
+    }
+
+    throw new Error(`올바르지 않은 시간 형식입니다: ${time}`);
+};
+
 const parseTime = (time: string) => {
-    const [hour, minute] = time.split(':').map(Number);
-    return { hour, minute };
+    const normalized = normalizeTimeString(time);
+    const [hour, minute, second] = normalized.split(':').map(Number);
+
+    return { hour, minute, second };
 };
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -37,7 +54,7 @@ const addDays = (dateStr: string, days: number) => {
 };
 
 const toDateTime = (date: string, time: string) =>
-    new Date(`${date}T${time}:00`);
+    new Date(`${date}T${normalizeTimeString(time)}`);
 
 export const getTimelineHours = (
     baseDate: string,
@@ -114,7 +131,7 @@ export const mapSlotsToTimelineSegments = (
         const end = toDateTime(endDate, slot.endTime);
 
         let current = new Date(start);
-        let actualEnd = new Date(end);
+        const actualEnd = new Date(end);
 
         if (actualEnd <= current) {
             actualEnd.setDate(actualEnd.getDate() + 1);
@@ -140,6 +157,7 @@ export const mapSlotsToTimelineSegments = (
                 startMinute: current.getMinutes(),
                 endMinute:
                     segmentEnd.getMinutes() === 0 ? 60 : segmentEnd.getMinutes(),
+                isPending: slot.isPending,
             });
 
             current = segmentEnd;
@@ -153,5 +171,17 @@ export const getSegmentsByHour = (
     segments: TimelineRowSegment[],
     hour: TimelineHour,
 ) => {
-    return segments.filter((segment) => segment.rowKey === hour.key);
+    return segments
+        .filter((segment) => segment.rowKey === hour.key)
+        .sort((a, b) => a.startMinute - b.startMinute);
+};
+
+export const formatTimelineDate = (dateStr: string) => {
+    const date = new Date(`${dateStr}T00:00:00`);
+
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const dayNum = String(date.getDate());
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+    return `${month} ${dayNum} · ${weekday}`;
 };

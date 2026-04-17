@@ -1,10 +1,17 @@
-export type ScheduleState = 'RESERVED' | 'BLOCKED';
+export type ScheduleState = 'ACTIVE' | 'INACTIVE';
+
+export type SlotReservationStatus =
+    | 'PENDING'
+    | 'RESERVED'
+    | 'CANCELLED';
 
 export interface DayScheduleSlot {
     startTime: string;
     endTime: string;
     label: string;
     color: string;
+    status: SlotReservationStatus;
+    isPending: boolean;
 }
 
 export interface DaySchedule {
@@ -13,7 +20,7 @@ export interface DaySchedule {
     date: string;
     openTime: string;
     closeTime: string;
-    state: ScheduleState;
+    status: ScheduleState;
     slots: DayScheduleSlot[];
 }
 

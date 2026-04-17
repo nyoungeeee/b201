@@ -23,7 +23,8 @@ export interface GetRoomMonthParams {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ACCESS_TOKEN_KEY = import.meta.env.VITE_ACCESS_TOKEN_KEY ?? 'accessToken';
+const ACCESS_TOKEN_KEY =
+    import.meta.env.VITE_ACCESS_TOKEN_KEY ?? 'accessToken';
 
 const buildRoomDayUrl = ({ roomId, date }: GetRoomDayParams): string => {
     const baseUrl = `${API_BASE_URL}/rooms/${roomId}/day/`;
@@ -76,10 +77,24 @@ export const getRoomDay = async ({
 
     const rawData: unknown = await response.json();
 
+    console.log('ROOM DAY RAW DATA:', rawData);
+    console.log(
+        'RAW SLOT STATUSES:',
+        Array.isArray((rawData as any)?.slot)
+            ? (rawData as any).slot.map((slot: any) => ({
+                name: slot.name,
+                status: slot.status,
+            }))
+            : rawData,
+    );
+
     const parsedResult = roomDayResponseSchema.safeParse(rawData);
 
     if (!parsedResult.success) {
-        console.error('RoomDay API validation failed:', parsedResult.error.format());
+        console.error(
+            'RoomDay API validation failed:',
+            parsedResult.error.format(),
+        );
         throw new Error('일정 응답 형식이 올바르지 않습니다.');
     }
 
@@ -105,7 +120,10 @@ export const getRoomMonth = async ({
     const parsedResult = roomMonthResponseSchema.safeParse(rawData);
 
     if (!parsedResult.success) {
-        console.error('RoomMonth API validation failed:', parsedResult.error.format());
+        console.error(
+            'RoomMonth API validation failed:',
+            parsedResult.error.format(),
+        );
         throw new Error('월 일정 응답 형식이 올바르지 않습니다.');
     }
 
