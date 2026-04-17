@@ -139,7 +139,7 @@ const CalendarSection = ({
         setCurrentMonth(next.month);
     }, [selectedDate]);
 
-    const { data, isLoading, isError, error } = useRoomMonth({
+    const { data } = useRoomMonth({
         roomId: 1,
         year: currentYear,
         month: currentMonth,
