@@ -167,6 +167,9 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "SCHEMA_PATH_PREFIX_TRIM": True,
+    "SERVERS": [
+        {"url": "/api/v1", "description": "API v1"},
+    ],
 }
 
 # Simple JWT Settings
