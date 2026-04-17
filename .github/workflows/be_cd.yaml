@@ -22,8 +22,14 @@ jobs:
           script: |
             set -e
             cd /home/ms/b201/BE
+
             git fetch origin
-            git checkout dev
+            git checkout -B dev origin/dev
             git reset --hard origin/dev
+
             . venv/bin/activate
+            pip install -r requirements.txt
             python manage.py migrate
+
+            sudo systemctl restart b201_gunicorn.service
+            sudo systemctl status b201_gunicorn.service --no-pager
