@@ -12,7 +12,7 @@ const ReservationStatusPage = () => {
     const [selectedDate, setSelectedDate] = useState(today);
     return (
         <MobilePageLayout>
-            <PageHeader title="예약 현황" />
+            <PageHeader isLoggedIn={true} /> {/* 로그인여부 강제설정 */}
 
             <div className="reservation-status-page">
                 <CalendarSection

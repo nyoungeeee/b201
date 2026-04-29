@@ -4,6 +4,7 @@ import "./styles/button.css";
 import "./styles/calendar.css";
 import "./styles/globals.css";
 import "./styles/layout.css";
+import "./styles/sideModal.css";
 import "./styles/timeline.css";
 
 import ReservationStatusPage from './pages/ReservationStatusPage';

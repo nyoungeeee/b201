@@ -1,76 +1,104 @@
 @import "./variables.css";
 
+/* 전체 앱 배경 + 가운데 정렬 */
 .app-shell {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100vh; /* 최소 화면 높이 */
   background: var(--bg-primary);
   display: flex;
-  justify-content: center;
+  justify-content: center; /* 모바일 프레임 가운데 정렬 */
 }
 
+/* 모바일 기기 프레임 역할 */
 .mobile-frame {
   width: 100%;
-  max-width: var(--mobile-max-width);
+  max-width: var(--mobile-max-width); /* 최대 모바일 너비 제한 */
   min-height: 100vh;
   background: #000;
-  position: relative;
+  position: relative; /* 내부 absolute 기준 */
   display: flex;
   flex-direction: column;
 }
 
+/* 실제 모바일 레이아웃 컨테이너 */
 .layout-mobile {
   width: 100%;
   max-width: var(--mobile-max-width);
   min-height: 100vh;
   margin: 0 auto;
   background: var(--bg-primary);
-  /* position: relative; */
-  overflow: hidden;
+  /* position: relative; */ /* 필요 시 모달 기준으로 사용 */
+  overflow: hidden; /* 넘치는 영역 숨김 (모달/스크롤 제어) */
   display: flex;
   flex-direction: column;
 }
 
+/* 메인 콘텐츠 영역 */
 .layout-content {
-  flex: 1;
+  flex: 1; /* 남은 공간 채움 */
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 0; /* flex overflow 방지 */
 }
 
+/* 좌우 패딩 공통 */
 .section-padding {
   padding-left: var(--page-horizontal-padding);
   padding-right: var(--page-horizontal-padding);
 }
 
+/* 섹션 구분선 */
 .section-divider {
   border-top: 1px solid var(--divider);
 }
 
+/* ===== 헤더 ===== */
 .page-header {
-  height: var(--header-height);
+  height: 56px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  background: #000000;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: #000;
 }
 
+/* 햄버거 버튼 */
+.page-header__menu {
+  width: 24px;
+  height: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.page-header__menu span {
+  display: block;
+  height: 2px;
+  background-color: var(--text-muted);
+  border-radius: 2px;
+}
+
+/* 중앙 로고 (absolute로 정확히 가운데 고정) */
 .page-header__logo {
   position: absolute;
-  left: var(--space-16);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .page-header__logo img {
-  width: 100%;
-  height: 100%;
+  height: 40px;
   object-fit: contain;
 }
 
+/* 우측 영역 (아이콘 자리 확보용) */
+.page-header__right {
+  width: 24px;
+}
+
+/* 페이지 타이틀 */
 .page-header__title {
   font-family: var(--font-title);
   font-size: var(--text-2xl);
@@ -79,6 +107,7 @@
   color: var(--text-primary);
 }
 
+/* 빈 상태 화면 */
 .page-empty {
   padding: var(--space-24) var(--space-16);
   text-align: center;
@@ -86,13 +115,15 @@
   font-size: var(--text-md);
 }
 
+/* ===== 하단 히어로 영역 ===== */
 .bottom-hero-area {
-  position: sticky;
+  position: sticky; /* 스크롤 시 하단에 붙음 */
   bottom: 0;
-  margin-top: auto;
+  margin-top: auto; /* 항상 하단으로 밀림 */
   z-index: var(--z-sticky);
 }
 
+/* 히어로 이미지 컨테이너 */
 .bottom-hero {
   position: relative;
   height: var(--bottom-hero-height);
@@ -103,17 +134,20 @@
 .bottom-hero img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* 비율 유지하며 채우기 */
   object-position: center bottom;
   transform: translateY(0%);
   opacity: 0.95;
 }
 
+/* 하단 CTA (버튼 영역) */
 .bottom-cta-wrap {
   position: sticky;
   bottom: 0;
   z-index: var(--z-sticky);
   padding: 0 var(--space-16) calc(var(--space-16) + var(--bottom-nav-safe-space));
+  
+  /* 하단에서 위로 자연스럽게 페이드 */
   background: linear-gradient(
     to top,
     var(--bg-primary) 55%,
@@ -122,9 +156,9 @@
   );
 }
 
+/* 예약 상태 페이지 전체 */
 .reservation-status-page {
-  flex: 1;
+  flex: 1; /* 화면 채우기 */
   display: flex;
   flex-direction: column;
 }
-
