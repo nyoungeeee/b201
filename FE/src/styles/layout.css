@@ -3,8 +3,9 @@
 /* 전체 앱 배경 + 가운데 정렬 */
 .app-shell {
   width: 100%;
-  min-height: 100vh; /* 최소 화면 높이 */
-  background: var(--bg-primary);
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-appshell);
   display: flex;
   justify-content: center; /* 모바일 프레임 가운데 정렬 */
 }
@@ -13,7 +14,8 @@
 .mobile-frame {
   width: 100%;
   max-width: var(--mobile-max-width); /* 최대 모바일 너비 제한 */
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: #000;
   position: relative; /* 내부 absolute 기준 */
   display: flex;
@@ -24,7 +26,8 @@
 .layout-mobile {
   width: 100%;
   max-width: var(--mobile-max-width);
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   margin: 0 auto;
   background: var(--bg-primary);
   /* position: relative; */ /* 필요 시 모달 기준으로 사용 */
@@ -35,10 +38,22 @@
 
 /* 메인 콘텐츠 영역 */
 .layout-content {
-  flex: 1; /* 남은 공간 채움 */
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+
   display: flex;
   flex-direction: column;
-  min-height: 0; /* flex overflow 방지 */
+
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.layout-content::-webkit-scrollbar {
+  display: none;
 }
 
 /* 좌우 패딩 공통 */
@@ -54,12 +69,14 @@
 
 /* ===== 헤더 ===== */
 .page-header {
+
+  flex-shrink: 0;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background-color: #000;
+  background-color: var(--bg-primary);
 }
 
 /* 햄버거 버튼 */
@@ -161,4 +178,5 @@
   flex: 1; /* 화면 채우기 */
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-primary);
 }

@@ -1,0 +1,61 @@
+.my-info-page {
+    padding: 32px 20px 120px;
+}
+
+.my-info-page__profile {
+    margin-bottom: 36px;
+}
+
+.my-info-page__label {
+    margin: 0 0 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-light);
+    color: var(--accent-primary);
+}
+
+.my-info-page__nickname {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--accent-primary);
+}
+
+.my-info-page__nickname-suffix {
+    font-size: var(--text-md);
+    font-weight: var(--weight-light);
+    color: var(--accent-primary);
+}
+
+.my-info-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.my-info-menu__item {
+    width: 100%;
+    height: 52px;
+    padding-left: 5%;
+    margin-bottom: 20px;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.my-info-menu__arrow {
+    display: flex;
+    align-items: center;
+}
+
+.my-info-page__divider {
+    margin: 32px 0;
+    height: 1px;
+    background-color: var(--divider);
+}

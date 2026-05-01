@@ -47,9 +47,12 @@ const SideNavModal = ({ isOpen, onClose, isLoggedIn, nickname }: Props) => {
                 </button>
 
                 {isLoggedIn ? (
-                    <MemberNavContent nickname={nickname} />
+                    <MemberNavContent
+                        nickname={nickname}
+                        onClose={onClose}
+                    />
                 ) : (
-                    <GuestNavContent />
+                    <GuestNavContent onClose={onClose} />
                 )}
 
                 <div className="side-nav-modal__divider-bottom" />

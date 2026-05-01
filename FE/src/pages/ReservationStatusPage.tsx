@@ -10,16 +10,17 @@ import { getTodayInSeoul } from "../utils/timelineUtils";
 const ReservationStatusPage = () => {
     const today = getTodayInSeoul();
     const [selectedDate, setSelectedDate] = useState(today);
-    return (
-        <MobilePageLayout>
-            <PageHeader isLoggedIn={true} /> {/* 로그인여부 강제설정 */}
 
+    return (
+        <MobilePageLayout header={<PageHeader isLoggedIn={true} />}>
             <div className="reservation-status-page">
                 <CalendarSection
                     selectedDate={selectedDate}
                     onSelectDate={setSelectedDate}
                 />
+
                 <TimelineSection date={selectedDate} />
+
                 <BottomHero />
             </div>
 
