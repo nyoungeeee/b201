@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import logo from "../../assets/B201_header_logo.png";
+import HamburgerIcon from "../common/icons/HamburgurIcon";
 import SideNavModal from "../navigation/SideNavModal";
 
 type Props = {
@@ -29,9 +30,7 @@ const PageHeader = ({ isLoggedIn }: Props) => {
                     onClick={() => setIsSideNavOpen(true)}
                     aria-label="메뉴 열기"
                 >
-                    <span />
-                    <span />
-                    <span />
+                    <HamburgerIcon />
                 </button>
 
                 <div className="page-header__logo">

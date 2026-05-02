@@ -7,6 +7,7 @@ import "./styles/layout.css";
 import './styles/myInfo.css';
 import "./styles/sideModal.css";
 import "./styles/timeline.css";
+import "./styles/toast.css";
 
 import { QueryProvider } from './providers/QueryProvider';
 import AppRouter from './router/AppRouter';

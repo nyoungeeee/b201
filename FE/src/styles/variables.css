@@ -43,6 +43,8 @@
   --text-muted: #7a746d;
   --text-disabled: #6e6862;
   --text-inverse: #1a1a1a;
+  --text-error: #FF4D4F;
+  --text-success: #34C759;
 
   /* =========================================================
    * Color - Border / Divider
@@ -200,6 +202,9 @@
 
   --kakao-bg: #252525;
   --kakao-cymbol: #FEE500;
+  --info-card-bg: var(--bg-secondary);
+  --info-card-text: var(--text-muted);
+  --info-card-shadow: rgba(0, 0, 0, 0.25);
 
 }
 
