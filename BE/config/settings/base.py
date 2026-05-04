@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "studios",
     "bookings",
     "auth_tokens",
+    "policies",
 ]
 
 if HAS_CORSHEADERS:
