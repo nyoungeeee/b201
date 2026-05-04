@@ -72,7 +72,7 @@ const MyInfoDetailPage = () => {
                     <button
                         type="button"
                         className="my-info-menu__item"
-                        onClick={() => navigate("/withdraw")}
+                        onClick={() => navigate("/my/withdraw")}
                     >
                         <span>회원탈퇴</span>
                         <span className="my-info-menu__arrow">

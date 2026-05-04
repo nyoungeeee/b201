@@ -1,33 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
 
 const MyInfoPage = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        const message = location.state?.toastMessage;
-
-        if (!message) return;
-
-        setToastMessage(message);
-
-        const timer = window.setTimeout(() => {
-            setToastMessage(null);
-
-            navigate(location.pathname, {
-                replace: true,
-                state: null,
-            });
-        }, 2000);
-
-        return () => window.clearTimeout(timer);
-    }, [location.state, navigate, location.pathname]);
 
     return (
         <MobilePageLayout>
@@ -74,11 +51,6 @@ const MyInfoPage = () => {
                 </section>
             </main>
 
-            {toastMessage && (
-                <div className="toast">
-                    {toastMessage}
-                </div>
-            )}
         </MobilePageLayout>
     );
 };
