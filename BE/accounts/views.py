@@ -71,6 +71,7 @@ class UserInfoView(APIView):
             raise ConflictException(code=e.code, message=e.message)
         return Response(UserInfoSerializer(user_info).data, status=status.HTTP_200_OK)
 
+
 class UserNicknameCheckView(APIView):
     permission_classes = [IsAuthenticated]
 
