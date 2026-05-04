@@ -114,6 +114,7 @@ class TeamMembersView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 class TeamMemberView(APIView):
     permission_classes = [IsAuthenticated]
 

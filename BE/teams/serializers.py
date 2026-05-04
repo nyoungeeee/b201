@@ -40,12 +40,16 @@ class TeamConfigRequestSerializer(serializers.Serializer):
     def validate_color(self, value: str) -> str:
         color = value.strip().lstrip("#")
         if not re.fullmatch(r"[0-9A-Fa-f]{6}", color):
-            raise serializers.ValidationError("대표 색상은 6자리 HEX 형식이어야 합니다.")
+            raise serializers.ValidationError(
+                "대표 색상은 6자리 HEX 형식이어야 합니다."
+            )
         return color.upper()
 
     def validate(self, attrs):
         if not attrs:
-            raise serializers.ValidationError("변경할 팀 이름 또는 대표 색상을 입력해주세요.")
+            raise serializers.ValidationError(
+                "변경할 팀 이름 또는 대표 색상을 입력해주세요."
+            )
         return attrs
 
 

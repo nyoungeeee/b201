@@ -144,7 +144,9 @@ class TeamCommandService:
     @transaction.atomic
     def delegate_leader(user, team_id: int, target_user_id: int) -> TeamConfig:
         team = TeamQueryService._get_active_team(team_id)
-        current_membership = TeamQueryService._validate_team_leader(user=user, team=team)
+        current_membership = TeamQueryService._validate_team_leader(
+            user=user, team=team
+        )
 
         try:
             target_membership = TeamMember.objects.get(

@@ -2,7 +2,6 @@ from django.urls import path
 
 from teams.views import TeamConfigView, TeamLeaderView, TeamMemberView, TeamMembersView
 
-
 urlpatterns = [
     path("<int:team_id>/members/", TeamMembersView.as_view(), name="team_members"),
     path(
