@@ -232,7 +232,7 @@ class TeamConfigView(APIView):
             409: openapi_exception_response(DuplicatedTeamNameError),
             500: openapi_exception_response(BaseServiceError),
         },
-        description="팀 이름과 대표 색상을 변경합니다. 팀장만 수행할 수 있습니다.",
+        description="팀 이름과 대표 색상을 변경합니다. 팀장만 수행할 수 있습니다. 둘다 required = False, 원하는 필드만 수정할 수 있습니다.",
     )
     def patch(self, request, team_id: int):
         serializer = TeamConfigRequestSerializer(data=request.data)

@@ -11,8 +11,16 @@ User = get_user_model()
 @override_settings(ROOT_URLCONF="config.urls")
 class BaseAccountAPITestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(kakao_id=2001, nickname="tester")
-        self.other_user = User.objects.create_user(kakao_id=2002, nickname="takenname")
+        self.user = User.objects.create_user(
+            kakao_id=2001,
+            email="tester@example.com",
+            nickname="tester",
+        )
+        self.other_user = User.objects.create_user(
+            kakao_id=2002,
+            email="taken@example.com",
+            nickname="takenname",
+        )
         self.team = Team.objects.create(
             name="team-a",
             color="112233",

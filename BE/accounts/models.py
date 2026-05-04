@@ -44,6 +44,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     kakao_id = models.BigIntegerField(unique=True)
+    email = models.EmailField(unique=True, null=True)
     nickname = models.CharField(max_length=30, null=True)
 
     status = models.CharField(

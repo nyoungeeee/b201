@@ -34,9 +34,16 @@ class TokenStatus:
 @dataclass
 class SigninResponse:
     id: int
+    email: str | None
     nickname: str
     team: List[Dict[str, str]]
     token: TokenStatus
+
+
+@dataclass
+class KakaoUserInfo:
+    kakao_id: int
+    email: str
 
 
 class TokenRefreshService:
@@ -97,15 +104,21 @@ class KakaoAuthService:
     def get_user_from_kakao_auth_code(kakao_auth_code: str) -> tuple[User, bool]:
         new_user_created = False
         access_token = KakaoAuthService._get_access_token(kakao_auth_code)
-        kakao_user_id = KakaoAuthService._get_kakao_user_id(access_token)
+        kakao_user_info = KakaoAuthService._get_kakao_user_info(access_token)
 
         try:
-            user = User.objects.get(kakao_id=kakao_user_id)
+            user = User.objects.get(kakao_id=kakao_user_info.kakao_id)
+            if user.email != kakao_user_info.email:
+                user.email = kakao_user_info.email
+                user.save(update_fields=["email"])
         except User.DoesNotExist:
             # 신규 사용자 생성
             try:
                 with transaction.atomic():
-                    user = User.objects.create_user(kakao_id=kakao_user_id)
+                    user = User.objects.create_user(
+                        kakao_id=kakao_user_info.kakao_id,
+                        email=kakao_user_info.email,
+                    )
                     new_user_created = True
             except IntegrityError:
                 raise UserAlreadyExistsError()
@@ -143,7 +156,7 @@ class KakaoAuthService:
         return access_token
 
     @staticmethod
-    def _get_kakao_user_id(access_token: str) -> int:
+    def _get_kakao_user_info(access_token: str) -> KakaoUserInfo:
         try:
             response = requests.get(
                 KakaoAuthService.USER_ME_URL,
@@ -161,11 +174,13 @@ class KakaoAuthService:
 
         data = response.json()
         kakao_user_id = data.get("id")
+        kakao_account = data.get("kakao_account") or {}
+        email = kakao_account.get("email")
 
-        if kakao_user_id is None:
+        if kakao_user_id is None or not email:
             raise KakaoAPIError()
 
-        return int(kakao_user_id)
+        return KakaoUserInfo(kakao_id=int(kakao_user_id), email=email)
 
 
 class AuthService:
@@ -186,6 +201,7 @@ class AuthService:
         return (
             SigninResponse(
                 id=user.id,
+                email=user.email,
                 nickname=user.nickname,
                 team=[
                     {"name": team_member.team.name, "id": team_member.team.id}

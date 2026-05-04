@@ -8,6 +8,7 @@ from teams.models import TeamMemberStatus, TeamStatus
 @dataclass
 class UserInfo:
     id: int
+    email: str | None
     nickname: str
     team: list[dict[str, str]]
 
@@ -19,6 +20,7 @@ class UserInfoService:
             raise UserNotFoundError()
         return UserInfo(
             id=user.id,
+            email=user.email,
             nickname=user.nickname,
             team=UserInfoService._get_active_teams(user),
         )
@@ -33,6 +35,7 @@ class UserInfoService:
         user.save(update_fields=["nickname"])
         return UserInfo(
             id=user.id,
+            email=user.email,
             nickname=user.nickname,
             team=UserInfoService._get_active_teams(user),
         )
@@ -48,3 +51,7 @@ class UserInfoService:
             .select_related("team")
             .all()
         ]
+
+    @staticmethod
+    def check_nickname_availability(nickname) -> bool:
+        return User.objects.filter(nickname__iexact=nickname).exists()

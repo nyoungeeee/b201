@@ -15,7 +15,11 @@ User = get_user_model()
 @override_settings(ROOT_URLCONF="config.urls")
 class BaseAuthTokenAPITestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(kakao_id=1001, nickname="tester")
+        self.user = User.objects.create_user(
+            kakao_id=1001,
+            email="tester@example.com",
+            nickname="tester",
+        )
         self.team = Team.objects.create(
             name="team-a",
             color="000000",
