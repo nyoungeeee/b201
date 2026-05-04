@@ -17,9 +17,11 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
 
         if (!message) return;
 
-        setToastMessage(message);
+        const showTimer = window.setTimeout(() => {
+            setToastMessage(message);
+        }, 0);
 
-        const timer = window.setTimeout(() => {
+        const hideTimer = window.setTimeout(() => {
             setToastMessage(null);
 
             navigate(location.pathname, {
@@ -28,7 +30,10 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
             });
         }, 2000);
 
-        return () => window.clearTimeout(timer);
+        return () => {
+            window.clearTimeout(showTimer);
+            window.clearTimeout(hideTimer);
+        };
     }, [location.state, location.pathname, navigate]);
 
     return (
@@ -36,12 +41,11 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
             <div className="mobile-frame">
                 <div className="layout-mobile">
 
-                    {/* 고정 영역 */}
                     {header}
 
-                    {/* 스크롤 영역 */}
                     <div className="layout-content">
                         {children}
+
                         {toastMessage && (
                             <div className="toast">
                                 {toastMessage}

@@ -15,16 +15,19 @@ const SideNavModal = ({ isOpen, onClose, isLoggedIn, nickname }: Props) => {
     const [isVisible, setIsVisible] = useState(isOpen);
 
     useEffect(() => {
+        let timer: number;
+
         if (isOpen) {
-            setIsVisible(true);
-            return;
+            timer = window.setTimeout(() => {
+                setIsVisible(true);
+            }, 0);
+        } else {
+            timer = window.setTimeout(() => {
+                setIsVisible(false);
+            }, ANIMATION_DURATION);
         }
 
-        const timer = setTimeout(() => {
-            setIsVisible(false);
-        }, ANIMATION_DURATION);
-
-        return () => clearTimeout(timer);
+        return () => window.clearTimeout(timer);
     }, [isOpen]);
 
     if (!isVisible) return null;
