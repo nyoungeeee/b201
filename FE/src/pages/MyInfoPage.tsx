@@ -35,12 +35,12 @@ const MyInfoPage = () => {
 
             <main className="my-info-page">
                 <section className="my-info-page__profile">
-                    <p className="my-info-page__label">
+                    <p className="my-info-page__label_accent">
                         안녕하세요, 무엇을 찾으시나요?
                     </p>
                     <h1 className="my-info-page__nickname">
                         닉네임은여덟글자
-                        <span className="my-info-page__nickname-suffix">
+                        <span className="my-info-page__nickname__suffix">
                             {' '}
                             님
                         </span>
@@ -64,9 +64,9 @@ const MyInfoPage = () => {
                     <button
                         type="button"
                         className="my-info-menu__item"
-                        onClick={() => navigate('/my/team')}
+                        onClick={() => navigate('/my/detail')}
                     >
-                        <span>내 팀 확인</span>
+                        <span>내 정보 확인</span>
                         <span className="my-info-menu__arrow">
                             <ChevronRightIcon />
                         </span>
