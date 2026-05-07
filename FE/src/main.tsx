@@ -1,10 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import "./styles/actionModal.css";
 import "./styles/button.css";
 import "./styles/calendar.css";
 import "./styles/globals.css";
 import "./styles/layout.css";
 import './styles/myInfo.css';
+import "./styles/myTeam.css";
 import "./styles/sideModal.css";
 import "./styles/timeline.css";
 import "./styles/toast.css";

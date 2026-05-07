@@ -41,10 +41,13 @@
   --text-primary: #f5f2ee;
   --text-secondary: #b8b2aa;
   --text-muted: #7a746d;
-  --text-disabled: #6e6862;
+  --text-disabled: #3A3530;
   --text-inverse: #1a1a1a;
   --text-error: #FF4D4F;
   --text-success: #34C759;
+  --text-success-blue: #3B82F6;
+  --btn-disabled-bg: #3A3A3C;
+  --btn-disabled-text: #C7C7C7;
 
   /* =========================================================
    * Color - Border / Divider
@@ -205,6 +208,61 @@
   --info-card-bg: var(--bg-secondary);
   --info-card-text: var(--text-muted);
   --info-card-shadow: rgba(0, 0, 0, 0.25);
+
+  /* =========================================================
+   * Modal
+   * ========================================================= */
+
+  --modal-backdrop-bg: rgba(0, 0, 0, 0.72);
+
+  --modal-panel-width-sm: 300px;
+  --modal-panel-width-md: 340px;
+
+  --modal-panel-padding: 28px 20px 20px;
+
+  --modal-radius: 18px;
+
+  --modal-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --modal-backdrop-blur: blur(4px);
+
+  --modal-button-height: 52px;
+  --modal-button-radius: 10px;
+
+  /* =========================================================
+   * Input
+   * ========================================================= */
+
+  --input-height-sm: 44px;
+
+  --input-status-error-shadow:
+    0 0 0 2px rgba(255, 59, 48, 0.15);
+
+  --input-status-success-shadow:
+    0 0 0 2px rgba(0, 200, 83, 0.15);
+
+  /* =========================================================
+   * Spinner
+   * ========================================================= */
+
+  --spinner-size-sm: 18px;
+
+  --spinner-border:
+    2px solid rgba(255, 255, 255, 0.18);
+
+  /* =========================================================
+   * Transition
+   * ========================================================= */
+
+  --transition-button:
+    opacity 120ms ease,
+    transform 120ms ease;
+
+  --transition-input:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 
 }
 
