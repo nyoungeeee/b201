@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import logo from "../../assets/B201_header_logo.png";
-import HamburgerIcon from "../common/icons/HamburgurIcon";
+import { HamburgerIcon } from "../common/icons";
 import SideNavModal from "../navigation/SideNavModal";
 
 type Props = {

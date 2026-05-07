@@ -5,12 +5,14 @@ interface PageSubHeaderProps {
     title?: string;
     onBack?: () => void;
     showBackButton?: boolean;
+    rightContent?: React.ReactNode;
 }
 
 const PageSubHeader = ({
     title,
     onBack,
     showBackButton = true,
+    rightContent,
 }: PageSubHeaderProps) => {
     const navigate = useNavigate();
 
@@ -25,18 +27,28 @@ const PageSubHeader = ({
 
     return (
         <header className="page-sub-header">
-            {showBackButton && (
-                <button
-                    type="button"
-                    className="page-sub-header__back-button"
-                    onClick={handleBack}
-                    aria-label="뒤로가기"
-                >
-                    <ChevronLeftIcon />
-                </button>
+            <div className="page-sub-header__left">
+                {showBackButton && (
+                    <button
+                        type="button"
+                        className="page-sub-header__back-button"
+                        onClick={handleBack}
+                        aria-label="뒤로가기"
+                    >
+                        <ChevronLeftIcon />
+                    </button>
+                )}
+            </div>
+
+            {title && (
+                <h1 className="page-sub-header__title">
+                    {title}
+                </h1>
             )}
 
-            {title && <h1 className="page-sub-header__title">{title}</h1>}
+            <div className="page-sub-header__right">
+                {rightContent}
+            </div>
         </header>
     );
 };
