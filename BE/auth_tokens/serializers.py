@@ -8,6 +8,7 @@ class TokenStatusSerializer(serializers.Serializer):
 
 class SigninResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)
+    email = serializers.EmailField(required=False, allow_null=True)
     nickname = serializers.CharField(required=False, allow_null=True)
     team = serializers.ListField(
         child=serializers.DictField(),

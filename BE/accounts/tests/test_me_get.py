@@ -11,6 +11,7 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.user.id)
+        self.assertEqual(response.data["email"], self.user.email)
         self.assertEqual(response.data["nickname"], self.user.nickname)
         self.assertEqual(
             response.data["team"], [{"id": self.team.id, "name": self.team.name}]

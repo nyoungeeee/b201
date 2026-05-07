@@ -13,7 +13,11 @@ from common.api_exceptions import (
 )
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
-from accounts.serializers import PatchUserInfoRequestSerializer, UserInfoSerializer
+from accounts.serializers import (
+    CheckNicknameResponseSerializer,
+    PatchUserInfoRequestSerializer,
+    UserInfoSerializer,
+)
 from rest_framework import status
 
 logger = logging.getLogger(__name__)
@@ -66,3 +70,28 @@ class UserInfoView(APIView):
         except NicknameAlreadyExistsError as e:
             raise ConflictException(code=e.code, message=e.message)
         return Response(UserInfoSerializer(user_info).data, status=status.HTTP_200_OK)
+
+
+class UserNicknameCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[PatchUserInfoRequestSerializer],
+        responses={
+            200: OpenApiResponse(
+                response=CheckNicknameResponseSerializer,
+                description="닉네임 사용 가능",
+            ),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="닉네임 중복 체크",
+    )
+    def get(self, request):
+        serializer = PatchUserInfoRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        nickname = serializer.validated_data["nickname"]
+        available = not UserInfoService.check_nickname_availability(nickname)
+        return Response(
+            CheckNicknameResponseSerializer({"available": available}).data,
+            status=status.HTTP_200_OK,
+        )

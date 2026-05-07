@@ -9,6 +9,7 @@ class UserInfoSerializer(serializers.Serializer):
         name = serializers.CharField(required=True)
 
     id = serializers.IntegerField(required=True)
+    email = serializers.EmailField(required=False, allow_null=True)
     nickname = serializers.CharField(allow_null=True)
     team = TeamSerializer(many=True, required=True)
 
@@ -42,3 +43,7 @@ class PatchUserInfoRequestSerializer(serializers.Serializer):
             )
 
         return nickname
+
+
+class CheckNicknameResponseSerializer(serializers.Serializer):
+    available = serializers.BooleanField(required=True)
