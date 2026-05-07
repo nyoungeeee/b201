@@ -26,7 +26,7 @@ const RemoveMemberModal = ({
                 </h2>
 
                 <p className="team-modal__description">
-                    {nickname}를 팀에서 제거하시겠습니까?
+                    {nickname}을/를 팀에서 제거하시겠습니까?
                     <br />
                     <br />
                     제거하면 해당 멤버는 더 이상
