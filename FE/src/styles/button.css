@@ -26,12 +26,21 @@
   position: sticky;
   bottom: 0;
   z-index: var(--z-overlay);
-  padding: 0 var(--space-16) var(--space-16);
+  padding: 0 var(--space-16) 20px;
+  background: var(--bg-primary);
+}
+
+.floating-cta::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -32px;
+  height: 32px;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 1) 55%,
-    rgba(0, 0, 0, 0.92) 78%,
+    var(--bg-primary) 0%,
     rgba(0, 0, 0, 0) 100%
   );
-  padding-bottom: 20px;
+  pointer-events: none;
 }

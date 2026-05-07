@@ -27,6 +27,7 @@
   /* =========================================================
    * Color - Background / Surface
    * ========================================================= */
+  --bg-appshell: #000000;
   --bg-primary: #0f0e0d;
   --bg-secondary: #1a1816;
   --bg-tertiary: #24211e;
@@ -42,6 +43,8 @@
   --text-muted: #7a746d;
   --text-disabled: #6e6862;
   --text-inverse: #1a1a1a;
+  --text-error: #FF4D4F;
+  --text-success: #34C759;
 
   /* =========================================================
    * Color - Border / Divider
@@ -181,6 +184,7 @@
   --bottom-hero-width: 352px;
   --cta-height: 56px;
   --bottom-nav-safe-space: 20px;
+  --side-modal-bg: #1c1a18;
 
   /* =========================================================
    * Z-index
@@ -191,4 +195,16 @@
   --z-sticky: 30;
   --z-overlay: 100;
   --z-modal: 1000;
+
+  /* =========================================================
+   * ETC
+   * ========================================================= */
+
+  --kakao-bg: #252525;
+  --kakao-cymbol: #FEE500;
+  --info-card-bg: var(--bg-secondary);
+  --info-card-text: var(--text-muted);
+  --info-card-shadow: rgba(0, 0, 0, 0.25);
+
 }
+
