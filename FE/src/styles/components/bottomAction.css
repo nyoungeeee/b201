@@ -1,0 +1,41 @@
+.bottom-action {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-floating);
+
+  flex-shrink: 0;
+  padding: var(--space-16) var(--space-20) var(--space-24);
+
+  background: linear-gradient(
+    to top,
+    var(--page-bg) 80%,
+    transparent
+  );
+}
+
+.bottom-action__button {
+  position: relative;
+  z-index: var(--z-content);
+
+  width: 100%;
+  height: var(--button-height-md);
+
+  border: 0;
+  border-radius: var(--button-radius-lg);
+
+  background-color: var(--button-filled-bg);
+  color: var(--button-filled-color);
+
+  font-size: var(--button-font-size-md);
+  font-weight: var(--weight-bold);
+
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.bottom-action__button:disabled {
+  background-color: var(--button-disabled-bg);
+  color: var(--button-disabled-color);
+  opacity: 1;
+  cursor: not-allowed;
+}

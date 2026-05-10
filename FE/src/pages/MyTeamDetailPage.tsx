@@ -8,33 +8,11 @@ import TeamEditActions from '../components/team/TeamEditActions';
 import TeamMemberList from '../components/team/TeamMemberList';
 import TeamNoticeBox from '../components/team/TeamNoticeBox';
 import TeamProfileCard from '../components/team/TeamProfileCard';
-
-const MY_TEAM_DETAIL_TEXT = {
-    headerTitle: '팀 멤버',
-    editButton: '편집',
-    doneButton: '완료',
-    removeSuccessToast: '팀 멤버가 제거되었어요.',
-    addSuccessToast: '팀 멤버가 추가되었어요.',
-} as const;
-
-type TeamMember = {
-    id: number;
-    nickname: string;
-    role: 'LEADER' | 'MEMBER';
-};
-
-const MOCK_MEMBERS: TeamMember[] = [
-    { id: 1, nickname: '[멤버1닉네임표시]', role: 'LEADER' },
-    { id: 2, nickname: '[멤버2닉네임표시]', role: 'MEMBER' },
-    { id: 3, nickname: '[멤버3닉네임표시]', role: 'MEMBER' },
-];
-
-const MOCK_TEAM_INFO = {
-    id: 1,
-    name: '[내가속한팀명1]',
-    color: '#06d6a0',
-    description: '[내가속한팀명1] 멤버를 확인할 수 있어요.',
-} as const;
+import { MY_TEAM_DETAIL_TEXT } from '../domains/team/constants';
+import {
+    MOCK_TEAM_INFO,
+    MOCK_TEAM_MEMBERS,
+} from '../domains/team/mock';
 
 type RemoveTarget = {
     id: number;
@@ -80,7 +58,9 @@ const MyTeamDetailPage = () => {
     };
 
     const handleOpenRemoveModal = (memberId: number) => {
-        const target = MOCK_MEMBERS.find((member) => member.id === memberId);
+        const target = MOCK_TEAM_MEMBERS.find(
+            (member) => member.id === memberId,
+        );
 
         if (!target) return;
 
@@ -132,7 +112,7 @@ const MyTeamDetailPage = () => {
                 />
 
                 <TeamMemberList
-                    members={MOCK_MEMBERS}
+                    members={MOCK_TEAM_MEMBERS}
                     isEditMode={isEditMode}
                     onRemoveMember={handleOpenRemoveModal}
                     onAddMember={handleAddMember}

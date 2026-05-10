@@ -54,7 +54,9 @@ const NICKNAME_MESSAGE = {
 
 const getInputWrapClassName = (checkStatus: NicknameCheckStatus) =>
     [
+        'form-input',
         'nickname-form__input-wrap',
+        checkStatus === 'unavailable' && 'is-error',
         checkStatus === 'available' && 'is-available',
         checkStatus === 'unavailable' && 'is-unavailable',
     ]
@@ -137,14 +139,14 @@ const NicknameEditPage = () => {
                         <div className="nickname-form__row">
                             <div className={getInputWrapClassName(checkStatus)}>
                                 <input
-                                    className="nickname-form__input"
+                                    className="form-input__control nickname-form__input"
                                     value={nickname}
                                     onChange={handleChange}
                                     placeholder={NICKNAME_TEXT.placeholder}
                                 />
 
                                 {checkStatus === 'available' && (
-                                    <span className="nickname-form__status-icon">
+                                    <span className="form-input__action nickname-form__status-icon">
                                         <CheckCircleIcon size={18} />
                                     </span>
                                 )}
@@ -152,7 +154,7 @@ const NicknameEditPage = () => {
                                 {checkStatus === 'unavailable' && (
                                     <button
                                         type="button"
-                                        className="nickname-form__status-icon"
+                                        className="form-input__action nickname-form__status-icon"
                                         onClick={handleClear}
                                         aria-label={NICKNAME_TEXT.clearAriaLabel}
                                     >
@@ -172,7 +174,7 @@ const NicknameEditPage = () => {
                         </div>
 
                         {nicknameMessage && (
-                            <div className="nickname-form__message-item">
+                            <div className="form-message nickname-form__message-item">
                                 <InfoCircleIcon
                                     size={16}
                                     color={nicknameMessage.color}
@@ -185,11 +187,11 @@ const NicknameEditPage = () => {
                             </div>
                         )}
 
-                        <div className="nickname-form__notice">
+                        <div className="info-box nickname-form__notice">
                             {NICKNAME_TEXT.notices.map((notice) => (
                                 <div
                                     key={notice}
-                                    className="nickname-form__notice-item"
+                                    className="info-box__item nickname-form__notice-item"
                                 >
                                     <InfoCircleIcon size={16} />
                                     <p>{notice}</p>
@@ -199,10 +201,10 @@ const NicknameEditPage = () => {
                     </section>
                 </main>
 
-                <div className="nickname-edit-page__bottom">
+                <div className="bottom-action nickname-edit-page__bottom">
                     <button
                         type="button"
-                        className="nickname-edit-page__submit"
+                        className="bottom-action__button nickname-edit-page__submit"
                         disabled={!isAvailable}
                         onClick={handleSubmit}
                     >

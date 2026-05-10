@@ -1,31 +1,14 @@
 import { MinusCircleIcon } from '../../components/common/icons';
+import { TEAM_MEMBER_TEXT } from '../../domains/team/constants';
+import type { TeamRole } from '../../types/team';
+import TeamRoleBadge from './TeamRoleBadge';
 
 interface TeamMemberItemProps {
     nickname: string;
-    role: 'LEADER' | 'MEMBER';
+    role: TeamRole;
     isEditMode?: boolean;
     onRemove?: () => void;
 }
-
-const TEAM_MEMBER_TEXT = {
-    leader: 'Leader',
-    member: 'Member',
-    removeAriaLabel: '멤버 제거',
-} as const;
-
-const getBadgeClassName = (isLeader: boolean) =>
-    [
-        'team-member-item__badge',
-
-        isLeader
-            ? 'team-member-item__badge--leader'
-            : 'team-member-item__badge--member',
-    ].join(' ');
-
-const getRoleLabel = (isLeader: boolean) =>
-    isLeader
-        ? TEAM_MEMBER_TEXT.leader
-        : TEAM_MEMBER_TEXT.member;
 
 const TeamMemberItem = ({
     nickname,
@@ -37,19 +20,13 @@ const TeamMemberItem = ({
 
     return (
         <li className="team-member-item">
-            <div className="team-member-item__content">
-                <span className="team-member-item__nickname">
+            <div className="card-row card-row--interactive team-member-item__content">
+                <span className="card-row__title team-member-item__nickname">
                     {nickname}
                 </span>
 
-                <div className="team-member-item__right">
-                    <span
-                        className={getBadgeClassName(
-                            isLeader,
-                        )}
-                    >
-                        {getRoleLabel(isLeader)}
-                    </span>
+                <div className="card-row__right team-member-item__right">
+                    <TeamRoleBadge role={role} />
 
                     {isEditMode &&
                         !isLeader && (

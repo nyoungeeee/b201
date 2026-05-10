@@ -1,21 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 
+import { TEAM_EDIT_ACTIONS_TEXT } from '../../domains/team/constants';
+import { TEAM_ROUTE } from '../../domains/team/routes';
+
 interface TeamEditActionsProps {
     teamId: number;
     teamName: string;
     teamColor: string;
 }
-
-const TEAM_EDIT_ACTIONS_TEXT = {
-    changeColor: '대표 색상 변경하기',
-    changeLeader: '리더 위임하기',
-} as const;
-
-const TEAM_ROUTE = {
-    color: (teamId: number) => `/team/${teamId}/color`,
-    changeLeader: (teamId: number) =>
-        `/team/${teamId}/change-leader`,
-} as const;
 
 const TeamEditActions = ({
     teamId,

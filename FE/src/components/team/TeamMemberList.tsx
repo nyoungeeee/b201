@@ -1,14 +1,10 @@
 import { useState } from 'react';
 
 import { PlusCircleIcon } from '../common/icons';
+import { TEAM_MEMBER_LIST_TEXT } from '../../domains/team/constants';
+import type { TeamMember } from '../../types/team';
 import AddMemberModal from './AddMemberModal';
 import TeamMemberItem from './TeamMemberItem';
-
-export interface TeamMember {
-    id: number;
-    nickname: string;
-    role: 'LEADER' | 'MEMBER';
-}
 
 interface TeamMemberListProps {
     members: TeamMember[];
@@ -16,12 +12,6 @@ interface TeamMemberListProps {
     onRemoveMember?: (memberId: number) => void;
     onAddMember?: (nickname: string) => void;
 }
-
-const TEAM_MEMBER_LIST_TEXT = {
-    title: '팀 멤버',
-    emptyMessage: '등록된 팀 멤버가 없어요.',
-    addButton: '멤버 추가하기',
-} as const;
 
 const TeamMemberList = ({
     members,
