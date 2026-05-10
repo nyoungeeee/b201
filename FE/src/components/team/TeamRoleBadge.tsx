@@ -1,4 +1,5 @@
 import { TEAM_ROLE_LABEL } from '../../domains/team/constants';
+import { TEAM_ROLE } from '../../types/team';
 import type { TeamRole } from '../../types/team';
 
 interface TeamRoleBadgeProps {
@@ -8,7 +9,7 @@ interface TeamRoleBadgeProps {
 const getRoleBadgeClassName = (role: TeamRole) =>
     [
         'role-badge',
-        role === 'LEADER'
+        role === TEAM_ROLE.leader
             ? 'role-badge--leader'
             : 'role-badge--member',
     ].join(' ');

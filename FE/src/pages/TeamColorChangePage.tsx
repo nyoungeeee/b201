@@ -7,9 +7,11 @@ import TeamColorPicker from '../components/team/TeamColorPicker';
 import TeamProfileCard from '../components/team/TeamProfileCard';
 
 import { TEAM_COLOR_TEXT } from '../domains/team/constants';
-import { isUsedTeamColor } from '../domains/team/colors';
+import {
+    isUsedTeamColor,
+    toTeamColorVar,
+} from '../domains/team/colors';
 import { TEAM_ROUTE } from '../domains/team/routes';
-import { toTeamColorVar } from '../utils/commonUtils';
 import type { TeamSummary } from '../types/team';
 
 type LocationState = {

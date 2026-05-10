@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const teamRoleSchema = z.enum(['LEADER', 'MEMBER']);
+import { TEAM_ROLE_VALUES } from './team';
+
+export const teamRoleSchema = z.enum(TEAM_ROLE_VALUES);
 
 const hexColorSchema = z
     .string()

@@ -1,5 +1,6 @@
 import { MinusCircleIcon } from '../../components/common/icons';
 import { TEAM_MEMBER_TEXT } from '../../domains/team/constants';
+import { TEAM_ROLE } from '../../types/team';
 import type { TeamRole } from '../../types/team';
 import TeamRoleBadge from './TeamRoleBadge';
 
@@ -16,7 +17,7 @@ const TeamMemberItem = ({
     isEditMode = false,
     onRemove,
 }: TeamMemberItemProps) => {
-    const isLeader = role === 'LEADER';
+    const isLeader = role === TEAM_ROLE.leader;
 
     return (
         <li className="team-member-item">

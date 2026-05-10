@@ -1,7 +1,9 @@
 import { LockIcon } from '../common/icons';
 import { TEAM_COLOR_TEXT } from '../../domains/team/constants';
-import { isUsedTeamColor } from '../../domains/team/colors';
-import { TEAM_COLOR_OPTIONS } from '../../utils/commonUtils';
+import {
+    isUsedTeamColor,
+    TEAM_COLOR_OPTIONS,
+} from '../../domains/team/colors';
 
 interface TeamColorPickerProps {
     currentColor: string;
