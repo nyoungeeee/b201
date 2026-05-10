@@ -1,33 +1,34 @@
-import { ErrorCircleIcon } from '../common/icons';
+import { InfoCircleIcon } from '../common/icons';
 
-interface RemoveMemberModalProps {
+interface ChangeLeaderModalProps {
+    id: number;
     nickname: string;
     onCancel: () => void;
     onConfirm: () => void;
 }
 
-const REMOVE_MEMBER_MODAL_TEXT = {
-    title: '팀 멤버 제거',
+const CHANGE_LEADER_MODAL_TEXT = {
+    title: '리더 위임',
     cancelButton: '취소',
-    confirmButton: '제거',
+    confirmButton: '위임하기',
 } as const;
 
 const getDescription = (nickname: string) => (
     <>
-        {nickname}을/를 팀에서 제거하시겠습니까?
+        {nickname}를 리더로 변경해요.
         <br />
         <br />
-        제거하면 해당 멤버는 더 이상
+        기존 리더는 일반 멤버로 전환되며
         <br />
-        팀 예약 신청을 할 수 없습니다.
+        더 이상 팀을 관리할 수 없어요.
     </>
 );
 
-const RemoveMemberModal = ({
+const ChangeLeaderModal = ({
     nickname,
     onCancel,
     onConfirm,
-}: RemoveMemberModalProps) => {
+}: ChangeLeaderModalProps) => {
     return (
         <div className="team-modal">
             <div
@@ -36,10 +37,13 @@ const RemoveMemberModal = ({
             />
 
             <section className="team-modal__panel">
-                <ErrorCircleIcon size={54} />
+                <InfoCircleIcon
+                    size={54}
+                    color="var(--text-error)"
+                />
 
                 <h2 className="team-modal__title">
-                    {REMOVE_MEMBER_MODAL_TEXT.title}
+                    {CHANGE_LEADER_MODAL_TEXT.title}
                 </h2>
 
                 <p className="team-modal__description">
@@ -52,15 +56,15 @@ const RemoveMemberModal = ({
                         className="team-modal__button team-modal__button--cancel"
                         onClick={onCancel}
                     >
-                        {REMOVE_MEMBER_MODAL_TEXT.cancelButton}
+                        {CHANGE_LEADER_MODAL_TEXT.cancelButton}
                     </button>
 
                     <button
                         type="button"
-                        className="team-modal__button team-modal__button--danger"
+                        className="team-modal__button team-modal__button--confirm"
                         onClick={onConfirm}
                     >
-                        {REMOVE_MEMBER_MODAL_TEXT.confirmButton}
+                        {CHANGE_LEADER_MODAL_TEXT.confirmButton}
                     </button>
                 </div>
             </section>
@@ -68,4 +72,4 @@ const RemoveMemberModal = ({
     );
 };
 
-export default RemoveMemberModal;
+export default ChangeLeaderModal;

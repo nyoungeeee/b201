@@ -24,7 +24,7 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
         const hideTimer = window.setTimeout(() => {
             setToastMessage(null);
 
-            navigate(location.pathname, {
+            navigate('.', {
                 replace: true,
                 state: null,
             });
@@ -34,7 +34,7 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
             window.clearTimeout(showTimer);
             window.clearTimeout(hideTimer);
         };
-    }, [location.state, location.pathname, navigate]);
+    }, [location.state?.toastMessage, navigate]);
 
     return (
         <div className="app-shell">

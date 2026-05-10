@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import ChevronLeftIcon from '../common/icons/ChevronLeftIcon';
 
 interface PageSubHeaderProps {
@@ -15,6 +16,7 @@ const PageSubHeader = ({
     rightContent,
 }: PageSubHeaderProps) => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleBack = () => {
         if (onBack) {
@@ -22,7 +24,18 @@ const PageSubHeader = ({
             return;
         }
 
-        navigate(-1);
+        const paths = location.pathname
+            .split('/')
+            .filter(Boolean);
+
+        if (paths.length <= 1) {
+            navigate('/');
+            return;
+        }
+
+        paths.pop();
+
+        navigate(`/${paths.join('/')}`);
     };
 
     return (

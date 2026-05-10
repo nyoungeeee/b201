@@ -7,6 +7,26 @@ interface TeamMemberItemProps {
     onRemove?: () => void;
 }
 
+const TEAM_MEMBER_TEXT = {
+    leader: 'Leader',
+    member: 'Member',
+    removeAriaLabel: '멤버 제거',
+} as const;
+
+const getBadgeClassName = (isLeader: boolean) =>
+    [
+        'team-member-item__badge',
+
+        isLeader
+            ? 'team-member-item__badge--leader'
+            : 'team-member-item__badge--member',
+    ].join(' ');
+
+const getRoleLabel = (isLeader: boolean) =>
+    isLeader
+        ? TEAM_MEMBER_TEXT.leader
+        : TEAM_MEMBER_TEXT.member;
+
 const TeamMemberItem = ({
     nickname,
     role,
@@ -24,24 +44,28 @@ const TeamMemberItem = ({
 
                 <div className="team-member-item__right">
                     <span
-                        className={`team-member-item__badge ${isLeader
-                            ? 'team-member-item__badge--leader'
-                            : 'team-member-item__badge--member'
-                            }`}
+                        className={getBadgeClassName(
+                            isLeader,
+                        )}
                     >
-                        {isLeader ? 'Leader' : 'Member'}
+                        {getRoleLabel(isLeader)}
                     </span>
 
-                    {isEditMode && !isLeader && (
-                        <button
-                            type="button"
-                            className="team-member-item__remove-button"
-                            onClick={onRemove}
-                            aria-label="멤버 제거"
-                        >
-                            <MinusCircleIcon size={18} />
-                        </button>
-                    )}
+                    {isEditMode &&
+                        !isLeader && (
+                            <button
+                                type="button"
+                                className="team-member-item__remove-button"
+                                onClick={onRemove}
+                                aria-label={
+                                    TEAM_MEMBER_TEXT.removeAriaLabel
+                                }
+                            >
+                                <MinusCircleIcon
+                                    size={18}
+                                />
+                            </button>
+                        )}
                 </div>
             </div>
         </li>

@@ -7,6 +7,8 @@ import MyTeamPage from '../pages/MyTeamPage';
 import NicknameEditPage from '../pages/NicknameEditPage';
 import PolicyPage from '../pages/PolicyPage';
 import ReservationStatusPage from '../pages/ReservationStatusPage';
+import TeamColorChangePage from '../pages/TeamColorChangePage';
+import TeamLeaderChangePage from '../pages/TeamLeaderChangePage';
 import WithdrawPage from '../pages/WithdrawPage';
 
 const AppRouter = () => {
@@ -17,10 +19,12 @@ const AppRouter = () => {
                 <Route path="/my" element={<MyInfoPage />} />
                 <Route path="/my/nickname" element={<NicknameEditPage />} />
                 <Route path="/my/detail" element={<MyInfoDetailPage />} />
-                <Route path="/policy/:type" element={<PolicyPage />} />
-                <Route path="/my/withdraw" element={<WithdrawPage />} />
+                <Route path="/my/detail/:type" element={<PolicyPage />} />
+                <Route path="/my/detail/withdraw" element={<WithdrawPage />} />
                 <Route path="/team" element={<MyTeamPage />} />
                 <Route path="/team/:id" element={<MyTeamDetailPage />} />
+                <Route path="/team/:id/color" element={<TeamColorChangePage />} />
+                <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
             </Routes>
         </BrowserRouter>
     );
