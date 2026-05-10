@@ -1,6 +1,6 @@
 const PlusCircleIcon = ({
     size = 18,
-    color = 'var(--text-success-blue)',
+    color = 'var(--accent-info)',
     plusColor = 'var(--bg-primary)',
 }: {
     size?: number;

@@ -1,0 +1,64 @@
+/* =========================================================
+ * Action Modal
+ * ========================================================= */
+
+.action-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--modal-padding);
+}
+
+.action-modal__backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: var(--modal-backdrop-bg);
+  backdrop-filter: var(--modal-backdrop-blur);
+}
+
+.action-modal__panel {
+  position: relative;
+
+  width: 100%;
+  max-width: var(--modal-panel-width-md);
+
+  padding: var(--modal-panel-padding);
+
+  border-radius: var(--modal-radius);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(28, 28, 30, 0.98) 0%,
+      rgba(20, 20, 22, 0.98) 100%
+    );
+
+  box-shadow: var(--modal-shadow);
+
+  animation: modalFadeUp 180ms ease-out;
+}
+
+.action-modal__actions {
+  display: flex;
+  gap: var(--space-10);
+
+  margin-top: var(--space-24);
+}
+
+@keyframes modalFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-8)) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

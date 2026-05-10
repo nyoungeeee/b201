@@ -63,8 +63,35 @@ const TEAM_COLOR_MAP: Record<string, string> = {
     '#e76f51': 'var(--team-16)',
 };
 
+const TEAM_COLOR_HEX_MAP: Record<string, string> = Object.fromEntries(
+    Object.entries(TEAM_COLOR_MAP).map(([hex, cssVar]) => [
+        cssVar,
+        hex,
+    ]),
+);
+
+const normalizeHexColor = (color: string) => {
+    const trimmedColor = color.trim();
+
+    if (/^[0-9A-Fa-f]{6}$/.test(trimmedColor)) {
+        return `#${trimmedColor.toLowerCase()}`;
+    }
+
+    return trimmedColor.toLowerCase();
+};
+
 export const toTeamColorVar = (color: string) => {
-    const normalized = color.toLowerCase();
+    const normalized = normalizeHexColor(color);
 
     return TEAM_COLOR_MAP[normalized] ?? color;
+};
+
+export const toTeamColorHex = (color: string) => {
+    const normalized = normalizeHexColor(color);
+
+    return (
+        TEAM_COLOR_HEX_MAP[color] ??
+        TEAM_COLOR_HEX_MAP[normalized] ??
+        normalized
+    ).replace('#', '');
 };

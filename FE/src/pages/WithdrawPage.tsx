@@ -7,7 +7,7 @@ import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
 
-import '../styles/withdraw.css';
+import '../styles/pages/withdraw.css';
 
 type WithdrawNotice = {
     text: string;
@@ -97,11 +97,11 @@ const WithdrawPage = () => {
                         {WITHDRAW_TEXT.description}
                     </p>
 
-                    <section className="withdraw-notice">
+                    <section className="info-box withdraw-notice">
                         {WITHDRAW_NOTICE_LIST.map((notice) => (
                             <div
                                 key={notice.text}
-                                className="withdraw-notice__item"
+                                className="info-box__item withdraw-notice__item"
                             >
                                 <InfoCircleIcon
                                     size={16}
@@ -135,10 +135,10 @@ const WithdrawPage = () => {
                     </button>
                 </main>
 
-                <div className="withdraw-page__bottom">
+                <div className="bottom-action withdraw-page__bottom">
                     <button
                         type="button"
-                        className="withdraw-page__submit"
+                        className="bottom-action__button withdraw-page__submit"
                         disabled={!isChecked}
                         onClick={handleSubmit}
                     >

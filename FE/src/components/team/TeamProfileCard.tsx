@@ -1,14 +1,12 @@
 import type { CSSProperties } from 'react';
 
+import { TEAM_PROFILE_CARD_TEXT } from '../../domains/team/constants';
+
 interface TeamProfileCardProps {
     name: string;
     color: string;
     description?: string;
 }
-
-const TEAM_PROFILE_CARD_TEXT = {
-    currentColorLabel: '현재 색상',
-} as const;
 
 const getTeamColorStyle = (
     color: string,

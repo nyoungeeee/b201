@@ -1,4 +1,6 @@
 import { ErrorCircleIcon } from '../common/icons';
+import { REMOVE_MEMBER_MODAL_TEXT } from '../../domains/team/constants';
+import TeamActionModal from './TeamActionModal';
 
 interface RemoveMemberModalProps {
     nickname: string;
@@ -6,65 +8,22 @@ interface RemoveMemberModalProps {
     onConfirm: () => void;
 }
 
-const REMOVE_MEMBER_MODAL_TEXT = {
-    title: '팀 멤버 제거',
-    cancelButton: '취소',
-    confirmButton: '제거',
-} as const;
-
-const getDescription = (nickname: string) => (
-    <>
-        {nickname}을/를 팀에서 제거하시겠습니까?
-        <br />
-        <br />
-        제거하면 해당 멤버는 더 이상
-        <br />
-        팀 예약 신청을 할 수 없습니다.
-    </>
-);
-
 const RemoveMemberModal = ({
     nickname,
     onCancel,
     onConfirm,
 }: RemoveMemberModalProps) => {
     return (
-        <div className="team-modal">
-            <div
-                className="team-modal__backdrop"
-                onClick={onCancel}
-            />
-
-            <section className="team-modal__panel">
-                <ErrorCircleIcon size={54} />
-
-                <h2 className="team-modal__title">
-                    {REMOVE_MEMBER_MODAL_TEXT.title}
-                </h2>
-
-                <p className="team-modal__description">
-                    {getDescription(nickname)}
-                </p>
-
-                <div className="team-modal__actions">
-                    <button
-                        type="button"
-                        className="team-modal__button team-modal__button--cancel"
-                        onClick={onCancel}
-                    >
-                        {REMOVE_MEMBER_MODAL_TEXT.cancelButton}
-                    </button>
-
-                    <button
-                        type="button"
-                        className="team-modal__button team-modal__button--danger"
-                        onClick={onConfirm}
-                    >
-                        {REMOVE_MEMBER_MODAL_TEXT.confirmButton}
-                    </button>
-                </div>
-            </section>
-        </div>
+        <TeamActionModal
+            icon={<ErrorCircleIcon size={54} />}
+            title={REMOVE_MEMBER_MODAL_TEXT.title}
+            description={REMOVE_MEMBER_MODAL_TEXT.description(nickname)}
+            cancelLabel={REMOVE_MEMBER_MODAL_TEXT.cancelButton}
+            confirmLabel={REMOVE_MEMBER_MODAL_TEXT.confirmButton}
+            confirmVariant="danger"
+            onCancel={onCancel}
+            onConfirm={onConfirm}
+        />
     );
 };
 

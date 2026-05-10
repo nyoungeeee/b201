@@ -1,0 +1,9 @@
+:root {
+  --transition-button:
+    opacity 120ms ease,
+    transform 120ms ease;
+
+  --transition-input:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}

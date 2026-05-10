@@ -1,0 +1,101 @@
+.team-leader-change-page {
+  padding: var(--space-16) var(--space-20) var(--space-28);
+}
+
+.team-leader-change-page__section {
+  margin-top: var(--space-24);
+}
+
+.team-leader-change-page__title {
+  margin: 0 0 var(--space-12);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.team-leader-change-page__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.team-leader-change-page__member-card {
+  cursor: pointer;
+}
+
+.team-leader-change-page__right {
+  gap: var(--space-12);
+}
+
+.team-leader-change-page__radio {
+  width: var(--space-16);
+  height: var(--space-16);
+  box-sizing: border-box;
+
+  border: 1.5px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.02);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-leader-change-page__member-card--selected
+.team-leader-change-page__radio {
+  border-color: var(--accent-primary);
+  background-color: rgba(255, 107, 43, 0.08);
+}
+
+.team-leader-change-page__radio-dot {
+  width: var(--space-8);
+  height: var(--space-8);
+
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+
+  animation: leaderRadioIn 140ms ease-out;
+}
+
+.team-leader-change-page__submit-button {
+  width: 100%;
+  height: var(--button-height-md);
+  margin-top: var(--space-24);
+
+  border: 0;
+  border-radius: var(--button-radius-md);
+
+  background-color: var(--button-filled-bg);
+  color: var(--button-filled-color);
+
+  font-size: var(--button-font-size-md);
+  font-weight: var(--button-font-weight);
+
+  cursor: pointer;
+}
+
+.team-leader-change-page__submit-button:active {
+  transform: scale(0.98);
+}
+
+.team-leader-change-page__submit-button:disabled {
+  background-color: var(--button-disabled-bg);
+  color: var(--button-disabled-color);
+  cursor: not-allowed;
+}
+
+@keyframes leaderRadioIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

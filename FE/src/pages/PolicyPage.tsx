@@ -8,7 +8,7 @@ import {
     TERMS_CONTENT,
 } from '../constants/terms';
 
-import '../styles/terms.css';
+import '../styles/pages/terms.css';
 
 type PolicyType = 'terms' | 'privacy';
 
