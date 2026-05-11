@@ -5,7 +5,7 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
-from teams.models import Team, TeamMember, TeamMemberStatus, TeamStatus
+from teams.models import Team, TeamColor, TeamMember, TeamMemberStatus, TeamStatus
 from studios.models import StudioRoom, StudioRoomStatus
 
 User = get_user_model()
@@ -49,10 +49,10 @@ class BaseBookingAPITestCase(APITestCase):
 
         self.team = Team.objects.create(
             name="team-a",
-            color="000000",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.create(color="000000", team=self.team)
         TeamMember.objects.create(
             team=self.team,
             user=self.user,
@@ -66,10 +66,10 @@ class BaseBookingAPITestCase(APITestCase):
 
         self.other_team = Team.objects.create(
             name="team-b",
-            color="111111",
             owner=self.other_user,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.create(color="111111", team=self.other_team)
         TeamMember.objects.create(
             team=self.other_team,
             user=self.other_user,

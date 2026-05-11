@@ -66,6 +66,7 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         self.assertEqual(len(response.data["team"]), 1)
         self.assertEqual(response.data["team"][0]["id"], self.team.id)
         self.assertEqual(response.data["team"][0]["name"], self.team.name)
+        self.assertEqual(response.data["team"][0]["color"], self.team.color)
 
     @patch("auth_tokens.services.requests.post")
     # 카카오 토큰 요청 실패 시 서버 오류 응답으로 변환되는지 검증한다.

@@ -18,15 +18,18 @@ from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
 from teams.exceptions import (
     AlreadyTeamMemberError,
+    DuplicatedTeamColorError,
     DuplicatedTeamNameError,
     ForbiddenTeamAccessError,
     ForbiddenTeamLeaderError,
+    InvalidTeamColorError,
     InvalidTeamMemberError,
     NotFoundTeamError,
     NotFoundTeamMemberError,
     NotFoundUserError,
 )
 from teams.serializers import (
+    TeamColorListSerializer,
     TeamConfigRequestSerializer,
     TeamConfigSerializer,
     TeamMemberAddRequestSerializer,
@@ -36,6 +39,50 @@ from teams.serializers import (
 from teams.services import TeamCommandService, TeamQueryService
 
 logger = logging.getLogger(__name__)
+
+
+class TeamColorsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="team_id",
+                required=False,
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="팀 수정 화면에서 현재 팀의 색상은 사용 가능으로 표시하기 위한 팀 ID",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=TeamColorListSerializer,
+                description="팀 색상 목록 조회 성공",
+            ),
+            403: openapi_exception_response(ForbiddenTeamAccessError),
+            404: openapi_exception_response(NotFoundTeamError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="미리 등록된 팀 색상 목록과 현재 사용 가능 여부를 조회합니다.",
+    )
+    def get(self, request):
+        team_id = request.query_params.get("team_id")
+        try:
+            colors = TeamQueryService.get_colors(
+                user=request.user,
+                team_id=int(team_id) if team_id else None,
+            )
+        except ValueError as e:
+            raise BadRequestException() from e
+        except NotFoundTeamError as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except ForbiddenTeamAccessError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except Exception as e:
+            logger.exception("Failed to get team colors.")
+            raise InternalServerErrorException() from e
+
+        return Response(TeamColorListSerializer(colors).data, status=status.HTTP_200_OK)
 
 
 class TeamMembersView(APIView):
@@ -76,7 +123,7 @@ class TeamMembersView(APIView):
                 response=TeamMemberListSerializer,
                 description="멤버 추가 성공",
             ),
-            400: openapi_exception_response(),
+            400: openapi_exception_response(InvalidTeamColorError),
             403: openapi_exception_response(
                 ForbiddenTeamAccessError,
                 ForbiddenTeamLeaderError,
@@ -229,10 +276,13 @@ class TeamConfigView(APIView):
                 ForbiddenTeamLeaderError,
             ),
             404: openapi_exception_response(NotFoundTeamError),
-            409: openapi_exception_response(DuplicatedTeamNameError),
+            409: openapi_exception_response(
+                DuplicatedTeamNameError,
+                DuplicatedTeamColorError,
+            ),
             500: openapi_exception_response(BaseServiceError),
         },
-        description="팀 이름과 대표 색상을 변경합니다. 팀장만 수행할 수 있습니다. 둘다 required = False, 원하는 필드만 수정할 수 있습니다.",
+        description="팀 이름과 대표 색상을 변경합니다. 팀장만 수행할 수 있습니다. 대표 색상은 등록된 색상 중 사용 가능한 색상만 선택할 수 있습니다.",
     )
     def patch(self, request, team_id: int):
         serializer = TeamConfigRequestSerializer(data=request.data)
@@ -249,7 +299,12 @@ class TeamConfigView(APIView):
             raise NotFoundException(code=e.code, message=e.message) from e
         except (ForbiddenTeamAccessError, ForbiddenTeamLeaderError) as e:
             raise ForbiddenException(code=e.code, message=e.message) from e
-        except DuplicatedTeamNameError as e:
+        except InvalidTeamColorError as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except (
+            DuplicatedTeamNameError,
+            DuplicatedTeamColorError,
+        ) as e:
             raise ConflictException(code=e.code, message=e.message) from e
         except Exception as e:
             logger.exception("Failed to update team config.")

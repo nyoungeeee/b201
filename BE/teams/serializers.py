@@ -57,3 +57,12 @@ class TeamConfigSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)
     name = serializers.CharField(required=True)
     color = serializers.CharField(required=True)
+
+
+class TeamColorSerializer(serializers.Serializer):
+    color = serializers.CharField(required=True)
+    available = serializers.BooleanField(required=True)
+
+
+class TeamColorListSerializer(serializers.Serializer):
+    colors = TeamColorSerializer(many=True, required=True)

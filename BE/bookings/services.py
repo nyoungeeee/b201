@@ -93,7 +93,7 @@ class BookingCheckService:
                 reservation_date=target_date,
                 status__in=[BookingStatus.RESERVED, BookingStatus.PENDING],
             )
-            .select_related("user", "team")
+            .select_related("user", "team", "team__team_color")
             .order_by("start_time")
         )
 
@@ -166,7 +166,7 @@ class BookingCheckService:
                 reservation_date__month=target_date.month,
             )
             .exclude(status=BookingStatus.CANCELED)
-            .select_related("user", "team")
+            .select_related("user", "team", "team__team_color")
             .order_by("reservation_date", "start_time")
         )
         closures = room.closures.filter(
@@ -364,7 +364,9 @@ class ReservationQueryService:
         target_date: date | None,
         status: list[str] | None,
     ):
-        queryset = queryset.select_related("room", "user", "team").order_by(
+        queryset = queryset.select_related(
+            "room", "user", "team", "team__team_color"
+        ).order_by(
             "-reservation_date",
             "-start_time",
             "-reservation_number",

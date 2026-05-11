@@ -1,6 +1,6 @@
 from rest_framework import status
 
-from teams.models import Team, TeamMember, TeamMemberStatus, TeamStatus
+from teams.models import Team, TeamColor, TeamMember, TeamMemberStatus, TeamStatus
 from .base import BaseAccountAPITestCase
 
 
@@ -14,7 +14,14 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
         self.assertEqual(response.data["email"], self.user.email)
         self.assertEqual(response.data["nickname"], self.user.nickname)
         self.assertEqual(
-            response.data["team"], [{"id": self.team.id, "name": self.team.name}]
+            response.data["team"],
+            [
+                {
+                    "id": self.team.id,
+                    "name": self.team.name,
+                    "color": self.team.color,
+                }
+            ],
         )
 
     # 소속된 활성 팀이 없으면 빈 배열이 반환되는지 검증한다.
@@ -30,10 +37,10 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
     def test_get_user_info_returns_all_active_teams_when_user_has_many_teams(self):
         another_team = Team.objects.create(
             name="team-b",
-            color="445566",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.create(color="445566", team=another_team)
         TeamMember.objects.create(
             team=another_team,
             user=self.user,
@@ -46,8 +53,16 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
         self.assertEqual(
             response.data["team"],
             [
-                {"id": self.team.id, "name": self.team.name},
-                {"id": another_team.id, "name": another_team.name},
+                {
+                    "id": self.team.id,
+                    "name": self.team.name,
+                    "color": self.team.color,
+                },
+                {
+                    "id": another_team.id,
+                    "name": another_team.name,
+                    "color": another_team.color,
+                },
             ],
         )
 

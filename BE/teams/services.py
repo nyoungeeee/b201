@@ -1,19 +1,28 @@
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from teams.exceptions import (
     AlreadyTeamMemberError,
+    DuplicatedTeamColorError,
     DuplicatedTeamNameError,
     ForbiddenTeamAccessError,
     ForbiddenTeamLeaderError,
     InvalidTeamMemberError,
+    InvalidTeamColorError,
     NotFoundTeamError,
     NotFoundTeamMemberError,
     NotFoundUserError,
 )
-from teams.models import Team, TeamMember, TeamMemberRole, TeamMemberStatus, TeamStatus
+from teams.models import (
+    Team,
+    TeamColor,
+    TeamMember,
+    TeamMemberRole,
+    TeamMemberStatus,
+    TeamStatus,
+)
 
 User = get_user_model()
 
@@ -37,6 +46,17 @@ class TeamConfig:
     color: str
 
 
+@dataclass
+class TeamColorInfo:
+    color: str
+    available: bool
+
+
+@dataclass
+class TeamColorList:
+    colors: list[TeamColorInfo]
+
+
 class TeamQueryService:
     @staticmethod
     def get_members(user, team_id: int) -> TeamMemberList:
@@ -56,6 +76,33 @@ class TeamQueryService:
                     role=TeamQueryService._resolve_role(team, membership),
                 )
                 for membership in memberships
+            ]
+        )
+
+    @staticmethod
+    def get_colors(user, team_id: int | None = None) -> TeamColorList:
+        current_team_id = None
+        if team_id is not None:
+            team = TeamQueryService._get_active_team(team_id)
+            TeamQueryService._validate_active_member(user=user, team=team)
+            current_team_id = team.id
+
+        colors = (
+            TeamColor.objects.filter(is_active=True)
+            .select_related("team")
+            .order_by("display_order", "id")
+        )
+        return TeamColorList(
+            colors=[
+                TeamColorInfo(
+                    color=color.color,
+                    available=(
+                        color.team_id is None
+                        or color.team_id == current_team_id
+                        or color.team.status != TeamStatus.ACTIVE
+                    ),
+                )
+                for color in colors
             ]
         )
 
@@ -185,10 +232,43 @@ class TeamCommandService:
                 raise DuplicatedTeamNameError()
             team.name = name
         if color is not None:
-            team.color = color
+            TeamCommandService._assign_color(color=color, team=team)
 
-        team.save(update_fields=["name", "color", "updated_at"])
+        try:
+            team.save(update_fields=["name", "updated_at"])
+        except IntegrityError as e:
+            raise DuplicatedTeamNameError() from e
         return TeamConfig(id=team.id, name=team.name, color=team.color)
+
+    @staticmethod
+    def _assign_color(color: str, team: Team) -> None:
+        try:
+            target_color = TeamColor.objects.select_for_update().get(
+                color=color,
+                is_active=True,
+            )
+        except TeamColor.DoesNotExist:
+            raise InvalidTeamColorError()
+
+        assigned_to_active_team = (
+            target_color.team_id is not None
+            and target_color.team_id != team.id
+            and Team.objects.filter(
+                id=target_color.team_id,
+                status=TeamStatus.ACTIVE,
+            ).exists()
+        )
+        if assigned_to_active_team:
+            raise DuplicatedTeamColorError()
+
+        try:
+            TeamColor.objects.select_for_update().filter(team=team).exclude(
+                id=target_color.id
+            ).update(team=None)
+            target_color.team = team
+            target_color.save(update_fields=["team"])
+        except IntegrityError as e:
+            raise DuplicatedTeamColorError() from e
 
     @staticmethod
     def _get_active_user(user_id: int):
