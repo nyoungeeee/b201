@@ -1,28 +1,73 @@
+import { useNavigate } from 'react-router-dom';
+
+import { TEAM_EDIT_ACTIONS_TEXT } from '../../domains/team/constants';
+import { TEAM_ROUTE } from '../../domains/team/routes';
+
 interface TeamEditActionsProps {
-    onChangeColor?: () => void;
-    onChangeLeader?: () => void;
+    teamId: number;
+    teamName: string;
+    teamColor: string;
 }
 
 const TeamEditActions = ({
-    onChangeColor,
-    onChangeLeader,
+    teamId,
+    teamName,
+    teamColor,
 }: TeamEditActionsProps) => {
+    const navigate = useNavigate();
+
+    const moveToPage = ({
+        path,
+        state,
+    }: {
+        path: string;
+        state: object;
+    }) => {
+        navigate(path, { state });
+    };
+
+    const handleChangeColor = () => {
+        moveToPage({
+            path: TEAM_ROUTE.color(teamId),
+
+            state: {
+                team: {
+                    id: teamId,
+                    name: teamName,
+                    color: teamColor,
+                },
+            },
+        });
+    };
+
+    const handleChangeLeader = () => {
+        moveToPage({
+            path: TEAM_ROUTE.changeLeader(teamId),
+
+            state: {
+                team: {
+                    id: teamId,
+                },
+            },
+        });
+    };
+
     return (
         <section className="team-edit-actions">
             <button
                 type="button"
                 className="team-edit-actions__button"
-                onClick={onChangeColor}
+                onClick={handleChangeColor}
             >
-                대표 색상 변경하기
+                {TEAM_EDIT_ACTIONS_TEXT.changeColor}
             </button>
 
             <button
                 type="button"
                 className="team-edit-actions__button"
-                onClick={onChangeLeader}
+                onClick={handleChangeLeader}
             >
-                리더 위임하기
+                {TEAM_EDIT_ACTIONS_TEXT.changeLeader}
             </button>
         </section>
     );

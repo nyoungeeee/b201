@@ -1,0 +1,18 @@
+:root {
+  --mobile-max-width: 390px;
+  --page-horizontal-padding: 16px;
+  --header-height: 70px;
+  --month-header-height: 50px;
+  --timeline-time-width: 40px;
+  --timeline-row-height: 24px;
+  --timeline-bar-height: 18px;
+  --bottom-hero-height: 181px;
+  --bottom-hero-width: 352px;
+  --cta-height: 56px;
+  --bottom-nav-safe-space: 20px;
+  --page-bottom-padding-sm: 80px;
+  --page-bottom-padding-lg: 120px;
+  --header-action-size: 36px;
+  --logo-size-md: 64px;
+  --side-modal-width: 250px;
+}

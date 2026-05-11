@@ -23,3 +23,4 @@ export const isValidNickname = (value: string) => {
 
     return getNicknameLength(value) <= MAX_LENGTH;
 };
+

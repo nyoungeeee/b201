@@ -1,8 +1,12 @@
 import { MinusCircleIcon } from '../../components/common/icons';
+import { TEAM_MEMBER_TEXT } from '../../domains/team/constants';
+import { TEAM_ROLE } from '../../types/team';
+import type { TeamRole } from '../../types/team';
+import TeamRoleBadge from './TeamRoleBadge';
 
 interface TeamMemberItemProps {
     nickname: string;
-    role: 'LEADER' | 'MEMBER';
+    role: TeamRole;
     isEditMode?: boolean;
     onRemove?: () => void;
 }
@@ -13,35 +17,33 @@ const TeamMemberItem = ({
     isEditMode = false,
     onRemove,
 }: TeamMemberItemProps) => {
-    const isLeader = role === 'LEADER';
+    const isLeader = role === TEAM_ROLE.leader;
 
     return (
         <li className="team-member-item">
-            <div className="team-member-item__content">
-                <span className="team-member-item__nickname">
+            <div className="card-row card-row--interactive team-member-item__content">
+                <span className="card-row__title team-member-item__nickname">
                     {nickname}
                 </span>
 
-                <div className="team-member-item__right">
-                    <span
-                        className={`team-member-item__badge ${isLeader
-                            ? 'team-member-item__badge--leader'
-                            : 'team-member-item__badge--member'
-                            }`}
-                    >
-                        {isLeader ? 'Leader' : 'Member'}
-                    </span>
+                <div className="card-row__right team-member-item__right">
+                    <TeamRoleBadge role={role} />
 
-                    {isEditMode && !isLeader && (
-                        <button
-                            type="button"
-                            className="team-member-item__remove-button"
-                            onClick={onRemove}
-                            aria-label="멤버 제거"
-                        >
-                            <MinusCircleIcon size={18} />
-                        </button>
-                    )}
+                    {isEditMode &&
+                        !isLeader && (
+                            <button
+                                type="button"
+                                className="team-member-item__remove-button"
+                                onClick={onRemove}
+                                aria-label={
+                                    TEAM_MEMBER_TEXT.removeAriaLabel
+                                }
+                            >
+                                <MinusCircleIcon
+                                    size={18}
+                                />
+                            </button>
+                        )}
                 </div>
             </div>
         </li>

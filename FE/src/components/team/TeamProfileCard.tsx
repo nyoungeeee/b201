@@ -1,39 +1,54 @@
 import type { CSSProperties } from 'react';
 
+import { TEAM_PROFILE_CARD_TEXT } from '../../domains/team/constants';
+
 interface TeamProfileCardProps {
     name: string;
     color: string;
     description?: string;
 }
 
+const getTeamColorStyle = (
+    color: string,
+): CSSProperties =>
+    ({
+        '--team-color': color,
+    }) as CSSProperties;
+
 const TeamProfileCard = ({
-    name,
     color,
-    description = '',
+    name,
+    description,
 }: TeamProfileCardProps) => {
     return (
         <section className="team-profile-card">
             <div className="team-profile-card__summary">
                 <div
                     className="team-profile-card__color"
-                    style={{ '--team-color': color } as CSSProperties}
+                    style={getTeamColorStyle(color)}
                     aria-hidden="true"
                 />
 
                 <div className="team-profile-card__main">
-                    <h1 className="team-profile-card__name">{name}</h1>
+                    <h1 className="team-profile-card__name">
+                        {name}
+                    </h1>
 
                     <p className="team-profile-card__color-label">
-                        현재 색상
+                        {
+                            TEAM_PROFILE_CARD_TEXT.currentColorLabel
+                        }
                     </p>
                 </div>
             </div>
 
             <div className="team-profile-card__divider" />
 
-            <p className="team-profile-card__description">
-                {description}
-            </p>
+            {description && (
+                <p className="team-profile-card__description">
+                    {description}
+                </p>
+            )}
         </section>
     );
 };

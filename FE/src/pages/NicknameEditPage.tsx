@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import logo from '../assets/B201_header_logo.png';
 import { InfoCircleIcon } from '../components/common/icons';
 import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
@@ -11,26 +12,87 @@ import { getNicknameLength, isValidNickname } from '../utils/commonUtils';
 
 type NicknameCheckStatus = 'unchecked' | 'available' | 'unavailable';
 
+const NICKNAME_TEXT = {
+    title: (
+        <>
+            서비스에서 사용할 닉네임을
+            <br />
+            입력해주세요.
+        </>
+    ),
+    label: '닉네임',
+    placeholder: '닉네임을 입력해주세요',
+    checkButton: '검사',
+    submitButton: '변경하기',
+    clearAriaLabel: '입력값 지우기',
+    toastMessage: '닉네임이 변경되었어요.',
+    unavailableMessage: '사용할 수 없는 닉네임이에요.',
+    availableMessage: '사용 가능한 닉네임이에요!',
+    notices: [
+        '최대 한글 8자, 영문 16자까지 입력 가능해요.',
+        '특수문자 및 공백은 사용할 수 없어요.',
+        '다른 사용자가 사용 중인 닉네임은 사용할 수 없어요.',
+    ],
+} as const;
+
+const NICKNAME_REGEX = {
+    invalidCharacter: /[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]/,
+} as const;
+
+const NICKNAME_MESSAGE = {
+    available: {
+        className: 'is-success',
+        color: 'var(--text-success)',
+        text: NICKNAME_TEXT.availableMessage,
+    },
+    unavailable: {
+        className: 'is-error',
+        color: 'var(--text-error)',
+        text: NICKNAME_TEXT.unavailableMessage,
+    },
+} as const;
+
+const getInputWrapClassName = (checkStatus: NicknameCheckStatus) =>
+    [
+        'form-input',
+        'nickname-form__input-wrap',
+        checkStatus === 'unavailable' && 'is-error',
+        checkStatus === 'available' && 'is-available',
+        checkStatus === 'unavailable' && 'is-unavailable',
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+const getNicknameMessage = (checkStatus: NicknameCheckStatus) => {
+    if (checkStatus === 'unchecked') return null;
+
+    return NICKNAME_MESSAGE[checkStatus];
+};
+
 const NicknameEditPage = () => {
+    const navigate = useNavigate();
+
+    const [nickname, setNickname] = useState('');
+    const [checkStatus, setCheckStatus] =
+        useState<NicknameCheckStatus>('unchecked');
+
+    const isFormatValid = isValidNickname(nickname);
+    const isAvailable = checkStatus === 'available';
+    const nicknameMessage = getNicknameMessage(checkStatus);
+
     const handleClear = () => {
         setNickname('');
         setCheckStatus('unchecked');
     };
 
-    const navigate = useNavigate();
-    const [nickname, setNickname] = useState('');
-    const [checkStatus, setCheckStatus] =
-        useState<NicknameCheckStatus>('unchecked');
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
 
-        if (/[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]/.test(value)) return;
+        if (NICKNAME_REGEX.invalidCharacter.test(value)) return;
+        if (getNicknameLength(value) > MAX_LENGTH) return;
 
-        if (getNicknameLength(value) <= MAX_LENGTH) {
-            setNickname(value);
-            setCheckStatus('unchecked');
-        }
+        setNickname(value);
+        setCheckStatus('unchecked');
     };
 
     const handleCheckNickname = () => {
@@ -38,22 +100,20 @@ const NicknameEditPage = () => {
 
         // TODO: 추후 닉네임 중복 검사 API로 교체
         const isDuplicated = DUMMY_NICKNAME.includes(nickname);
+
         setCheckStatus(isDuplicated ? 'unavailable' : 'available');
     };
 
     const handleSubmit = () => {
-        if (checkStatus !== 'available') return;
+        if (!isAvailable) return;
 
         // TODO: 추후 닉네임 변경 API 호출 후 성공 시 이동
         navigate('/my', {
             state: {
-                toastMessage: '닉네임이 변경되었어요.',
+                toastMessage: NICKNAME_TEXT.toastMessage,
             },
         });
     };
-
-    const isFormatValid = isValidNickname(nickname);
-    const isAvailable = checkStatus === 'available';
 
     return (
         <MobilePageLayout>
@@ -68,51 +128,38 @@ const NicknameEditPage = () => {
                     />
 
                     <h1 className="nickname-edit-page__title">
-                        서비스에서 사용할 닉네임을
-                        <br />
-                        입력해주세요.
+                        {NICKNAME_TEXT.title}
                     </h1>
 
                     <section className="nickname-form">
                         <label className="nickname-form__label">
-                            닉네임
+                            {NICKNAME_TEXT.label}
                         </label>
 
                         <div className="nickname-form__row">
-                            <div
-                                className={[
-                                    'nickname-form__input-wrap',
-                                    checkStatus === 'available' &&
-                                    'is-available',
-                                    checkStatus === 'unavailable' &&
-                                    'is-unavailable',
-                                ]
-                                    .filter(Boolean)
-                                    .join(' ')}
-                            >
+                            <div className={getInputWrapClassName(checkStatus)}>
                                 <input
-                                    className="nickname-form__input"
+                                    className="form-input__control nickname-form__input"
                                     value={nickname}
                                     onChange={handleChange}
-                                    placeholder="닉네임을 입력해주세요"
+                                    placeholder={NICKNAME_TEXT.placeholder}
                                 />
 
-                                {checkStatus !== 'unchecked' && (
-                                    checkStatus === 'available' ? (
-                                        <span className="nickname-form__status-icon">
-                                            <CheckCircleIcon size={18} />
-                                        </span>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            key={checkStatus}
-                                            className="nickname-form__status-icon"
-                                            onClick={handleClear}
-                                            aria-label="입력값 지우기"
-                                        >
-                                            <ErrorCircleIcon size={18} />
-                                        </button>
-                                    )
+                                {checkStatus === 'available' && (
+                                    <span className="form-input__action nickname-form__status-icon">
+                                        <CheckCircleIcon size={18} />
+                                    </span>
+                                )}
+
+                                {checkStatus === 'unavailable' && (
+                                    <button
+                                        type="button"
+                                        className="form-input__action nickname-form__status-icon"
+                                        onClick={handleClear}
+                                        aria-label={NICKNAME_TEXT.clearAriaLabel}
+                                    >
+                                        <ErrorCircleIcon size={18} />
+                                    </button>
                                 )}
                             </div>
 
@@ -122,64 +169,46 @@ const NicknameEditPage = () => {
                                 disabled={!isFormatValid}
                                 onClick={handleCheckNickname}
                             >
-                                검사
+                                {NICKNAME_TEXT.checkButton}
                             </button>
                         </div>
 
-                        {checkStatus === 'unavailable' && (
-                            <div className='nickname-form__message-item'>
-                                <InfoCircleIcon size={16} color="var(--text-error)" />
-                                <p className="nickname-form__message is-error">
-                                    사용할 수 없는 닉네임이에요.
+                        {nicknameMessage && (
+                            <div className="form-message nickname-form__message-item">
+                                <InfoCircleIcon
+                                    size={16}
+                                    color={nicknameMessage.color}
+                                />
+                                <p
+                                    className={`nickname-form__message ${nicknameMessage.className}`}
+                                >
+                                    {nicknameMessage.text}
                                 </p>
                             </div>
-
                         )}
 
-                        {checkStatus === 'available' && (
-                            <div className='nickname-form__message-item'>
-                                <InfoCircleIcon size={16} color="var(--text-success)" />
-                                <p className="nickname-form__message is-success">
-                                    사용 가능한 닉네임이에요!
-                                </p>
-                            </div>
-
-
-                        )}
-
-                        <div className="nickname-form__notice">
-                            <div className="nickname-form__notice-item">
-                                <InfoCircleIcon size={16} />
-                                <p>
-                                    최대 한글 8자, 영문 16자까지 입력
-                                    가능해요.
-                                </p>
-                            </div>
-
-                            <div className="nickname-form__notice-item">
-                                <InfoCircleIcon size={16} />
-                                <p>특수문자 및 공백은 사용할 수 없어요.</p>
-                            </div>
-
-                            <div className="nickname-form__notice-item">
-                                <InfoCircleIcon size={16} />
-                                <p>
-                                    다른 사용자가 사용 중인 닉네임은 사용할 수
-                                    없어요.
-                                </p>
-                            </div>
+                        <div className="info-box nickname-form__notice">
+                            {NICKNAME_TEXT.notices.map((notice) => (
+                                <div
+                                    key={notice}
+                                    className="info-box__item nickname-form__notice-item"
+                                >
+                                    <InfoCircleIcon size={16} />
+                                    <p>{notice}</p>
+                                </div>
+                            ))}
                         </div>
                     </section>
                 </main>
 
-                <div className="nickname-edit-page__bottom">
+                <div className="bottom-action nickname-edit-page__bottom">
                     <button
                         type="button"
-                        className="nickname-edit-page__submit"
+                        className="bottom-action__button nickname-edit-page__submit"
                         disabled={!isAvailable}
                         onClick={handleSubmit}
                     >
-                        변경하기
+                        {NICKNAME_TEXT.submitButton}
                     </button>
                 </div>
             </div>

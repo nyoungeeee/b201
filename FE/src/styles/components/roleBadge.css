@@ -1,0 +1,25 @@
+.role-badge {
+  min-width: var(--role-badge-min-width);
+  height: var(--space-20);
+  padding: 0 var(--space-8);
+  box-sizing: border-box;
+
+  border-radius: var(--radius-pill);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-light);
+}
+
+.role-badge--leader {
+  border: var(--border-width-sm) solid var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.role-badge--member {
+  border: var(--border-width-sm) solid var(--text-muted);
+  color: var(--text-secondary);
+}

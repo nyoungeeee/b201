@@ -1,0 +1,82 @@
+:root {
+  /* Base */
+  --white: #ffffff;
+
+  /* Background / Surface */
+  --bg-appshell: #000000;
+  --bg-primary: #0f0e0d;
+  --bg-secondary: #1a1816;
+  --bg-tertiary: #24211e;
+  --bg-hover: #2a2521;
+  --bg-elevated: #312c28;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --page-bg: var(--bg-primary);
+  --input-bg: var(--bg-secondary);
+
+  /* Text */
+  --text-primary: #f5f2ee;
+  --text-secondary: #b8b2aa;
+  --text-muted: #7a746d;
+  --text-disabled: #3a3530;
+  --text-inverse: #1a1a1a;
+  --text-error: #ff4d4f;
+  --text-success: #34c759;
+
+  /* Border / Divider */
+  --border-primary: #2a2521;
+  --border-secondary: #3a332d;
+  --border-strong: #4a4139;
+  --divider: rgba(245, 242, 238, 0.08);
+
+  /* Brand / Accent */
+  --accent-primary: #ff6a2a;
+  --accent-primary-hover: #ff7a42;
+  --accent-primary-active: #e85b1d;
+  --accent-secondary: #00e5ff;
+  --accent-info: #3b82f6;
+
+  /* Calendar */
+  --calendar-text-default: #f5f2ee;
+  --calendar-text-adjacent: #6e6862;
+  --calendar-sunday-current: #ff5c5c;
+  --calendar-sunday-adjacent: #7a3a3a;
+  --calendar-saturday-current: #4cc9f0;
+  --calendar-saturday-adjacent: #2f5f6e;
+  --calendar-selected-bg: #2a2521;
+  --calendar-selected-border: #ff6a2a;
+  --calendar-today-border: #b8b2aa;
+  --calendar-dot-empty: rgba(255, 255, 255, 0.12);
+
+  /* Reservation / Team */
+  --person-01: #dadada;
+  --team-01: #ff6a2a;
+  --team-02: #ff3b3b;
+  --team-03: #ffd60a;
+  --team-04: #a7f432;
+  --team-05: #06d6a0;
+  --team-06: #00e5ff;
+  --team-07: #4cc9f0;
+  --team-08: #4361ee;
+  --team-09: #3a0ca3;
+  --team-10: #7209b7;
+  --team-11: #b5179e;
+  --team-12: #f72585;
+  --team-13: #f9844a;
+  --team-14: #90be6d;
+  --team-15: #577590;
+  --team-16: #e76f51;
+  --team-text-light: #ffffff;
+  --team-text-dark: #1a1a1a;
+  --reservation-me: #00e5ff;
+  --reservation-pending: rgba(255, 106, 42, 0.45);
+  --reservation-dimmed: rgba(255, 255, 255, 0.12);
+  --state-inactive: #5c5650;
+
+  /* Product surfaces */
+  --kakao-bg: #252525;
+  --kakao-cymbol: #fee500;
+  --side-modal-bg: #1c1a18;
+  --info-card-bg: var(--bg-secondary);
+  --info-card-text: var(--text-muted);
+  --info-card-shadow: rgba(0, 0, 0, 0.25);
+}

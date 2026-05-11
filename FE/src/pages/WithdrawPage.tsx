@@ -1,14 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import logo from '../assets/B201_header_logo.png';
 import { InfoCircleIcon } from '../components/common/icons';
+import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
 
-import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
-import '../styles/withdraw.css';
+import '../styles/pages/withdraw.css';
 
-const WITHDRAW_NOTICE_LIST = [
+type WithdrawNotice = {
+    text: string;
+    isWarning?: boolean;
+};
+
+const WITHDRAW_TEXT = {
+    logoAlt: 'B201',
+    title: '정말 탈퇴하시나요?',
+    description: '탈퇴 전 아래 내용을 꼭 확인해주세요.',
+    confirmText: '위 내용을 모두 확인했으며 회원탈퇴에 동의합니다.',
+    submitButton: '탈퇴 신청하기',
+    toastMessage: '회원탈퇴가 완료되었어요.',
+} as const;
+
+const WITHDRAW_NOTICE_LIST: WithdrawNotice[] = [
     {
         text: '탈퇴 시 정보는 초기화되며, 다시 연결되지 않아요.',
         isWarning: true,
@@ -27,20 +42,37 @@ const WITHDRAW_NOTICE_LIST = [
     },
 ];
 
-const WithdrawPage = () => {
+const WITHDRAW_COLOR = {
+    warning: 'var(--text-error)',
+    checked: 'var(--accent-primary)',
+    unchecked: 'var(--text-muted)',
+} as const;
 
+const getNoticeTextClassName = (isWarning?: boolean) =>
+    isWarning ? 'is-warning' : '';
+
+const getNoticeIconColor = (isWarning?: boolean) =>
+    isWarning ? WITHDRAW_COLOR.warning : undefined;
+
+const getCheckIconColor = (isChecked: boolean) =>
+    isChecked ? WITHDRAW_COLOR.checked : WITHDRAW_COLOR.unchecked;
+
+const WithdrawPage = () => {
     const navigate = useNavigate();
+
     const [isChecked, setIsChecked] = useState(false);
+
     const handleToggle = () => {
         setIsChecked((prev) => !prev);
     };
+
     const handleSubmit = () => {
-        setIsChecked((prev) => !prev);
+        if (!isChecked) return;
 
         // TODO: 추후 회원탈퇴 API 호출 후 성공 시 이동
         navigate('/', {
             state: {
-                toastMessage: '회원탈퇴가 완료되었어요.',
+                toastMessage: WITHDRAW_TEXT.toastMessage,
             },
         });
     };
@@ -53,38 +85,35 @@ const WithdrawPage = () => {
                 <main className="withdraw-page__content">
                     <img
                         src={logo}
-                        alt="B201"
+                        alt={WITHDRAW_TEXT.logoAlt}
                         className="withdraw-page__logo"
                     />
 
                     <h1 className="withdraw-page__title">
-                        정말 탈퇴하시나요?
+                        {WITHDRAW_TEXT.title}
                     </h1>
 
                     <p className="withdraw-page__description">
-                        탈퇴 전 아래 내용을 꼭 확인해주세요.
+                        {WITHDRAW_TEXT.description}
                     </p>
 
-                    <section className="withdraw-notice">
+                    <section className="info-box withdraw-notice">
                         {WITHDRAW_NOTICE_LIST.map((notice) => (
                             <div
                                 key={notice.text}
-                                className="withdraw-notice__item"
+                                className="info-box__item withdraw-notice__item"
                             >
                                 <InfoCircleIcon
                                     size={16}
-                                    color={
-                                        notice.isWarning
-                                            ? 'var(--text-error)'
-                                            : undefined
-                                    }
+                                    color={getNoticeIconColor(
+                                        notice.isWarning,
+                                    )}
                                 />
+
                                 <p
-                                    className={
-                                        notice.isWarning
-                                            ? 'is-warning'
-                                            : ''
-                                    }
+                                    className={getNoticeTextClassName(
+                                        notice.isWarning,
+                                    )}
                                 >
                                     {notice.text}
                                 </p>
@@ -99,26 +128,21 @@ const WithdrawPage = () => {
                     >
                         <CheckCircleIcon
                             size={16}
-                            color={
-                                isChecked
-                                    ? 'var(--accent-primary)'
-                                    : 'var(--text-muted)'
-                            }
+                            color={getCheckIconColor(isChecked)}
                         />
-                        <span>
-                            위 내용을 모두 확인했으며 회원탈퇴에 동의합니다.
-                        </span>
+
+                        <span>{WITHDRAW_TEXT.confirmText}</span>
                     </button>
                 </main>
 
-                <div className="withdraw-page__bottom">
+                <div className="bottom-action withdraw-page__bottom">
                     <button
                         type="button"
-                        className="withdraw-page__submit"
+                        className="bottom-action__button withdraw-page__submit"
                         disabled={!isChecked}
                         onClick={handleSubmit}
                     >
-                        탈퇴 신청하기
+                        {WITHDRAW_TEXT.submitButton}
                     </button>
                 </div>
             </div>

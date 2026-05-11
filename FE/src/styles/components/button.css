@@ -13,8 +13,8 @@
 
   border: 0;
   border-radius: var(--radius-lg);
-  background: var(--accent-primary);
-  color: var(--team-text-light);
+  background: var(--button-filled-bg);
+  color: var(--button-filled-color);
   font-family: var(--font-title);
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
@@ -26,7 +26,7 @@
   position: sticky;
   bottom: 0;
   z-index: var(--z-overlay);
-  padding: 0 var(--space-16) 20px;
+  padding: 0 var(--space-16) var(--space-20);
   background: var(--bg-primary);
 }
 
@@ -35,8 +35,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -32px;
-  height: 32px;
+  top: calc(-1 * var(--space-32));
+  height: var(--space-32);
   background: linear-gradient(
     to top,
     var(--bg-primary) 0%,

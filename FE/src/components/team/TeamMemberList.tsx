@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { PlusCircleIcon } from '../common/icons';
 
+import { PlusCircleIcon } from '../common/icons';
+import { TEAM_MEMBER_LIST_TEXT } from '../../domains/team/constants';
+import type { TeamMember } from '../../types/team';
 import AddMemberModal from './AddMemberModal';
 import TeamMemberItem from './TeamMemberItem';
-
-export interface TeamMember {
-    id: number;
-    nickname: string;
-    role: 'LEADER' | 'MEMBER';
-}
 
 interface TeamMemberListProps {
     members: TeamMember[];
     isEditMode?: boolean;
     onRemoveMember?: (memberId: number) => void;
-    onAddMember?: () => void;
+    onAddMember?: (nickname: string) => void;
 }
 
 const TeamMemberList = ({
@@ -26,6 +22,8 @@ const TeamMemberList = ({
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] =
         useState(false);
 
+    const hasMembers = members.length > 0;
+
     const handleOpenAddMemberModal = () => {
         setIsAddMemberModalOpen(true);
     };
@@ -34,14 +32,19 @@ const TeamMemberList = ({
         setIsAddMemberModalOpen(false);
     };
 
+    const handleConfirmAddMember = (nickname: string) => {
+        onAddMember?.(nickname);
+        handleCloseAddMemberModal();
+    };
+
     return (
         <>
             <section className="team-member-list">
                 <h2 className="team-member-list__title">
-                    팀 멤버
+                    {TEAM_MEMBER_LIST_TEXT.title}
                 </h2>
 
-                {members.length > 0 ? (
+                {hasMembers ? (
                     <ul className="team-member-list__items">
                         {members.map((member) => (
                             <TeamMemberItem
@@ -57,7 +60,7 @@ const TeamMemberList = ({
                     </ul>
                 ) : (
                     <div className="team-member-list__empty">
-                        등록된 팀 멤버가 없어요.
+                        {TEAM_MEMBER_LIST_TEXT.emptyMessage}
                     </div>
                 )}
 
@@ -65,14 +68,12 @@ const TeamMemberList = ({
                     <button
                         type="button"
                         className="team-member-list__add-button"
-                        onClick={
-                            handleOpenAddMemberModal
-                        }
+                        onClick={handleOpenAddMemberModal}
                     >
                         <PlusCircleIcon size={18} />
 
                         <span className="team-member-list__add-text">
-                            멤버 추가하기
+                            {TEAM_MEMBER_LIST_TEXT.addButton}
                         </span>
                     </button>
                 )}
@@ -80,16 +81,8 @@ const TeamMemberList = ({
 
             {isAddMemberModalOpen && (
                 <AddMemberModal
-                    onCancel={
-                        handleCloseAddMemberModal
-                    }
-                    onConfirm={(nickname) => {
-                        onAddMember?.();
-
-                        console.log(nickname);
-
-                        handleCloseAddMemberModal();
-                    }}
+                    onCancel={handleCloseAddMemberModal}
+                    onConfirm={handleConfirmAddMember}
                 />
             )}
         </>
