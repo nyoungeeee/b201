@@ -7,6 +7,7 @@ class UserInfoSerializer(serializers.Serializer):
     class TeamSerializer(serializers.Serializer):
         id = serializers.IntegerField(required=True)
         name = serializers.CharField(required=True)
+        color = serializers.CharField(required=True)
 
     id = serializers.IntegerField(required=True)
     email = serializers.EmailField(required=False, allow_null=True)

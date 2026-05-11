@@ -1,8 +1,17 @@
 from django.urls import path
 
-from teams.views import TeamConfigView, TeamLeaderView, TeamMemberView, TeamMembersView
+from teams.views import (
+    TeamColorsView,
+    TeamConfigView,
+    TeamDetailView,
+    TeamLeaderView,
+    TeamMemberView,
+    TeamMembersView,
+)
 
 urlpatterns = [
+    path("colors/", TeamColorsView.as_view(), name="team_colors"),
+    path("<int:team_id>/", TeamDetailView.as_view(), name="team_detail"),
     path("<int:team_id>/members/", TeamMembersView.as_view(), name="team_members"),
     path(
         "<int:team_id>/members/<int:member_id>/",

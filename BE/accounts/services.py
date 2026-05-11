@@ -43,12 +43,16 @@ class UserInfoService:
     @staticmethod
     def _get_active_teams(user) -> list[dict[str, int | str]]:
         return [
-            {"id": team_membership.team.id, "name": team_membership.team.name}
+            {
+                "id": team_membership.team.id,
+                "name": team_membership.team.name,
+                "color": team_membership.team.color,
+            }
             for team_membership in user.team_memberships.filter(
                 status=TeamMemberStatus.ACTIVE,
                 team__status=TeamStatus.ACTIVE,
             )
-            .select_related("team")
+            .select_related("team", "team__team_color")
             .all()
         ]
 

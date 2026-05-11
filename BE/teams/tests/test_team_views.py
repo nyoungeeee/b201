@@ -4,7 +4,14 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
-from teams.models import Team, TeamMember, TeamMemberRole, TeamMemberStatus, TeamStatus
+from teams.models import (
+    Team,
+    TeamColor,
+    TeamMember,
+    TeamMemberRole,
+    TeamMemberStatus,
+    TeamStatus,
+)
 
 User = get_user_model()
 
@@ -12,6 +19,12 @@ User = get_user_model()
 @override_settings(ROOT_URLCONF="config.urls")
 class TeamAPITestCase(APITestCase):
     def setUp(self):
+        for index, color in enumerate(["000000", "111111", "AABBCC", "DDEEFF"]):
+            TeamColor.objects.update_or_create(
+                color=color,
+                defaults={"is_active": True, "display_order": index},
+            )
+
         self.leader = User.objects.create_user(kakao_id=4101, nickname="leader")
         self.member = User.objects.create_user(kakao_id=4102, nickname="member")
         self.new_user = User.objects.create_user(kakao_id=4103, nickname="newbie")
@@ -19,10 +32,10 @@ class TeamAPITestCase(APITestCase):
 
         self.team = Team.objects.create(
             name="team-a",
-            color="000000",
             owner=self.leader,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.filter(color="000000").update(team=self.team)
         TeamMember.objects.create(
             team=self.team,
             user=self.leader,
@@ -38,10 +51,10 @@ class TeamAPITestCase(APITestCase):
 
         self.other_team = Team.objects.create(
             name="team-b",
-            color="111111",
             owner=self.other_user,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.filter(color="111111").update(team=self.other_team)
         TeamMember.objects.create(
             team=self.other_team,
             user=self.other_user,
@@ -57,6 +70,28 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["members"]), 2)
         self.assertEqual(response.data["members"][0]["role"], TeamMemberRole.LEADER)
+
+    def test_get_team_detail(self):
+        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.team.id)
+        self.assertEqual(response.data["name"], self.team.name)
+        self.assertEqual(response.data["color"], "000000")
+        self.assertEqual(
+            response.data["color_id"],
+            TeamColor.objects.get(color="000000").id,
+        )
+        self.assertEqual(len(response.data["members"]), 2)
+        self.assertTrue(response.data["is_leader"])
+
+    def test_get_team_detail_returns_member_leader_false(self):
+        self._authenticate(self.member)
+
+        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_leader"])
 
     def test_add_team_member(self):
         response = self.client.post(
@@ -96,9 +131,11 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(response.data["id"], self.team.id)
 
     def test_update_team_config(self):
+        color = TeamColor.objects.get(color="AABBCC")
+
         response = self.client.patch(
             f"/api/v1/teams/{self.team.id}/config/",
-            {"name": "team-renamed", "color": "#AABBCC"},
+            {"name": "team-renamed", "color_id": color.id},
             format="json",
         )
 
@@ -106,6 +143,48 @@ class TeamAPITestCase(APITestCase):
         self.team.refresh_from_db()
         self.assertEqual(self.team.name, "team-renamed")
         self.assertEqual(self.team.color, "AABBCC")
+        self.assertEqual(response.data["color_id"], color.id)
+
+    def test_get_team_colors_returns_availability(self):
+        response = self.client.get("/api/v1/teams/colors/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        colors = {item["color"]: item["available"] for item in response.data["colors"]}
+        ids = {item["color"]: item["id"] for item in response.data["colors"]}
+        self.assertFalse(colors["000000"])
+        self.assertFalse(colors["111111"])
+        self.assertTrue(colors["AABBCC"])
+        self.assertEqual(ids["000000"], TeamColor.objects.get(color="000000").id)
+
+    def test_get_team_colors_with_team_id_keeps_current_color_available(self):
+        response = self.client.get(f"/api/v1/teams/colors/?team_id={self.team.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        colors = {item["color"]: item["available"] for item in response.data["colors"]}
+        self.assertTrue(colors["000000"])
+        self.assertFalse(colors["111111"])
+
+    def test_update_team_config_rejects_used_color(self):
+        color = TeamColor.objects.get(color="111111")
+
+        response = self.client.patch(
+            f"/api/v1/teams/{self.team.id}/config/",
+            {"color_id": color.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_TEAM_COLOR")
+
+    def test_update_team_config_rejects_unregistered_color(self):
+        response = self.client.patch(
+            f"/api/v1/teams/{self.team.id}/config/",
+            {"color_id": 999999},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_TEAM_COLOR")
 
     def test_member_cannot_add_team_member(self):
         self._authenticate(self.member)

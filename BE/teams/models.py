@@ -17,9 +17,31 @@ class TeamMemberStatus(models.TextChoices):
     LEFT = "LEFT", "LEFT"
 
 
+class TeamColor(models.Model):
+    color = models.CharField(max_length=6, unique=True)
+    team = models.OneToOneField(
+        "Team",
+        on_delete=models.SET_NULL,
+        related_name="team_color",
+        blank=True,
+        null=True,
+    )
+    is_active = models.BooleanField(default=True)
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "team_colors"
+        indexes = [
+            models.Index(fields=["team"]),
+            models.Index(fields=["is_active", "display_order"]),
+        ]
+
+    def __str__(self):
+        return self.color
+
+
 class Team(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    color = models.CharField(max_length=6)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -44,6 +66,13 @@ class Team(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
+
+    @property
+    def color(self):
+        try:
+            return self.team_color.color
+        except TeamColor.DoesNotExist:
+            return None
 
     def __str__(self):
         return self.name

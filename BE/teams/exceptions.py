@@ -41,6 +41,16 @@ class DuplicatedTeamNameError(TeamServiceError):
     message = "이미 존재하는 팀 이름입니다."
 
 
+class InvalidTeamColorError(TeamServiceError):
+    code = "INVALID_TEAM_COLOR"
+    message = "선택할 수 없는 팀 색상입니다."
+
+
+class DuplicatedTeamColorError(TeamServiceError):
+    code = "DUPLICATED_TEAM_COLOR"
+    message = "이미 사용 중인 팀 색상입니다."
+
+
 class AlreadyTeamMemberError(TeamServiceError):
     code = "ALREADY_TEAM_MEMBER"
     message = "이미 팀에 속한 사용자입니다."

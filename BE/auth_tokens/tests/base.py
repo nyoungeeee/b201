@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
 from auth_tokens.models import RefreshToken
-from teams.models import Team, TeamMember, TeamMemberStatus, TeamStatus
+from teams.models import Team, TeamColor, TeamMember, TeamMemberStatus, TeamStatus
 
 User = get_user_model()
 
@@ -22,10 +22,10 @@ class BaseAuthTokenAPITestCase(APITestCase):
         )
         self.team = Team.objects.create(
             name="team-a",
-            color="000000",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
+        TeamColor.objects.create(color="000000", team=self.team)
         TeamMember.objects.create(
             team=self.team,
             user=self.user,

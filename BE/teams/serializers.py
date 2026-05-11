@@ -1,5 +1,3 @@
-import re
-
 from rest_framework import serializers
 
 
@@ -29,21 +27,13 @@ class TeamMemberRemoveRequestSerializer(serializers.Serializer):
 
 class TeamConfigRequestSerializer(serializers.Serializer):
     name = serializers.CharField(required=False, max_length=50)
-    color = serializers.CharField(required=False, max_length=7)
+    color_id = serializers.IntegerField(required=False, min_value=1)
 
     def validate_name(self, value: str) -> str:
         name = value.strip()
         if not name:
             raise serializers.ValidationError("팀 이름은 비워둘 수 없습니다.")
         return name
-
-    def validate_color(self, value: str) -> str:
-        color = value.strip().lstrip("#")
-        if not re.fullmatch(r"[0-9A-Fa-f]{6}", color):
-            raise serializers.ValidationError(
-                "대표 색상은 6자리 HEX 형식이어야 합니다."
-            )
-        return color.upper()
 
     def validate(self, attrs):
         if not attrs:
@@ -56,4 +46,24 @@ class TeamConfigRequestSerializer(serializers.Serializer):
 class TeamConfigSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)
     name = serializers.CharField(required=True)
+    color_id = serializers.IntegerField(required=False, allow_null=True)
+    color = serializers.CharField(required=True, allow_null=True)
+
+
+class TeamColorSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=True)
     color = serializers.CharField(required=True)
+    available = serializers.BooleanField(required=True)
+
+
+class TeamColorListSerializer(serializers.Serializer):
+    colors = TeamColorSerializer(many=True, required=True)
+
+
+class TeamDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=True)
+    name = serializers.CharField(required=True)
+    color_id = serializers.IntegerField(required=False, allow_null=True)
+    color = serializers.CharField(required=True, allow_null=True)
+    members = TeamMemberSerializer(many=True, required=True)
+    is_leader = serializers.BooleanField(required=True)

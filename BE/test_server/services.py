@@ -37,12 +37,17 @@ class TestSigninService:
 
         return SigninResponse(
             id=user.id,
+            email=user.email,
             nickname=user.nickname,
             team=[
-                {"name": team_member.team.name, "id": team_member.team.id}
+                {
+                    "name": team_member.team.name,
+                    "id": team_member.team.id,
+                    "color": team_member.team.color,
+                }
                 for team_member in user.team_memberships.filter(
                     status=TeamMemberStatus.ACTIVE, team__status=TeamStatus.ACTIVE
-                ).select_related("team")
+                ).select_related("team", "team__team_color")
             ],
             token=token_status,
         )
