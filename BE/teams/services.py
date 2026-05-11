@@ -43,11 +43,13 @@ class TeamMemberList:
 class TeamConfig:
     id: int
     name: str
-    color: str
+    color_id: int | None
+    color: str | None
 
 
 @dataclass
 class TeamColorInfo:
+    id: int
     color: str
     available: bool
 
@@ -55,6 +57,16 @@ class TeamColorInfo:
 @dataclass
 class TeamColorList:
     colors: list[TeamColorInfo]
+
+
+@dataclass
+class TeamDetail:
+    id: int
+    name: str
+    color_id: int | None
+    color: str | None
+    members: list[TeamMemberInfo]
+    is_leader: bool
 
 
 class TeamQueryService:
@@ -80,6 +92,22 @@ class TeamQueryService:
         )
 
     @staticmethod
+    def get_detail(user, team_id: int) -> TeamDetail:
+        team = TeamQueryService._get_active_team(team_id)
+        membership = TeamQueryService._validate_active_member(user=user, team=team)
+        members = TeamQueryService._get_member_infos(team=team)
+        return TeamDetail(
+            id=team.id,
+            name=team.name,
+            color_id=TeamQueryService._get_color_id(team),
+            color=team.color,
+            members=members,
+            is_leader=(
+                team.owner_id == user.id or membership.role == TeamMemberRole.LEADER
+            ),
+        )
+
+    @staticmethod
     def get_colors(user, team_id: int | None = None) -> TeamColorList:
         current_team_id = None
         if team_id is not None:
@@ -95,6 +123,7 @@ class TeamQueryService:
         return TeamColorList(
             colors=[
                 TeamColorInfo(
+                    id=color.id,
                     color=color.color,
                     available=(
                         color.team_id is None
@@ -109,9 +138,35 @@ class TeamQueryService:
     @staticmethod
     def _get_active_team(team_id: int) -> Team:
         try:
-            return Team.objects.get(id=team_id, status=TeamStatus.ACTIVE)
+            return Team.objects.select_related("team_color").get(
+                id=team_id,
+                status=TeamStatus.ACTIVE,
+            )
         except Team.DoesNotExist:
             raise NotFoundTeamError()
+
+    @staticmethod
+    def _get_member_infos(team: Team) -> list[TeamMemberInfo]:
+        memberships = (
+            team.team_members.filter(status=TeamMemberStatus.ACTIVE)
+            .select_related("user")
+            .order_by("joined_at", "id")
+        )
+        return [
+            TeamMemberInfo(
+                id=membership.user_id,
+                nickname=membership.user.nickname,
+                role=TeamQueryService._resolve_role(team, membership),
+            )
+            for membership in memberships
+        ]
+
+    @staticmethod
+    def _get_color_id(team: Team) -> int | None:
+        try:
+            return team.team_color.id
+        except TeamColor.DoesNotExist:
+            return None
 
     @staticmethod
     def _validate_active_member(user, team: Team) -> TeamMember:
@@ -214,7 +269,12 @@ class TeamCommandService:
 
         team.owner = target_membership.user
         team.save(update_fields=["owner", "updated_at"])
-        return TeamConfig(id=team.id, name=team.name, color=team.color)
+        return TeamConfig(
+            id=team.id,
+            name=team.name,
+            color_id=TeamQueryService._get_color_id(team),
+            color=team.color,
+        )
 
     @staticmethod
     @transaction.atomic
@@ -222,7 +282,7 @@ class TeamCommandService:
         user,
         team_id: int,
         name: str | None = None,
-        color: str | None = None,
+        color_id: int | None = None,
     ) -> TeamConfig:
         team = TeamQueryService._get_active_team(team_id)
         TeamQueryService._validate_team_leader(user=user, team=team)
@@ -231,20 +291,25 @@ class TeamCommandService:
             if Team.objects.filter(name=name).exclude(id=team.id).exists():
                 raise DuplicatedTeamNameError()
             team.name = name
-        if color is not None:
-            TeamCommandService._assign_color(color=color, team=team)
+        if color_id is not None:
+            TeamCommandService._assign_color(color_id=color_id, team=team)
 
         try:
             team.save(update_fields=["name", "updated_at"])
         except IntegrityError as e:
             raise DuplicatedTeamNameError() from e
-        return TeamConfig(id=team.id, name=team.name, color=team.color)
+        return TeamConfig(
+            id=team.id,
+            name=team.name,
+            color_id=TeamQueryService._get_color_id(team),
+            color=team.color,
+        )
 
     @staticmethod
-    def _assign_color(color: str, team: Team) -> None:
+    def _assign_color(color_id: int, team: Team) -> None:
         try:
             target_color = TeamColor.objects.select_for_update().get(
-                color=color,
+                id=color_id,
                 is_active=True,
             )
         except TeamColor.DoesNotExist:

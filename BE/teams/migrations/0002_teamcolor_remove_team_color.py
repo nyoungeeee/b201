@@ -3,7 +3,6 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-
 DEFAULT_TEAM_COLORS = [
     "FF6A2A",
     "FF3B3B",
@@ -34,8 +33,8 @@ def seed_and_assign_team_colors(apps, schema_editor):
             defaults={"display_order": index, "is_active": True},
         )
 
-    for team in Team.objects.exclude(color__isnull=True).exclude(color="").order_by(
-        "id"
+    for team in (
+        Team.objects.exclude(color__isnull=True).exclude(color="").order_by("id")
     ):
         color = team.color.strip().lstrip("#").upper()
         team_color, created = TeamColor.objects.get_or_create(

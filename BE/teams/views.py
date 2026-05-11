@@ -32,6 +32,7 @@ from teams.serializers import (
     TeamColorListSerializer,
     TeamConfigRequestSerializer,
     TeamConfigSerializer,
+    TeamDetailSerializer,
     TeamMemberAddRequestSerializer,
     TeamMemberListSerializer,
     TeamMemberRemoveRequestSerializer,
@@ -83,6 +84,35 @@ class TeamColorsView(APIView):
             raise InternalServerErrorException() from e
 
         return Response(TeamColorListSerializer(colors).data, status=status.HTTP_200_OK)
+
+
+class TeamDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=TeamDetailSerializer,
+                description="팀 상세 정보 조회 성공",
+            ),
+            403: openapi_exception_response(ForbiddenTeamAccessError),
+            404: openapi_exception_response(NotFoundTeamError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="팀 이름, 색상, 멤버 목록, 내 팀장 여부를 조회합니다.",
+    )
+    def get(self, request, team_id: int):
+        try:
+            team = TeamQueryService.get_detail(user=request.user, team_id=team_id)
+        except NotFoundTeamError as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except ForbiddenTeamAccessError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except Exception as e:
+            logger.exception("Failed to get team detail.")
+            raise InternalServerErrorException() from e
+
+        return Response(TeamDetailSerializer(team).data, status=status.HTTP_200_OK)
 
 
 class TeamMembersView(APIView):
@@ -293,7 +323,7 @@ class TeamConfigView(APIView):
                 user=request.user,
                 team_id=team_id,
                 name=serializer.validated_data.get("name"),
-                color=serializer.validated_data.get("color"),
+                color_id=serializer.validated_data.get("color_id"),
             )
         except NotFoundTeamError as e:
             raise NotFoundException(code=e.code, message=e.message) from e

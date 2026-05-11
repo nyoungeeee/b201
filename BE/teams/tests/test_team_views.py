@@ -71,6 +71,28 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(len(response.data["members"]), 2)
         self.assertEqual(response.data["members"][0]["role"], TeamMemberRole.LEADER)
 
+    def test_get_team_detail(self):
+        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.team.id)
+        self.assertEqual(response.data["name"], self.team.name)
+        self.assertEqual(response.data["color"], "000000")
+        self.assertEqual(
+            response.data["color_id"],
+            TeamColor.objects.get(color="000000").id,
+        )
+        self.assertEqual(len(response.data["members"]), 2)
+        self.assertTrue(response.data["is_leader"])
+
+    def test_get_team_detail_returns_member_leader_false(self):
+        self._authenticate(self.member)
+
+        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_leader"])
+
     def test_add_team_member(self):
         response = self.client.post(
             f"/api/v1/teams/{self.team.id}/members/",
@@ -109,9 +131,11 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(response.data["id"], self.team.id)
 
     def test_update_team_config(self):
+        color = TeamColor.objects.get(color="AABBCC")
+
         response = self.client.patch(
             f"/api/v1/teams/{self.team.id}/config/",
-            {"name": "team-renamed", "color": "#AABBCC"},
+            {"name": "team-renamed", "color_id": color.id},
             format="json",
         )
 
@@ -119,15 +143,18 @@ class TeamAPITestCase(APITestCase):
         self.team.refresh_from_db()
         self.assertEqual(self.team.name, "team-renamed")
         self.assertEqual(self.team.color, "AABBCC")
+        self.assertEqual(response.data["color_id"], color.id)
 
     def test_get_team_colors_returns_availability(self):
         response = self.client.get("/api/v1/teams/colors/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         colors = {item["color"]: item["available"] for item in response.data["colors"]}
+        ids = {item["color"]: item["id"] for item in response.data["colors"]}
         self.assertFalse(colors["000000"])
         self.assertFalse(colors["111111"])
         self.assertTrue(colors["AABBCC"])
+        self.assertEqual(ids["000000"], TeamColor.objects.get(color="000000").id)
 
     def test_get_team_colors_with_team_id_keeps_current_color_available(self):
         response = self.client.get(f"/api/v1/teams/colors/?team_id={self.team.id}")
@@ -138,9 +165,11 @@ class TeamAPITestCase(APITestCase):
         self.assertFalse(colors["111111"])
 
     def test_update_team_config_rejects_used_color(self):
+        color = TeamColor.objects.get(color="111111")
+
         response = self.client.patch(
             f"/api/v1/teams/{self.team.id}/config/",
-            {"color": "111111"},
+            {"color_id": color.id},
             format="json",
         )
 
@@ -150,7 +179,7 @@ class TeamAPITestCase(APITestCase):
     def test_update_team_config_rejects_unregistered_color(self):
         response = self.client.patch(
             f"/api/v1/teams/{self.team.id}/config/",
-            {"color": "123456"},
+            {"color_id": 999999},
             format="json",
         )
 
