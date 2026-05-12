@@ -1,5 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+
 import logo from "../../assets/B201_logo.png";
+import { buildKakaoAuthorizeUrl } from '../../utils/kakaoAuth';
+import {
+    GUEST_NAV_MENU_ITEMS,
+    GUEST_NAV_TEXT,
+} from './constants';
 
 type Props = {
     onClose: () => void;
@@ -13,6 +19,11 @@ const GuestNavContent = ({ onClose }: Props) => {
         onClose();
     };
 
+    const handleKakaoLogin = () => {
+        onClose();
+        window.location.assign(buildKakaoAuthorizeUrl());
+    };
+
     return (
         <>
             <div className="side-nav-modal__logo side-nav-modal__logo--guest">
@@ -22,22 +33,25 @@ const GuestNavContent = ({ onClose }: Props) => {
             <button
                 type="button"
                 className="side-nav-modal__login"
-                onClick={onClose}
+                onClick={handleKakaoLogin}
             >
                 <span className="side-nav-modal__kakao-icon" />
-                카카오 계정으로 로그인하기
+                {GUEST_NAV_TEXT.kakaoLogin}
             </button>
 
             <div className="side-nav-modal__divider" />
 
             <nav className="side-nav-modal__menu">
-                <button
-                    type="button"
-                    className="side-nav-modal__menu-item"
-                    onClick={() => handleMove("/")}
-                >
-                    <span>예약 현황</span>
-                </button>
+                {GUEST_NAV_MENU_ITEMS.map(({ label, path }) => (
+                    <button
+                        key={path}
+                        type="button"
+                        className="side-nav-modal__menu-item"
+                        onClick={() => handleMove(path)}
+                    >
+                        <span>{label}</span>
+                    </button>
+                ))}
             </nav>
         </>
     );

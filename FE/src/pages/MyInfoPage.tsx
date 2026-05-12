@@ -29,7 +29,7 @@ const MyInfoPage = () => {
 
     return (
         <MobilePageLayout>
-            <PageHeader isLoggedIn={true} />
+            <PageHeader />
 
             <main className="my-info-page">
                 <section className="my-info-page__profile">

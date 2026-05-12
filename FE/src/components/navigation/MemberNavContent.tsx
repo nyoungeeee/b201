@@ -1,5 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+
 import logo from "../../assets/B201_logo.png";
+import { clearAuthSession } from '../../utils/authStorage';
+import {
+    MEMBER_NAV_MENU_ITEMS,
+    MEMBER_NAV_TEXT,
+} from './constants';
 
 type Props = {
     nickname?: string;
@@ -7,14 +13,24 @@ type Props = {
 };
 
 const MemberNavContent = ({
-    nickname = "닉네임은여덟글자",
+    nickname = MEMBER_NAV_TEXT.defaultNickname,
     onClose,
 }: Props) => {
     const navigate = useNavigate();
 
     const handleMove = (path: string) => {
         navigate(path);
-        onClose(); // 핵심
+        onClose();
+    };
+
+    const handleLogout = () => {
+        clearAuthSession();
+        navigate('/', {
+            state: {
+                toastMessage: MEMBER_NAV_TEXT.logoutToast,
+            },
+        });
+        onClose();
     };
 
     return (
@@ -26,11 +42,13 @@ const MemberNavContent = ({
 
                 <div className="side-nav-modal__user">
                     <p className="side-nav-modal__greeting">
-                        B201에 어서오세요!
+                        {MEMBER_NAV_TEXT.greeting}
                     </p>
                     <p className="side-nav-modal__nickname">
                         {nickname}
-                        <span className="side-nav-modal__nickname-suffix"> 님</span>
+                        <span className="side-nav-modal__nickname-suffix">
+                            {MEMBER_NAV_TEXT.nicknameSuffix}
+                        </span>
                     </p>
                 </div>
             </div>
@@ -38,47 +56,26 @@ const MemberNavContent = ({
             <div className="side-nav-modal__divider" />
 
             <nav className="side-nav-modal__menu">
-                <button
-                    type="button"
-                    className="side-nav-modal__menu-item"
-                    onClick={() => handleMove("/")}
-                >
-                    <span>예약 현황</span>
-                </button>
+                {MEMBER_NAV_MENU_ITEMS.map(({ label, path }, index) => (
+                    <button
+                        key={path}
+                        type="button"
+                        className="side-nav-modal__menu-item"
+                        onClick={() => handleMove(path)}
+                    >
+                        <span>{label}</span>
+                        {index > 0 && (
+                            <span className="side-nav-modal__arrow">&gt;</span>
+                        )}
+                    </button>
+                ))}
 
                 <button
                     type="button"
                     className="side-nav-modal__menu-item"
-                    onClick={() => handleMove("/reservation")}
+                    onClick={handleLogout}
                 >
-                    <span>내 예약 확인</span>
-                    <span className="side-nav-modal__arrow">›</span>
-                </button>
-
-                <button
-                    type="button"
-                    className="side-nav-modal__menu-item"
-                    onClick={() => handleMove("/my")}
-                >
-                    <span>내 정보 관리</span>
-                    <span className="side-nav-modal__arrow">›</span>
-                </button>
-
-                <button
-                    type="button"
-                    className="side-nav-modal__menu-item"
-                    onClick={() => handleMove("/team")}
-                >
-                    <span>내 팀 관리</span>
-                    <span className="side-nav-modal__arrow">›</span>
-                </button>
-
-                <button
-                    type="button"
-                    className="side-nav-modal__menu-item"
-                    onClick={onClose}
-                >
-                    <span>로그아웃</span>
+                    <span>{MEMBER_NAV_TEXT.logoutButton}</span>
                 </button>
             </nav>
         </>

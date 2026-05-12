@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+
 import GuestNavContent from "./GuestNavContent";
 import MemberNavContent from "./MemberNavContent";
+import { SIDE_NAV_TEXT } from "./constants";
 
 type Props = {
     isOpen: boolean;
@@ -44,9 +46,9 @@ const SideNavModal = ({ isOpen, onClose, isLoggedIn, nickname }: Props) => {
                     type="button"
                     className="side-nav-modal__close"
                     onClick={onClose}
-                    aria-label="메뉴 닫기"
+                    aria-label={SIDE_NAV_TEXT.closeAriaLabel}
                 >
-                    ×
+                    {SIDE_NAV_TEXT.closeButton}
                 </button>
 
                 {isLoggedIn ? (
