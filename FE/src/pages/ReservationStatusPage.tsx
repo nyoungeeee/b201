@@ -12,7 +12,7 @@ const ReservationStatusPage = () => {
     const [selectedDate, setSelectedDate] = useState(today);
 
     return (
-        <MobilePageLayout header={<PageHeader isLoggedIn={true} />}>
+        <MobilePageLayout header={<PageHeader />}>
             <div className="reservation-status-page">
                 <CalendarSection
                     selectedDate={selectedDate}
