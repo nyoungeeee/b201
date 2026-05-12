@@ -7,12 +7,14 @@ interface TeamEditActionsProps {
     teamId: number;
     teamName: string;
     teamColor: string;
+    teamColorId?: number | null;
 }
 
 const TeamEditActions = ({
     teamId,
     teamName,
     teamColor,
+    teamColorId,
 }: TeamEditActionsProps) => {
     const navigate = useNavigate();
 
@@ -35,6 +37,7 @@ const TeamEditActions = ({
                     id: teamId,
                     name: teamName,
                     color: teamColor,
+                    colorId: teamColorId,
                 },
             },
         });

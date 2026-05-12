@@ -21,7 +21,27 @@ export const teamMemberListResponseSchema = z.object({
 export const teamConfigResponseSchema = z.object({
     id: z.number(),
     name: z.string(),
+    color_id: z.number().nullable().optional(),
     color: hexColorSchema,
+});
+
+export const teamDetailResponseSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    color_id: z.number().nullable().optional(),
+    color: hexColorSchema,
+    members: z.array(teamMemberSchema),
+    is_leader: z.boolean(),
+});
+
+export const teamColorSchema = z.object({
+    id: z.number(),
+    color: hexColorSchema,
+    available: z.boolean(),
+});
+
+export const teamColorListResponseSchema = z.object({
+    colors: z.array(teamColorSchema),
 });
 
 export type TeamMemberApiResponse = z.infer<typeof teamMemberSchema>;
@@ -30,4 +50,11 @@ export type TeamMemberListApiResponse = z.infer<
 >;
 export type TeamConfigApiResponse = z.infer<
     typeof teamConfigResponseSchema
+>;
+export type TeamDetailApiResponse = z.infer<
+    typeof teamDetailResponseSchema
+>;
+export type TeamColorApiResponse = z.infer<typeof teamColorSchema>;
+export type TeamColorListApiResponse = z.infer<
+    typeof teamColorListResponseSchema
 >;

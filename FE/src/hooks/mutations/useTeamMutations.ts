@@ -6,6 +6,8 @@ import {
     removeTeamMember,
     updateTeamConfig,
 } from '../../apis/teamApi';
+import { teamDetailQueryKeys } from '../queries/useTeamDetail';
+import { teamColorQueryKeys } from '../queries/useTeamColors';
 import { teamMemberQueryKeys } from '../queries/useTeamMembers';
 
 interface TeamMutationOptions {
@@ -26,10 +28,16 @@ export const useAddTeamMember = ({
             nickname: string;
         }) => addTeamMember({ teamId, nickname, accessToken }),
         onSuccess: (members, { teamId }) => {
-            queryClient.setQueryData(
-                teamMemberQueryKeys.list(teamId),
-                members,
-            );
+            if (members) {
+                queryClient.setQueryData(
+                    teamMemberQueryKeys.list(teamId),
+                    members,
+                );
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: teamDetailQueryKeys.detail(teamId),
+            });
         },
     });
 };
@@ -48,10 +56,16 @@ export const useRemoveTeamMember = ({
             memberId: number;
         }) => removeTeamMember({ teamId, memberId, accessToken }),
         onSuccess: (members, { teamId }) => {
-            queryClient.setQueryData(
-                teamMemberQueryKeys.list(teamId),
-                members,
-            );
+            if (members) {
+                queryClient.setQueryData(
+                    teamMemberQueryKeys.list(teamId),
+                    members,
+                );
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: teamDetailQueryKeys.detail(teamId),
+            });
         },
     });
 };
@@ -73,6 +87,9 @@ export const useDelegateTeamLeader = ({
             queryClient.invalidateQueries({
                 queryKey: teamMemberQueryKeys.list(teamId),
             });
+            queryClient.invalidateQueries({
+                queryKey: teamDetailQueryKeys.detail(teamId),
+            });
         },
     });
 };
@@ -80,21 +97,31 @@ export const useDelegateTeamLeader = ({
 export const useUpdateTeamConfig = ({
     accessToken,
 }: TeamMutationOptions = {}) => {
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: ({
             teamId,
             name,
-            color,
+            colorId,
         }: {
             teamId: number;
             name?: string;
-            color?: string;
+            colorId?: number;
         }) =>
             updateTeamConfig({
                 teamId,
                 name,
-                color,
+                colorId,
                 accessToken,
             }),
+        onSuccess: (_, { teamId }) => {
+            queryClient.invalidateQueries({
+                queryKey: teamDetailQueryKeys.detail(teamId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: teamColorQueryKeys.list(teamId),
+            });
+        },
     });
 };

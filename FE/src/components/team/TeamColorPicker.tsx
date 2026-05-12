@@ -1,38 +1,38 @@
+import type { CSSProperties } from 'react';
+
 import { LockIcon } from '../common/icons';
 import { TEAM_COLOR_TEXT } from '../../domains/team/constants';
-import {
-    isUsedTeamColor,
-    TEAM_COLOR_OPTIONS,
-} from '../../domains/team/colors';
+import type { TeamColorOption } from '../../types/team';
 
 interface TeamColorPickerProps {
-    currentColor: string;
-    selectedColor: string;
-    onSelectColor: (color: string) => void;
+    colors: TeamColorOption[];
+    currentColorId?: number | null;
+    selectedColorId?: number | null;
+    onSelectColor: (color: TeamColorOption) => void;
 }
 
 const getColorLabel = ({
     color,
-    currentColor,
-    selectedColor,
+    currentColorId,
+    selectedColorId,
 }: {
-    color: string;
-    currentColor: string;
-    selectedColor: string;
+    color: TeamColorOption;
+    currentColorId?: number | null;
+    selectedColorId?: number | null;
 }) => {
-    if (isUsedTeamColor(color)) {
-        return TEAM_COLOR_TEXT.usedLabel;
-    }
-
     if (
-        color === selectedColor &&
-        color !== currentColor
+        color.id === selectedColorId &&
+        color.id !== currentColorId
     ) {
         return TEAM_COLOR_TEXT.selectedLabel;
     }
 
-    if (color === currentColor) {
+    if (color.id === currentColorId) {
         return TEAM_COLOR_TEXT.currentLabel;
+    }
+
+    if (!color.available) {
+        return TEAM_COLOR_TEXT.usedLabel;
     }
 
     return '';
@@ -40,46 +40,54 @@ const getColorLabel = ({
 
 const hasOuterRing = ({
     color,
-    currentColor,
-    selectedColor,
+    currentColorId,
+    selectedColorId,
 }: {
-    color: string;
-    currentColor: string;
-    selectedColor: string;
+    color: TeamColorOption;
+    currentColorId?: number | null;
+    selectedColorId?: number | null;
 }) => {
-    if (selectedColor === currentColor) {
-        return color === currentColor;
+    if (selectedColorId === currentColorId) {
+        return color.id === currentColorId;
     }
 
-    return color === selectedColor;
+    return color.id === selectedColorId;
 };
+
+const isDisabledColor = ({
+    color,
+    currentColorId,
+}: {
+    color: TeamColorOption;
+    currentColorId?: number | null;
+}) => !color.available && color.id !== currentColorId;
 
 const getColorButtonClassName = ({
     color,
-    currentColor,
-    selectedColor,
+    currentColorId,
+    selectedColorId,
 }: {
-    color: string;
-    currentColor: string;
-    selectedColor: string;
+    color: TeamColorOption;
+    currentColorId?: number | null;
+    selectedColorId?: number | null;
 }) =>
     [
         'team-color-page__color-button',
 
         hasOuterRing({
             color,
-            currentColor,
-            selectedColor,
+            currentColorId,
+            selectedColorId,
         }) && 'has-outer-ring',
 
-        isUsedTeamColor(color) && 'is-used',
+        isDisabledColor({ color, currentColorId }) && 'is-used',
     ]
         .filter(Boolean)
         .join(' ');
 
 const getColorButtonStyle = (
     color: string,
-): React.CSSProperties & {
+): CSSProperties & {
     '--team-color': string;
 } => ({
     '--team-color': color,
@@ -89,13 +97,14 @@ const getColorAriaLabel = ({
     color,
     label,
 }: {
-    color: string;
+    color: TeamColorOption;
     label: string;
-}) => label || `${color} 색상 선택`;
+}) => label || `${color.color} 색상 선택`;
 
 const TeamColorPicker = ({
-    currentColor,
-    selectedColor,
+    colors,
+    currentColorId,
+    selectedColorId,
     onSelectColor,
 }: TeamColorPickerProps) => {
     return (
@@ -105,34 +114,38 @@ const TeamColorPicker = ({
             </h2>
 
             <ul className="team-color-page__color-list">
-                {TEAM_COLOR_OPTIONS.map((color) => {
+                {colors.map((color) => {
+                    const disabled = isDisabledColor({
+                        color,
+                        currentColorId,
+                    });
                     const label = getColorLabel({
                         color,
-                        currentColor,
-                        selectedColor,
+                        currentColorId,
+                        selectedColorId,
                     });
 
                     return (
                         <li
-                            key={color}
+                            key={color.id}
                             className="team-color-page__color-item"
                         >
                             <button
                                 type="button"
                                 className={getColorButtonClassName({
                                     color,
-                                    currentColor,
-                                    selectedColor,
+                                    currentColorId,
+                                    selectedColorId,
                                 })}
-                                style={getColorButtonStyle(color)}
+                                style={getColorButtonStyle(color.color)}
                                 onClick={() => onSelectColor(color)}
-                                disabled={isUsedTeamColor(color)}
+                                disabled={disabled}
                                 aria-label={getColorAriaLabel({
                                     color,
                                     label,
                                 })}
                             >
-                                {isUsedTeamColor(color) && (
+                                {disabled && (
                                     <span className="team-color-page__lock">
                                         <LockIcon size={15} />
                                     </span>

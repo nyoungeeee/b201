@@ -3,17 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
+import { useAuthSession } from '../hooks/useAuthSession';
 
 const MY_INFO_DETAIL_TEXT = {
     title: '내 정보 확인',
     description: (
         <>
-            현재 로그인한 계정에 대한 <br />
+            현재 로그인한 계정에 대한
+            <br />
             SNS 연동 정보를 확인할 수 있어요.
         </>
     ),
     snsLabel: '연동 SNS',
     emailLabel: 'SNS 계정',
+    provider: 'kakao',
+    emptyEmail: '-',
 } as const;
 
 const MY_INFO_DETAIL_ROUTES = [
@@ -31,12 +35,6 @@ const MY_INFO_DETAIL_ROUTES = [
     },
 ] as const;
 
-const USER = {
-    email: 'testkakaoemail@kakao.com',
-    provider: 'kakao',
-    nickname: '',
-} as const;
-
 const SNS_ICON = {
     kakao: {
         src: '/icons/kakao.png',
@@ -46,6 +44,7 @@ const SNS_ICON = {
 
 const MyInfoDetailPage = () => {
     const navigate = useNavigate();
+    const { user } = useAuthSession();
 
     return (
         <MobilePageLayout>
@@ -75,7 +74,7 @@ const MyInfoDetailPage = () => {
                                 alt={SNS_ICON.kakao.alt}
                                 className="my-info-detail__sns-icon"
                             />
-                            <span>{USER.provider}</span>
+                            <span>{MY_INFO_DETAIL_TEXT.provider}</span>
                         </div>
                     </div>
 
@@ -84,7 +83,7 @@ const MyInfoDetailPage = () => {
                             {MY_INFO_DETAIL_TEXT.emailLabel}
                         </span>
                         <span className="my-info-detail__value">
-                            {USER.email}
+                            {user?.email ?? MY_INFO_DETAIL_TEXT.emptyEmail}
                         </span>
                     </div>
 

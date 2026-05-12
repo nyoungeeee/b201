@@ -64,8 +64,11 @@ export const isUsedTeamColor = (color: string) =>
 export const toTeamColorVar = (color: string) => {
     const normalized = normalizeHexColor(color);
 
-    return TEAM_COLOR_MAP[normalized] ?? color;
+    return TEAM_COLOR_MAP[normalized] ?? normalized;
 };
+
+export const toTeamColorCssValue = (color: string) =>
+    toTeamColorVar(color);
 
 export const toTeamColorHex = (color: string) => {
     const normalized = normalizeHexColor(color);

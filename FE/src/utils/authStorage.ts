@@ -35,6 +35,11 @@ export const getAuthUser = (): AuthUser | null => {
     }
 };
 
+export const saveAuthUser = (user: AuthUser) => {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    notifyAuthSessionChange();
+};
+
 export const clearAuthSession = () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);

@@ -4,12 +4,14 @@ import TeamActionModal from './TeamActionModal';
 
 interface RemoveMemberModalProps {
     nickname: string;
+    isConfirmDisabled?: boolean;
     onCancel: () => void;
     onConfirm: () => void;
 }
 
 const RemoveMemberModal = ({
     nickname,
+    isConfirmDisabled = false,
     onCancel,
     onConfirm,
 }: RemoveMemberModalProps) => {
@@ -21,6 +23,7 @@ const RemoveMemberModal = ({
             cancelLabel={REMOVE_MEMBER_MODAL_TEXT.cancelButton}
             confirmLabel={REMOVE_MEMBER_MODAL_TEXT.confirmButton}
             confirmVariant="danger"
+            isConfirmDisabled={isConfirmDisabled}
             onCancel={onCancel}
             onConfirm={onConfirm}
         />

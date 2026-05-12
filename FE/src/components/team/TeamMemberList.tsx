@@ -81,6 +81,9 @@ const TeamMemberList = ({
 
             {isAddMemberModalOpen && (
                 <AddMemberModal
+                    existingMemberNicknames={members.map(
+                        (member) => member.nickname,
+                    )}
                     onCancel={handleCloseAddMemberModal}
                     onConfirm={handleConfirmAddMember}
                 />

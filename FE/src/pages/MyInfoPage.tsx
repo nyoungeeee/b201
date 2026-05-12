@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
+import { useAuthSession } from '../hooks/useAuthSession';
 
 const MY_INFO_TEXT = {
-    greeting: '안녕하세요, 무엇을 찾으시나요?',
+    greeting: '안녕하세요. 무엇을 찾으시나요?',
     nicknameSuffix: '님',
+    defaultNickname: '사용자',
 } as const;
 
 const MY_INFO_MENU = [
@@ -20,12 +22,10 @@ const MY_INFO_MENU = [
     },
 ] as const;
 
-const USER = {
-    nickname: '닉네임은여덟글자',
-} as const;
-
 const MyInfoPage = () => {
     const navigate = useNavigate();
+    const { user } = useAuthSession();
+    const nickname = user?.nickname ?? MY_INFO_TEXT.defaultNickname;
 
     return (
         <MobilePageLayout>
@@ -38,7 +38,7 @@ const MyInfoPage = () => {
                     </p>
 
                     <h1 className="my-info-page__nickname">
-                        {USER.nickname}
+                        {nickname}
 
                         <span className="my-info-page__nickname__suffix">
                             {' '}

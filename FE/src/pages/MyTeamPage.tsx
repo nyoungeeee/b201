@@ -2,15 +2,17 @@ import { useNavigate } from 'react-router-dom';
 
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
-import PageSubHeader from '../components/layout/PageSubHeader';
+import PageHeader from '../components/layout/PageHeader';
 import { MY_TEAM_TEXT } from '../domains/team/constants';
-import { MOCK_TEAMS } from '../domains/team/mock';
 import { TEAM_ROUTE } from '../domains/team/routes';
+import { useAuthSession } from '../hooks/useAuthSession';
 
 const MyTeamPage = () => {
     const navigate = useNavigate();
+    const { user } = useAuthSession();
 
-    const hasTeams = MOCK_TEAMS.length > 0;
+    const teams = user?.team ?? [];
+    const hasTeams = teams.length > 0;
 
     const handleMoveTeamDetail = (teamId: number) => {
         navigate(TEAM_ROUTE.detail(teamId));
@@ -18,7 +20,7 @@ const MyTeamPage = () => {
 
     return (
         <MobilePageLayout>
-            <PageSubHeader />
+            <PageHeader />
 
             <main className="my-team-page">
                 <section className="my-team-page__intro">
@@ -33,7 +35,7 @@ const MyTeamPage = () => {
 
                 {hasTeams ? (
                     <ul className="my-team-page__list">
-                        {MOCK_TEAMS.map((team) => (
+                        {teams.map((team) => (
                             <li
                                 key={team.id}
                                 className="my-team-page__item"
@@ -45,7 +47,9 @@ const MyTeamPage = () => {
                                         handleMoveTeamDetail(team.id)
                                     }
                                 >
-                                    <span>{team.name}</span>
+                                    <span className="my-team-page__team-name">
+                                        {team.name}
+                                    </span>
 
                                     <ChevronRightIcon />
                                 </button>

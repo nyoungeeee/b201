@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import {
+    checkNicknameAvailability,
+    updateMyNickname,
+} from '../apis/accountApi';
 import logo from '../assets/B201_header_logo.png';
 import { InfoCircleIcon } from '../components/common/icons';
 import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
 import ErrorCircleIcon from '../components/common/icons/ErrorCircleIcon';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
-import { DUMMY_NICKNAME, MAX_LENGTH } from '../constants/global';
+import { MAX_LENGTH } from '../constants/global';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { saveAuthUser } from '../utils/authStorage';
 import { getNicknameLength, isValidNickname } from '../utils/commonUtils';
 
 type NicknameCheckStatus = 'unchecked' | 'available' | 'unavailable';
@@ -71,14 +77,23 @@ const getNicknameMessage = (checkStatus: NicknameCheckStatus) => {
 
 const NicknameEditPage = () => {
     const navigate = useNavigate();
+    const { accessToken, user } = useAuthSession();
 
-    const [nickname, setNickname] = useState('');
+    const [nickname, setNickname] = useState(user?.nickname ?? '');
     const [checkStatus, setCheckStatus] =
         useState<NicknameCheckStatus>('unchecked');
+    const [isChecking, setIsChecking] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const isFormatValid = isValidNickname(nickname);
+    useEffect(() => {
+        setNickname(user?.nickname ?? '');
+    }, [user?.nickname]);
+
+    const trimmedNickname = nickname.trim();
+    const isFormatValid = isValidNickname(trimmedNickname);
     const isAvailable = checkStatus === 'available';
     const nicknameMessage = getNicknameMessage(checkStatus);
+    const isBusy = isChecking || isSubmitting;
 
     const handleClear = () => {
         setNickname('');
@@ -95,24 +110,55 @@ const NicknameEditPage = () => {
         setCheckStatus('unchecked');
     };
 
-    const handleCheckNickname = () => {
-        if (!isValidNickname(nickname)) return;
+    const handleCheckNickname = async () => {
+        if (!isFormatValid) return;
 
-        // TODO: 추후 닉네임 중복 검사 API로 교체
-        const isDuplicated = DUMMY_NICKNAME.includes(nickname);
+        if (!accessToken) {
+            console.error('Nickname check requires login.');
+            return;
+        }
 
-        setCheckStatus(isDuplicated ? 'unavailable' : 'available');
+        try {
+            setIsChecking(true);
+
+            const available = await checkNicknameAvailability({
+                nickname: trimmedNickname,
+                accessToken,
+            });
+
+            setCheckStatus(available ? 'available' : 'unavailable');
+        } catch (error) {
+            console.error('Nickname check failed:', error);
+            setCheckStatus('unchecked');
+        } finally {
+            setIsChecking(false);
+        }
     };
 
-    const handleSubmit = () => {
-        if (!isAvailable) return;
+    const handleSubmit = async () => {
+        if (!isAvailable || !accessToken) return;
 
-        // TODO: 추후 닉네임 변경 API 호출 후 성공 시 이동
-        navigate('/my', {
-            state: {
-                toastMessage: NICKNAME_TEXT.toastMessage,
-            },
-        });
+        try {
+            setIsSubmitting(true);
+
+            const updatedUser = await updateMyNickname({
+                nickname: trimmedNickname,
+                accessToken,
+            });
+
+            saveAuthUser(updatedUser);
+
+            navigate('/my', {
+                state: {
+                    toastMessage: NICKNAME_TEXT.toastMessage,
+                },
+            });
+        } catch (error) {
+            console.error('Nickname update failed:', error);
+            setCheckStatus('unavailable');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -143,6 +189,7 @@ const NicknameEditPage = () => {
                                     value={nickname}
                                     onChange={handleChange}
                                     placeholder={NICKNAME_TEXT.placeholder}
+                                    disabled={isBusy}
                                 />
 
                                 {checkStatus === 'available' && (
@@ -157,6 +204,7 @@ const NicknameEditPage = () => {
                                         className="form-input__action nickname-form__status-icon"
                                         onClick={handleClear}
                                         aria-label={NICKNAME_TEXT.clearAriaLabel}
+                                        disabled={isBusy}
                                     >
                                         <ErrorCircleIcon size={18} />
                                     </button>
@@ -166,7 +214,7 @@ const NicknameEditPage = () => {
                             <button
                                 type="button"
                                 className="nickname-form__check-button"
-                                disabled={!isFormatValid}
+                                disabled={!isFormatValid || isBusy}
                                 onClick={handleCheckNickname}
                             >
                                 {NICKNAME_TEXT.checkButton}
@@ -205,7 +253,7 @@ const NicknameEditPage = () => {
                     <button
                         type="button"
                         className="bottom-action__button nickname-edit-page__submit"
-                        disabled={!isAvailable}
+                        disabled={!isAvailable || isBusy}
                         onClick={handleSubmit}
                     >
                         {NICKNAME_TEXT.submitButton}

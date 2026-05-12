@@ -111,11 +111,22 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .page-header__logo img {
   height: var(--space-40);
   object-fit: contain;
+}
+
+.page-header__logo:active {
+  opacity: 0.7;
 }
 
 /* 우측 영역 */
