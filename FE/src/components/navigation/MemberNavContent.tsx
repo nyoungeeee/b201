@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
+import { ChevronRightIcon } from '../common/icons';
 import logo from "../../assets/B201_logo.png";
 import { clearAuthSession } from '../../utils/authStorage';
 import {
@@ -65,7 +66,9 @@ const MemberNavContent = ({
                     >
                         <span>{label}</span>
                         {index > 0 && (
-                            <span className="side-nav-modal__arrow">&gt;</span>
+                            <span className="side-nav-modal__arrow">
+                                <ChevronRightIcon />
+                            </span>
                         )}
                     </button>
                 ))}

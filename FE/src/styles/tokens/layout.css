@@ -1,5 +1,6 @@
 :root {
-  --mobile-max-width: 390px;
+  --mobile-min-width: 390px;
+  --mobile-max-width: 600px;
   --page-horizontal-padding: 16px;
   --header-height: 70px;
   --month-header-height: 50px;

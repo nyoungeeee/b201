@@ -35,7 +35,7 @@ const GuestNavContent = ({ onClose }: Props) => {
                 className="side-nav-modal__login"
                 onClick={handleKakaoLogin}
             >
-                <span className="side-nav-modal__kakao-icon" />
+                <span className="side-nav-modal__kakao-icon" aria-hidden="true" />
                 {GUEST_NAV_TEXT.kakaoLogin}
             </button>
 
