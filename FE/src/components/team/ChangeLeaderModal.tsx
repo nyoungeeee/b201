@@ -5,12 +5,14 @@ import TeamActionModal from './TeamActionModal';
 interface ChangeLeaderModalProps {
     id: number;
     nickname: string;
+    isConfirmDisabled?: boolean;
     onCancel: () => void;
     onConfirm: () => void;
 }
 
 const ChangeLeaderModal = ({
     nickname,
+    isConfirmDisabled = false,
     onCancel,
     onConfirm,
 }: ChangeLeaderModalProps) => {
@@ -27,6 +29,7 @@ const ChangeLeaderModal = ({
             cancelLabel={CHANGE_LEADER_MODAL_TEXT.cancelButton}
             confirmLabel={CHANGE_LEADER_MODAL_TEXT.confirmButton}
             confirmVariant="confirm"
+            isConfirmDisabled={isConfirmDisabled}
             onCancel={onCancel}
             onConfirm={onConfirm}
         />

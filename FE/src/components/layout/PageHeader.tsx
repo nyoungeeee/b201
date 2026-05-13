@@ -1,58 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import logo from "../../assets/B201_header_logo.png";
-import {
-    AUTH_SESSION_EVENT,
-    getAccessToken,
-    getAuthUser,
-} from "../../utils/authStorage";
-import { HamburgerIcon } from "../common/icons";
-import SideNavModal from "../navigation/SideNavModal";
-
-type AuthHeaderState = {
-    isLoggedIn: boolean;
-    nickname?: string;
-};
-
-const readAuthHeaderState = (): AuthHeaderState => {
-    const accessToken = getAccessToken();
-    const authUser = getAuthUser();
-
-    return {
-        isLoggedIn: !!accessToken,
-        nickname: authUser?.nickname ?? undefined,
-    };
-};
+import logo from '../../assets/B201_header_logo.png';
+import { useAuthSession } from '../../hooks/useAuthSession';
+import { HamburgerIcon } from '../common/icons';
+import SideNavModal from '../navigation/SideNavModal';
 
 const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
-    const [authState, setAuthState] =
-        useState<AuthHeaderState>(readAuthHeaderState);
+    const { isLoggedIn, user } = useAuthSession();
 
     useEffect(() => {
         if (!isSideNavOpen) return;
 
         const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
+        document.body.style.overflow = 'hidden';
 
         return () => {
             document.body.style.overflow = originalOverflow;
         };
     }, [isSideNavOpen]);
-
-    useEffect(() => {
-        const syncAuthState = () => {
-            setAuthState(readAuthHeaderState());
-        };
-
-        window.addEventListener(AUTH_SESSION_EVENT, syncAuthState);
-        window.addEventListener("storage", syncAuthState);
-
-        return () => {
-            window.removeEventListener(AUTH_SESSION_EVENT, syncAuthState);
-            window.removeEventListener("storage", syncAuthState);
-        };
-    }, []);
 
     return (
         <>
@@ -66,9 +33,13 @@ const PageHeader = () => {
                     <HamburgerIcon />
                 </button>
 
-                <div className="page-header__logo">
+                <Link
+                    to="/"
+                    className="page-header__logo"
+                    aria-label="예약 현황으로 이동"
+                >
                     <img src={logo} alt="B201" />
-                </div>
+                </Link>
 
                 <div className="page-header__right" />
             </header>
@@ -76,8 +47,8 @@ const PageHeader = () => {
             <SideNavModal
                 isOpen={isSideNavOpen}
                 onClose={() => setIsSideNavOpen(false)}
-                isLoggedIn={authState.isLoggedIn}
-                nickname={authState.nickname}
+                isLoggedIn={isLoggedIn}
+                nickname={user?.nickname ?? undefined}
             />
         </>
     );

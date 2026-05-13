@@ -1,11 +1,12 @@
-import { useState } from "react";
-import BottomHero from "../components/branding/BottomHero";
-import CalendarSection from "../components/calendar/CalendarSection";
-import MobilePageLayout from "../components/layout/MobilePageLayout";
-import PageHeader from "../components/layout/PageHeader";
-import ReservationApplyButton from "../components/reservation/ReservationApplyButton";
-import TimelineSection from "../components/timeline/TimelineSection";
-import { getTodayInSeoul } from "../utils/timelineUtils";
+import { useState } from 'react';
+
+import BottomHero from '../components/branding/BottomHero';
+import CalendarSection from '../components/calendar/CalendarSection';
+import MobilePageLayout from '../components/layout/MobilePageLayout';
+import PageHeader from '../components/layout/PageHeader';
+import ReservationApplyButton from '../components/reservation/ReservationApplyButton';
+import TimelineSection from '../components/timeline/TimelineSection';
+import { getTodayInSeoul } from '../utils/timelineUtils';
 
 const ReservationStatusPage = () => {
     const today = getTodayInSeoul();

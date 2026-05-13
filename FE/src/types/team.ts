@@ -21,4 +21,16 @@ export interface TeamSummary {
     id: number;
     name: string;
     color: string;
+    colorId?: number | null;
+}
+
+export interface TeamDetail extends TeamSummary {
+    members: TeamMember[];
+    isLeader: boolean;
+}
+
+export interface TeamColorOption {
+    id: number;
+    color: string;
+    available: boolean;
 }

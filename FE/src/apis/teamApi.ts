@@ -1,16 +1,37 @@
 import { API_BASE_URL } from '../constants/env';
 import {
+    teamColorListResponseSchema,
     teamConfigResponseSchema,
+    teamDetailResponseSchema,
     teamMemberListResponseSchema,
 } from '../types/teamSchemas';
-import type { TeamMember, TeamSummary } from '../types/team';
+import type {
+    TeamColorOption,
+    TeamDetail,
+    TeamMember,
+    TeamSummary,
+} from '../types/team';
 import {
+    mapTeamColorsResponse,
     mapTeamConfigResponse,
+    mapTeamDetailResponse,
     mapTeamMembersResponse,
 } from '../domains/team/mapper';
 
 interface TeamRequestOptions {
     accessToken?: string;
+}
+
+interface GetTeamColorsParams extends TeamRequestOptions {
+    teamId?: number;
+}
+
+interface GetTeamDetailParams extends TeamRequestOptions {
+    teamId: number;
+}
+
+interface GetTeamMembersParams extends TeamRequestOptions {
+    teamId: number;
 }
 
 interface AddTeamMemberParams extends TeamRequestOptions {
@@ -31,23 +52,21 @@ interface DelegateTeamLeaderParams extends TeamRequestOptions {
 interface UpdateTeamConfigParams extends TeamRequestOptions {
     teamId: number;
     name?: string;
-    color?: string;
-}
-
-interface GetTeamMembersParams extends TeamRequestOptions {
-    teamId: number;
+    colorId?: number;
 }
 
 const TEAM_API_MESSAGE = {
+    colorsFetchError: '팀 색상 목록 조회에 실패했습니다.',
+    detailFetchError: '팀 상세 조회에 실패했습니다.',
     membersFetchError: '팀 멤버 조회에 실패했습니다.',
     memberAddError: '팀 멤버 추가에 실패했습니다.',
     memberRemoveError: '팀 멤버 제거에 실패했습니다.',
     leaderDelegateError: '팀 리더 위임에 실패했습니다.',
     configUpdateError: '팀 정보 변경에 실패했습니다.',
-    membersResponseError:
-        '팀 멤버 응답 형식이 올바르지 않습니다.',
-    configResponseError:
-        '팀 정보 응답 형식이 올바르지 않습니다.',
+    colorsResponseError: '팀 색상 목록 응답 형식이 올바르지 않습니다.',
+    detailResponseError: '팀 상세 응답 형식이 올바르지 않습니다.',
+    membersResponseError: '팀 멤버 응답 형식이 올바르지 않습니다.',
+    configResponseError: '팀 정보 응답 형식이 올바르지 않습니다.',
 } as const;
 
 const buildTeamUrl = (path: string) =>
@@ -78,6 +97,21 @@ const requestJson = async <T>(
     return response.json() as Promise<T>;
 };
 
+const parseTeamColors = (rawData: unknown): TeamColorOption[] => {
+    const parsedResult =
+        teamColorListResponseSchema.safeParse(rawData);
+
+    if (!parsedResult.success) {
+        console.error(
+            'Team colors API validation failed:',
+            parsedResult.error.format(),
+        );
+        throw new Error(TEAM_API_MESSAGE.colorsResponseError);
+    }
+
+    return mapTeamColorsResponse(parsedResult.data);
+};
+
 const parseTeamMembers = (rawData: unknown): TeamMember[] => {
     const parsedResult =
         teamMemberListResponseSchema.safeParse(rawData);
@@ -106,6 +140,61 @@ const parseTeamConfig = (rawData: unknown): TeamSummary => {
     }
 
     return mapTeamConfigResponse(parsedResult.data);
+};
+
+const parseTeamDetail = (rawData: unknown): TeamDetail => {
+    const parsedResult =
+        teamDetailResponseSchema.safeParse(rawData);
+
+    if (!parsedResult.success) {
+        console.error(
+            'Team detail API validation failed:',
+            parsedResult.error.format(),
+        );
+        throw new Error(TEAM_API_MESSAGE.detailResponseError);
+    }
+
+    return mapTeamDetailResponse(parsedResult.data);
+};
+
+export const getTeamColors = async ({
+    teamId,
+    accessToken,
+}: GetTeamColorsParams): Promise<TeamColorOption[]> => {
+    const searchParams = new URLSearchParams();
+
+    if (teamId) {
+        searchParams.set('team_id', String(teamId));
+    }
+
+    const queryString = searchParams.toString();
+
+    const rawData = await requestJson<unknown>(
+        `${buildTeamUrl('colors/')}${queryString ? `?${queryString}` : ''}`,
+        {
+            method: 'GET',
+            headers: buildHeaders(accessToken),
+        },
+        TEAM_API_MESSAGE.colorsFetchError,
+    );
+
+    return parseTeamColors(rawData);
+};
+
+export const getTeamDetail = async ({
+    teamId,
+    accessToken,
+}: GetTeamDetailParams): Promise<TeamDetail> => {
+    const rawData = await requestJson<unknown>(
+        buildTeamUrl(`${teamId}/`),
+        {
+            method: 'GET',
+            headers: buildHeaders(accessToken),
+        },
+        TEAM_API_MESSAGE.detailFetchError,
+    );
+
+    return parseTeamDetail(rawData);
 };
 
 export const getTeamMembers = async ({
@@ -146,15 +235,32 @@ export const removeTeamMember = async ({
     teamId,
     memberId,
     accessToken,
-}: RemoveTeamMemberParams): Promise<TeamMember[]> => {
-    const rawData = await requestJson<unknown>(
+}: RemoveTeamMemberParams): Promise<TeamMember[] | undefined> => {
+    const response = await fetch(
         buildTeamUrl(`${teamId}/members/${memberId}/`),
         {
             method: 'DELETE',
             headers: buildHeaders(accessToken),
         },
-        TEAM_API_MESSAGE.memberRemoveError,
     );
+
+    if (!response.ok) {
+        throw new Error(
+            `${TEAM_API_MESSAGE.memberRemoveError} (status: ${response.status})`,
+        );
+    }
+
+    if (response.status === 204) {
+        return undefined;
+    }
+
+    const responseText = await response.text();
+
+    if (!responseText) {
+        return undefined;
+    }
+
+    const rawData: unknown = JSON.parse(responseText);
 
     return parseTeamMembers(rawData);
 };
@@ -180,12 +286,12 @@ export const delegateTeamLeader = async ({
 export const updateTeamConfig = async ({
     teamId,
     name,
-    color,
+    colorId,
     accessToken,
 }: UpdateTeamConfigParams): Promise<TeamSummary> => {
     const body = {
         ...(name !== undefined ? { name } : {}),
-        ...(color !== undefined ? { color } : {}),
+        ...(colorId !== undefined ? { color_id: colorId } : {}),
     };
 
     const rawData = await requestJson<unknown>(

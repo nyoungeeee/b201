@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
@@ -8,11 +8,16 @@ import TeamEditActions from '../components/team/TeamEditActions';
 import TeamMemberList from '../components/team/TeamMemberList';
 import TeamNoticeBox from '../components/team/TeamNoticeBox';
 import TeamProfileCard from '../components/team/TeamProfileCard';
-import { MY_TEAM_DETAIL_TEXT } from '../domains/team/constants';
 import {
-    MOCK_TEAM_INFO,
-    MOCK_TEAM_MEMBERS,
-} from '../domains/team/mock';
+    MY_TEAM_DETAIL_TEXT,
+    MY_TEAM_TEXT,
+} from '../domains/team/constants';
+import {
+    useAddTeamMember,
+    useRemoveTeamMember,
+} from '../hooks/mutations/useTeamMutations';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { useTeamDetail } from '../hooks/queries/useTeamDetail';
 
 type RemoveTarget = {
     id: number;
@@ -22,6 +27,16 @@ type RemoveTarget = {
 type LocationState = {
     isEditMode?: boolean;
 };
+
+const TEAM_DETAIL_PAGE_TEXT = {
+    loading: '팀 정보를 불러오고 있어요.',
+    error: '팀 정보를 불러오지 못했어요.',
+} as const;
+
+const getTeamDescription = (teamName: string, isEditMode: boolean) =>
+    isEditMode
+        ? '멤버를 관리하거나 대표 색상 변경, 리더 위임 기능을 사용할 수 있어요.'
+        : `${teamName} 멤버를 확인할 수 있어요.`;
 
 const getEditButtonClassName = (isEditMode: boolean) =>
     [
@@ -34,15 +49,38 @@ const getEditButtonClassName = (isEditMode: boolean) =>
 const MyTeamDetailPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { id } = useParams();
+    const { accessToken } = useAuthSession();
 
     const locationState = location.state as LocationState | null;
+    const parsedTeamId = Number(id);
+    const teamId = Number.isFinite(parsedTeamId)
+        ? parsedTeamId
+        : undefined;
+
+    const {
+        data: team,
+        isError,
+        isLoading,
+    } = useTeamDetail({
+        teamId,
+        accessToken,
+        enabled: !!teamId,
+    });
+    const addTeamMemberMutation = useAddTeamMember({
+        accessToken: accessToken ?? undefined,
+    });
+    const removeTeamMemberMutation = useRemoveTeamMember({
+        accessToken: accessToken ?? undefined,
+    });
 
     const [isEditMode, setIsEditMode] = useState(
         locationState?.isEditMode ?? false,
     );
     const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
 
-    const isLeader = true;
+    const isLeader = team?.isLeader ?? false;
+    const canEdit = isLeader && isEditMode;
 
     const showToast = (toastMessage: string) => {
         navigate(location.pathname, {
@@ -54,11 +92,15 @@ const MyTeamDetailPage = () => {
     };
 
     const handleToggleEditMode = () => {
+        if (!isLeader) return;
+
         setIsEditMode((prev) => !prev);
     };
 
     const handleOpenRemoveModal = (memberId: number) => {
-        const target = MOCK_TEAM_MEMBERS.find(
+        if (!team?.isLeader) return;
+
+        const target = team.members.find(
             (member) => member.id === memberId,
         );
 
@@ -74,15 +116,33 @@ const MyTeamDetailPage = () => {
         setRemoveTarget(null);
     };
 
-    const handleConfirmRemoveMember = () => {
-        if (!removeTarget) return;
+    const handleConfirmRemoveMember = async () => {
+        if (!removeTarget || !team?.isLeader || !teamId) return;
 
-        setRemoveTarget(null);
-        showToast(MY_TEAM_DETAIL_TEXT.removeSuccessToast);
+        try {
+            await removeTeamMemberMutation.mutateAsync({
+                teamId,
+                memberId: removeTarget.id,
+            });
+            setRemoveTarget(null);
+            showToast(MY_TEAM_DETAIL_TEXT.removeSuccessToast);
+        } catch (error) {
+            console.error('Team member remove failed:', error);
+        }
     };
 
-    const handleAddMember = () => {
-        showToast(MY_TEAM_DETAIL_TEXT.addSuccessToast);
+    const handleAddMember = async (nickname: string) => {
+        if (!team?.isLeader || !teamId) return;
+
+        try {
+            await addTeamMemberMutation.mutateAsync({
+                teamId,
+                nickname,
+            });
+            showToast(MY_TEAM_DETAIL_TEXT.addSuccessToast);
+        } catch (error) {
+            console.error('Team member add failed:', error);
+        }
     };
 
     return (
@@ -105,33 +165,66 @@ const MyTeamDetailPage = () => {
             />
 
             <main className="my-team-detail-page">
-                <TeamProfileCard
-                    name={MOCK_TEAM_INFO.name}
-                    color={MOCK_TEAM_INFO.color}
-                    description={MOCK_TEAM_INFO.description}
-                />
+                {isLoading && (
+                    <section className="page-empty">
+                        {TEAM_DETAIL_PAGE_TEXT.loading}
+                    </section>
+                )}
 
-                <TeamMemberList
-                    members={MOCK_TEAM_MEMBERS}
-                    isEditMode={isEditMode}
-                    onRemoveMember={handleOpenRemoveModal}
-                    onAddMember={handleAddMember}
-                />
+                {isError && (
+                    <section className="page-empty">
+                        {TEAM_DETAIL_PAGE_TEXT.error}
+                    </section>
+                )}
 
-                <TeamNoticeBox />
+                {!isLoading && !isError && team && (
+                    <>
+                        <TeamProfileCard
+                            name={team.name}
+                            color={team.color}
+                            description={getTeamDescription(
+                                team.name,
+                                canEdit,
+                            )}
+                        />
 
-                {isEditMode && (
-                    <TeamEditActions
-                        teamId={MOCK_TEAM_INFO.id}
-                        teamName={MOCK_TEAM_INFO.name}
-                        teamColor={MOCK_TEAM_INFO.color}
-                    />
+                        <TeamMemberList
+                            members={team.members}
+                            isEditMode={canEdit}
+                            onRemoveMember={handleOpenRemoveModal}
+                            onAddMember={handleAddMember}
+                        />
+
+                        <TeamNoticeBox />
+
+                        {canEdit && (
+                            <TeamEditActions
+                                teamId={team.id}
+                                teamName={team.name}
+                                teamColor={team.color}
+                                teamColorId={team.colorId}
+                            />
+                        )}
+                    </>
+                )}
+
+                {!isLoading && !isError && !team && (
+                    <section className="my-team-page__empty">
+                        <p className="my-team-page__empty-title">
+                            {MY_TEAM_TEXT.emptyTitle}
+                        </p>
+
+                        <p className="my-team-page__empty-description">
+                            {MY_TEAM_TEXT.emptyDescription}
+                        </p>
+                    </section>
                 )}
             </main>
 
             {removeTarget && (
                 <RemoveMemberModal
                     nickname={removeTarget.nickname}
+                    isConfirmDisabled={removeTeamMemberMutation.isPending}
                     onCancel={handleCloseRemoveModal}
                     onConfirm={handleConfirmRemoveMember}
                 />

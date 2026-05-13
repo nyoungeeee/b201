@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import { TEAM_PROFILE_CARD_TEXT } from '../../domains/team/constants';
+import { toTeamColorCssValue } from '../../domains/team/colors';
 
 interface TeamProfileCardProps {
     name: string;
@@ -12,7 +13,7 @@ const getTeamColorStyle = (
     color: string,
 ): CSSProperties =>
     ({
-        '--team-color': color,
+        '--team-color': toTeamColorCssValue(color),
     }) as CSSProperties;
 
 const TeamProfileCard = ({

@@ -1,8 +1,18 @@
 import type {
+    TeamColorListApiResponse,
     TeamConfigApiResponse,
+    TeamDetailApiResponse,
     TeamMemberListApiResponse,
 } from '../../types/teamSchemas';
-import type { TeamMember, TeamSummary } from '../../types/team';
+import type {
+    TeamColorOption,
+    TeamDetail,
+    TeamMember,
+    TeamSummary,
+} from '../../types/team';
+
+const normalizeTeamColor = (color: string) =>
+    color.startsWith('#') ? color : `#${color}`;
 
 export const mapTeamMembersResponse = ({
     members,
@@ -16,9 +26,36 @@ export const mapTeamMembersResponse = ({
 export const mapTeamConfigResponse = ({
     id,
     name,
+    color_id,
     color,
 }: TeamConfigApiResponse): TeamSummary => ({
     id,
     name,
-    color: color.startsWith('#') ? color : `#${color}`,
+    color: normalizeTeamColor(color),
+    colorId: color_id ?? null,
 });
+
+export const mapTeamDetailResponse = ({
+    id,
+    name,
+    color_id,
+    color,
+    members,
+    is_leader,
+}: TeamDetailApiResponse): TeamDetail => ({
+    id,
+    name,
+    color: normalizeTeamColor(color),
+    colorId: color_id ?? null,
+    members: mapTeamMembersResponse({ members }),
+    isLeader: is_leader,
+});
+
+export const mapTeamColorsResponse = ({
+    colors,
+}: TeamColorListApiResponse): TeamColorOption[] =>
+    colors.map((color) => ({
+        id: color.id,
+        color: normalizeTeamColor(color.color),
+        available: color.available,
+    }));

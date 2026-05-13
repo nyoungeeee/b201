@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
@@ -8,35 +8,68 @@ import TeamLeaderOptionCard from '../components/team/TeamLeaderOptionCard';
 import TeamNoticeBox from '../components/team/TeamNoticeBox';
 import TeamRoleBadge from '../components/team/TeamRoleBadge';
 import { TEAM_LEADER_CHANGE_TEXT } from '../domains/team/constants';
-import {
-    MOCK_CURRENT_LEADER,
-    MOCK_LEADER_CANDIDATES,
-} from '../domains/team/mock';
+import { useDelegateTeamLeader } from '../hooks/mutations/useTeamMutations';
+import { useTeamDetail } from '../hooks/queries/useTeamDetail';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { TEAM_ROLE } from '../types/team';
+import { clearAuthSession } from '../utils/authStorage';
 
 const TeamLeaderChangePage = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const { accessToken } = useAuthSession();
+    const parsedTeamId = Number(id);
+    const teamId = Number.isFinite(parsedTeamId)
+        ? parsedTeamId
+        : undefined;
 
+    const {
+        data: team,
+        isError,
+        isLoading,
+    } = useTeamDetail({
+        teamId,
+        accessToken,
+        enabled: !!teamId,
+    });
+    const delegateTeamLeaderMutation = useDelegateTeamLeader({
+        accessToken: accessToken ?? undefined,
+    });
     const [selectedMemberId, setSelectedMemberId] =
-        useState<number | null>(
-            MOCK_LEADER_CANDIDATES[0]?.id ?? null,
-        );
+        useState<number | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const [isModalOpen, setIsModalOpen] =
-        useState(false);
-
-    const selectedMember = MOCK_LEADER_CANDIDATES.find(
-        (member) =>
-            member.id === selectedMemberId,
+    const leader = team?.members.find(
+        (member) => member.role === TEAM_ROLE.leader,
+    );
+    const leaderCandidates = useMemo(
+        () =>
+            team?.members.filter(
+                (member) => member.role !== TEAM_ROLE.leader,
+            ) ?? [],
+        [team?.members],
+    );
+    const selectedMemberIdFromCandidates = leaderCandidates.some(
+        (member) => member.id === selectedMemberId,
+    )
+        ? selectedMemberId
+        : (leaderCandidates[0]?.id ?? null);
+    const selectedMember = leaderCandidates.find(
+        (member) => member.id === selectedMemberIdFromCandidates,
     );
 
-    const handleSelectMember = (
-        memberId: number,
-    ) => {
+    const hasLeaderCandidate = leaderCandidates.length > 0;
+
+    const isSubmitDisabled =
+        !selectedMemberIdFromCandidates ||
+        delegateTeamLeaderMutation.isPending;
+
+    const handleSelectMember = (memberId: number) => {
         setSelectedMemberId(memberId);
     };
 
     const handleOpenModal = () => {
-        if (!selectedMemberId) return;
+        if (!selectedMemberIdFromCandidates) return;
 
         setIsModalOpen(true);
     };
@@ -45,97 +78,125 @@ const TeamLeaderChangePage = () => {
         setIsModalOpen(false);
     };
 
-    const handleConfirmChangeLeader = () => {
-        if (!selectedMemberId) return;
+    const handleConfirmChangeLeader = async () => {
+        if (!teamId || !selectedMemberIdFromCandidates) return;
 
-        navigate('/', {
-            replace: true,
-            state: {
-                toastMessage:
-                    TEAM_LEADER_CHANGE_TEXT.toastMessage,
-            },
-        });
+        try {
+            await delegateTeamLeaderMutation.mutateAsync({
+                teamId,
+                userId: selectedMemberIdFromCandidates,
+            });
+
+            clearAuthSession();
+            navigate('/', {
+                replace: true,
+                state: {
+                    toastMessage: TEAM_LEADER_CHANGE_TEXT.toastMessage,
+                },
+            });
+        } catch (error) {
+            console.error('Team leader delegation failed:', error);
+        }
     };
 
     return (
         <MobilePageLayout
             header={
                 <PageSubHeader
-                    title={
-                        TEAM_LEADER_CHANGE_TEXT.headerTitle
-                    }
+                    title={TEAM_LEADER_CHANGE_TEXT.headerTitle}
                 />
             }
         >
             <main className="team-leader-change-page">
-                <section className="team-leader-change-page__section">
-                    <h2 className="team-leader-change-page__title">
-                        {
-                            TEAM_LEADER_CHANGE_TEXT.currentLeaderTitle
-                        }
-                    </h2>
+                {isLoading && (
+                    <section className="page-empty">
+                        {TEAM_LEADER_CHANGE_TEXT.loading}
+                    </section>
+                )}
 
-                    <div className="card-row team-leader-change-page__leader-card">
-                        <span className="card-row__title team-leader-change-page__nickname">
-                            {MOCK_CURRENT_LEADER.nickname}
-                        </span>
+                {isError && (
+                    <section className="page-empty">
+                        {TEAM_LEADER_CHANGE_TEXT.error}
+                    </section>
+                )}
 
-                        <TeamRoleBadge role={MOCK_CURRENT_LEADER.role} />
-                    </div>
-                </section>
-
-                <section className="team-leader-change-page__section">
-                    <h2 className="team-leader-change-page__title">
-                        {
-                            TEAM_LEADER_CHANGE_TEXT.selectLeaderTitle
-                        }
-                    </h2>
-
-                    <div className="team-leader-change-page__list">
-                        {MOCK_LEADER_CANDIDATES.map((member) => (
-                            <TeamLeaderOptionCard
-                                key={member.id}
-                                member={member}
-                                isSelected={
-                                    selectedMemberId === member.id
+                {!isLoading && !isError && team && (
+                    <>
+                        <section className="team-leader-change-page__section">
+                            <h2 className="team-leader-change-page__title">
+                                {
+                                    TEAM_LEADER_CHANGE_TEXT.currentLeaderTitle
                                 }
-                                onSelect={handleSelectMember}
-                            />
-                        ))}
-                    </div>
-                </section>
+                            </h2>
 
-                <TeamNoticeBox
-                    messages={TEAM_LEADER_CHANGE_TEXT.notices}
-                />
+                            {leader && (
+                                <div className="card-row team-leader-change-page__leader-card">
+                                    <span className="card-row__title team-leader-change-page__nickname">
+                                        {leader.nickname}
+                                    </span>
 
-                <button
-                    type="button"
-                    className="team-leader-change-page__submit-button"
-                    disabled={!selectedMemberId}
-                    onClick={handleOpenModal}
-                >
-                    {
-                        TEAM_LEADER_CHANGE_TEXT.submitButton
-                    }
-                </button>
+                                    <TeamRoleBadge role={leader.role} />
+                                </div>
+                            )}
+                        </section>
+
+                        <section className="team-leader-change-page__section">
+                            <h2 className="team-leader-change-page__title">
+                                {
+                                    TEAM_LEADER_CHANGE_TEXT.selectLeaderTitle
+                                }
+                            </h2>
+
+                            {hasLeaderCandidate ? (
+                                <div className="team-leader-change-page__list">
+                                    {leaderCandidates.map((member) => (
+                                        <TeamLeaderOptionCard
+                                            key={member.id}
+                                            member={member}
+                                            isSelected={
+                                                selectedMemberIdFromCandidates ===
+                                                member.id
+                                            }
+                                            onSelect={handleSelectMember}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="page-empty">
+                                    {
+                                        TEAM_LEADER_CHANGE_TEXT.emptyCandidate
+                                    }
+                                </div>
+                            )}
+                        </section>
+
+                        <TeamNoticeBox
+                            messages={TEAM_LEADER_CHANGE_TEXT.notices}
+                        />
+
+                        <button
+                            type="button"
+                            className="team-leader-change-page__submit-button"
+                            disabled={isSubmitDisabled}
+                            onClick={handleOpenModal}
+                        >
+                            {TEAM_LEADER_CHANGE_TEXT.submitButton}
+                        </button>
+                    </>
+                )}
             </main>
 
-            {isModalOpen &&
-                selectedMember && (
-                    <ChangeLeaderModal
-                        id={selectedMember.id}
-                        nickname={
-                            selectedMember.nickname
-                        }
-                        onCancel={
-                            handleCloseModal
-                        }
-                        onConfirm={
-                            handleConfirmChangeLeader
-                        }
-                    />
-                )}
+            {isModalOpen && selectedMember && (
+                <ChangeLeaderModal
+                    id={selectedMember.id}
+                    nickname={selectedMember.nickname}
+                    isConfirmDisabled={
+                        delegateTeamLeaderMutation.isPending
+                    }
+                    onCancel={handleCloseModal}
+                    onConfirm={handleConfirmChangeLeader}
+                />
+            )}
         </MobilePageLayout>
     );
 };
