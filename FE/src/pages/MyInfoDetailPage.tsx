@@ -35,13 +35,6 @@ const MY_INFO_DETAIL_ROUTES = [
     },
 ] as const;
 
-const SNS_ICON = {
-    kakao: {
-        src: '/icons/kakao.png',
-        alt: '',
-    },
-} as const;
-
 const MyInfoDetailPage = () => {
     const navigate = useNavigate();
     const { user } = useAuthSession();
@@ -69,10 +62,9 @@ const MyInfoDetailPage = () => {
                         </span>
 
                         <div className="my-info-detail__value my-info-detail__value--sns">
-                            <img
-                                src={SNS_ICON.kakao.src}
-                                alt={SNS_ICON.kakao.alt}
+                            <span
                                 className="my-info-detail__sns-icon"
+                                aria-hidden="true"
                             />
                             <span>{MY_INFO_DETAIL_TEXT.provider}</span>
                         </div>

@@ -126,6 +126,9 @@
   height: var(--spinner-size-sm);
   flex-shrink: 0;
   display: block;
+  background-color: var(--kakao-cymbol);
+  mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
+  -webkit-mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
 }
 
 .nickname-edit-page {
