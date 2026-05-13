@@ -1,6 +1,7 @@
 /* 전체 앱 배경 + 가운데 정렬 */
 .app-shell {
   width: 100%;
+  min-width: var(--mobile-min-width);
   height: 100dvh;
   overflow: hidden;
   background: var(--bg-appshell);
@@ -11,6 +12,7 @@
 /* 모바일 프레임 */
 .mobile-frame {
   width: 100%;
+  min-width: var(--mobile-min-width);
   max-width: var(--mobile-max-width);
   height: 100dvh;
   overflow: hidden;
@@ -23,6 +25,7 @@
 /* 모바일 레이아웃 */
 .layout-mobile {
   width: 100%;
+  min-width: var(--mobile-min-width);
   max-width: var(--mobile-max-width);
   height: 100dvh;
   overflow: hidden;

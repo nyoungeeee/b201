@@ -135,10 +135,12 @@
 
 /* 카카오 아이콘 (원형) */
 .side-nav-modal__kakao-icon {
-  width: var(--space-12);
-  height: var(--space-12);
-  border-radius: var(--radius-circle);
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   background-color: var(--kakao-cymbol);
+  mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
+  -webkit-mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
 }
 
 /* ===== 구분선 ===== */
@@ -186,9 +188,13 @@
 
 /* 오른쪽 화살표 */
 .side-nav-modal__arrow {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-secondary);
-  font-size: var(--text-3xl);
-  line-height: 1;
 }
 
 /* ===== 애니메이션 ===== */
