@@ -16,6 +16,8 @@ import type {
 } from "./types";
 
 type AdminReservationPanelProps = {
+  initialReservationId?: number | null;
+  onInitialBack?: () => void;
   onOpenUser?: (userId: number) => void;
   onOpenTeam?: (teamId: number) => void;
 };
@@ -29,14 +31,23 @@ const formatCreatedDate = (date: string) => {
   return `${month}.${day} (${weekdays[parsedDate.getDay()]})`;
 };
 
-const AdminReservationPanel = ({ onOpenUser, onOpenTeam }: AdminReservationPanelProps) => {
+const AdminReservationPanel = ({
+  initialReservationId = null,
+  onInitialBack,
+  onOpenUser,
+  onOpenTeam,
+}: AdminReservationPanelProps) => {
   const [reservations, setReservations] = useState<AdminReservation[]>(mockAdminReservations);
   const [activeStatus, setActiveStatus] = useState<AdminReservationStatus>("pending");
   const [dateRange, setDateRange] = useState("7");
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(() =>
+    initialReservationId === null
+      ? null
+      : mockAdminReservations.find((reservation) => reservation.id === initialReservationId) ?? null,
+  );
 
   const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
   const approvedCount = reservations.filter((reservation) => {
@@ -158,6 +169,14 @@ const AdminReservationPanel = ({ onOpenUser, onOpenTeam }: AdminReservationPanel
     setIsCreateOpen(false);
   };
 
+  const handleCloseDetail = () => {
+    setSelectedReservation(null);
+
+    if (initialReservationId !== null) {
+      onInitialBack?.();
+    }
+  };
+
   return (
     <section className="admin-reservation" aria-label="예약 관리">
       <AdminReservationTabs
@@ -213,7 +232,7 @@ const AdminReservationPanel = ({ onOpenUser, onOpenTeam }: AdminReservationPanel
       {selectedReservation && (
         <AdminReservationDetail
           reservation={selectedReservation}
-          onBack={() => setSelectedReservation(null)}
+          onBack={handleCloseDetail}
           onApprove={handleApprove}
           onReject={handleReject}
           onRejectOccurrences={handleRejectOccurrences}

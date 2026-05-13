@@ -2104,3 +2104,605 @@
   border: 1px solid #ff4d4f;
   background: rgba(255, 77, 79, 0.04);
 }
+
+.admin-sub-actions button.is-outline-primary {
+  color: #2f8cff;
+  border: 1px solid #2f8cff;
+  background: rgba(47, 140, 255, 0.04);
+}
+
+.admin-rooms {
+  min-height: 100%;
+  padding: 0 16px 18px;
+}
+
+.admin-room-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.admin-room-tabs > button:not(.admin-room-dayoff-add) {
+  height: 56px;
+  position: relative;
+  color: rgba(247, 248, 251, 0.58);
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-tabs > button:not(.admin-room-dayoff-add).is-active {
+  color: #2f8cff;
+}
+
+.admin-room-tabs > button:not(.admin-room-dayoff-add).is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 999px;
+  background: #2f8cff;
+}
+
+.admin-room-tabs strong {
+  margin-left: 4px;
+  font-size: 15px;
+}
+
+.admin-room-dayoff-add {
+  min-width: 118px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2f8cff 0%, #1673ff 100%);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.admin-room-list,
+.admin-room-dayoff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.admin-room-card,
+.admin-dayoff-card,
+.admin-room-add-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #f7f8fb;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-room-card {
+  width: 100%;
+  padding: 20px;
+  text-align: left;
+}
+
+.admin-room-card header,
+.admin-dayoff-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-room-card header {
+  justify-content: flex-start;
+}
+
+.admin-room-card svg {
+  color: #2f8cff;
+}
+
+.admin-room-card h2,
+.admin-dayoff-card h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-hours {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  margin-bottom: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-room-hours span {
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-room-hours strong {
+  min-width: 0;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.admin-room-hours em {
+  color: rgba(247, 248, 251, 0.72);
+  font-style: normal;
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.admin-room-hours i {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ff665f;
+  background: rgba(255, 102, 95, 0.16);
+  font-style: normal;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-hours i.is-open {
+  color: #2f8cff;
+  background: rgba(47, 140, 255, 0.16);
+}
+
+.admin-room-add-card {
+  width: 100%;
+  min-height: 76px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  border-style: dashed;
+  color: #2f8cff;
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.admin-room-filter-row .admin-user-select-filter {
+  padding: 0 10px;
+}
+
+.admin-dayoff-card {
+  padding: 18px;
+}
+
+.admin-dayoff-badge {
+  min-width: 56px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-dayoff-badge.is-휴무 {
+  color: #ff665f;
+  background: rgba(255, 102, 95, 0.18);
+}
+
+.admin-dayoff-badge.is-점검 {
+  color: #ffbd64;
+  background: rgba(255, 189, 100, 0.18);
+}
+
+.admin-dayoff-badge.is-기타 {
+  color: #69d7ab;
+  background: rgba(105, 215, 171, 0.18);
+}
+
+.admin-dayoff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-dayoff-grid p,
+.admin-dayoff-reason {
+  margin: 0;
+}
+
+.admin-dayoff-grid span,
+.admin-dayoff-reason span {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(247, 248, 251, 0.56);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-dayoff-grid strong,
+.admin-dayoff-reason strong {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-dayoff-reason {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-dayoff-reason svg {
+  color: #2f8cff;
+}
+
+.admin-room-detail-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-room-detail-hero > div {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-room-detail-hero section {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.admin-room-detail-hero svg,
+.admin-impact-summary > svg,
+.admin-impact-card > svg {
+  width: 72px;
+  height: 72px;
+  padding: 18px;
+  border-radius: 16px;
+  color: #2f8cff;
+  background: rgba(47, 140, 255, 0.1);
+}
+
+.admin-room-state {
+  min-width: 78px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: rgba(247, 248, 251, 0.62);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-state.is-active {
+  color: #2f8cff;
+  background: rgba(47, 140, 255, 0.18);
+}
+
+.admin-room-detail-hero h3 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-detail-hero p {
+  margin: 0;
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 16px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-room-info-card,
+.admin-room-dayoff-link,
+.admin-room-form-card,
+.admin-impact-summary,
+.admin-impact-card {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #f7f8fb;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-room-info-card h3,
+.admin-room-form-card h3 {
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-info-card p {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-room-info-card span,
+.admin-impact-summary span,
+.admin-impact-card span {
+  color: rgba(247, 248, 251, 0.58);
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-room-info-card strong {
+  color: #ffffff;
+  font-size: 16px;
+  text-align: right;
+}
+
+.admin-room-dayoff-link {
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.admin-room-dayoff-link strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffffff;
+  font-size: 21px;
+}
+
+.admin-room-dayoff-link span {
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-form-field textarea,
+.admin-form-field select,
+.admin-room-form-card select {
+  width: 100%;
+  min-height: 58px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 18px;
+  outline: 0;
+}
+
+.admin-form-field textarea {
+  min-height: 124px;
+  padding-top: 18px;
+  resize: none;
+}
+
+.admin-form-field select option,
+.admin-room-form-card select option {
+  color: #151922;
+}
+
+.admin-room-form-description {
+  margin: 0;
+  color: rgba(247, 248, 251, 0.68);
+  font-size: 16px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-room-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-room-time-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-room-time-row span {
+  color: rgba(247, 248, 251, 0.58);
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+}
+
+.admin-room-toggle-row {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-toggle-row input {
+  width: 54px;
+  height: 30px;
+  accent-color: #2f8cff;
+}
+
+.admin-room-target-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.admin-room-target-tabs button {
+  height: 54px;
+  color: rgba(247, 248, 251, 0.72);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-room-target-tabs button.is-active {
+  color: #2f8cff;
+  box-shadow: inset 0 0 0 1px #2f8cff;
+}
+
+.admin-room-warning-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 139, 64, 0.38);
+  border-radius: 14px;
+  color: #ff8b64;
+  background: rgba(255, 139, 64, 0.09);
+}
+
+.admin-room-warning-box p {
+  margin: 0;
+  color: #ff8b64;
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.45;
+}
+
+.admin-impact-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  border-color: #2f8cff;
+}
+
+.admin-impact-summary p {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 12px;
+}
+
+.admin-impact-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.admin-impact-summary strong {
+  color: #ffffff;
+  font-size: 17px;
+}
+
+.admin-impact-type {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 8px;
+  color: #2f8cff !important;
+  background: rgba(47, 140, 255, 0.2);
+}
+
+.admin-impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-impact-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-impact-card h3 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 22px;
+}
+
+.admin-impact-card p {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 10px;
+  margin: 6px 0 0;
+}
+
+.admin-impact-card strong {
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.admin-impact-card section {
+  min-width: 84px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.admin-impact-card section > strong {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.admin-impact-card__open {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: rgba(247, 248, 251, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-impact-card__open:hover {
+  color: #ffffff;
+  background: rgba(47, 140, 255, 0.18);
+}
+
+.admin-impact-card .is-approved {
+  color: #ffffff;
+  background: rgba(53, 180, 104, 0.72);
+}
+
+.admin-impact-card .is-pending {
+  color: #ffd43b;
+  background: rgba(255, 189, 0, 0.24);
+}
