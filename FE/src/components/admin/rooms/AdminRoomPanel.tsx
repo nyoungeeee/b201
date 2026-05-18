@@ -160,7 +160,7 @@ const AdminRoomPanel = ({
     setDaysOff((currentDaysOff) => [nextDayOff, ...currentDaysOff]);
     setActiveTab("daysOff");
     resetView();
-    onToast?.("쉬는날을 생성했습니다.");
+    onToast?.(`쉬는날 - ${draft.type}을 설정했습니다.`);
   };
 
   const handleCheckDayOff = async (draft: AdminRoomDayOffDraft) => {
