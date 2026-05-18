@@ -9,7 +9,7 @@ import {
 import AdminSelect from "../common/AdminSelect";
 import AdminDayPicker from "../common/AdminDayPicker";
 import AdminCreateConflictReview from "./AdminCreateConflictReview";
-import * as adminApi from "../../../api/adminApi";
+import * as adminApi from "../../../apis/adminApi";
 import type { AdminReservationConflict, AdminRoom, NewAdminReservation } from "./types";
 
 type AdminReservationTeamOption = {

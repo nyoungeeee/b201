@@ -9,7 +9,7 @@ import AdminReservationPanel from "../components/admin/reservations/AdminReserva
 import AdminRoomPanel from "../components/admin/rooms/AdminRoomPanel";
 import type { AdminPracticeRoom } from "../components/admin/rooms/types";
 import AdminUserPanel, { type AdminUserView } from "../components/admin/users/AdminUserPanel";
-import * as adminApi from "../api/adminApi";
+import * as adminApi from "../apis/adminApi";
 
 const initialAdminLogs: AdminLogEntry[] = [
   {

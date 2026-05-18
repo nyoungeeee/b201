@@ -11,7 +11,7 @@ import {
   AdminWarningIcon,
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
-import * as adminApi from "../../../api/adminApi";
+import * as adminApi from "../../../apis/adminApi";
 import type {
   AdminManagedTeam,
   AdminManagedUser,

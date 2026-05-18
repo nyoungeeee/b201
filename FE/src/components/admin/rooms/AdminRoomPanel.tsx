@@ -13,7 +13,7 @@ import {
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
 import AdminDayPicker from "../common/AdminDayPicker";
-import * as adminApi from "../../../api/adminApi";
+import * as adminApi from "../../../apis/adminApi";
 import type {
   AdminPracticeRoom,
   AdminRoomAffectedReservation,
@@ -37,12 +37,24 @@ type AdminRoomView =
 
 type AdminRoomPanelProps = {
   rooms: AdminPracticeRoom[];
-  onRoomsChange: (rooms: AdminPracticeRoom[] | ((currentRooms: AdminPracticeRoom[]) => AdminPracticeRoom[])) => void;
+  onRoomsChange: (
+    rooms:
+      | AdminPracticeRoom[]
+      | ((currentRooms: AdminPracticeRoom[]) => AdminPracticeRoom[]),
+  ) => void;
   onOpenReservation?: (reservationId: number) => void;
   onToast?: (message: string) => void;
 };
 
-const DAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+const DAY_NAMES = [
+  "일요일",
+  "월요일",
+  "화요일",
+  "수요일",
+  "목요일",
+  "금요일",
+  "토요일",
+];
 
 const getDateLabelWithDay = (dateLabel: string) => {
   const [year, month, day] = dateLabel.split(".").map(Number);
@@ -76,7 +88,6 @@ const defaultDayOffDraft: AdminRoomDayOffDraft = {
   endTime: "18:00",
   reason: "",
 };
-
 
 const AdminRoomPanel = ({
   rooms,
@@ -129,7 +140,10 @@ const AdminRoomPanel = ({
     const created = await adminApi.createRoom(draft);
     onRoomsChange((currentRooms) => [...currentRooms, created]);
     setActiveTab("rooms");
-    setViewStack([{ name: "list" }, { name: "room-detail", roomId: created.id }]);
+    setViewStack([
+      { name: "list" },
+      { name: "room-detail", roomId: created.id },
+    ]);
     onToast?.("합주실을 추가했습니다.");
   };
 
@@ -374,68 +388,68 @@ const DayOffList = ({
 
   return (
     <>
-    <div className="admin-room-filter-row">
-      <AdminSelect
-        className="admin-user-select-filter"
-        value={dateFilter}
-        icon={<AdminCalendarIcon />}
-        options={[{ value: "all", label: "날짜" }]}
-        onChange={setDateFilter}
-      />
-      <AdminSelect
-        className="admin-user-select-filter"
-        value={roomFilter}
-        icon={<AdminRoomIcon />}
-        options={[
-          { value: "all", label: "합주실" },
-          { value: "allRooms", label: "전체 합주실" },
-          ...rooms.map((room) => ({ value: room.name, label: room.name })),
-        ]}
-        onChange={setRoomFilter}
-      />
-      <AdminSelect
-        className="admin-user-select-filter"
-        value={typeFilter}
-        icon={<AdminStatusIcon />}
-        options={[
-          { value: "all", label: "유형" },
-          { value: "휴무", label: "휴무" },
-          { value: "점검", label: "점검" },
-          { value: "기타", label: "기타" },
-        ]}
-        onChange={setTypeFilter}
-      />
-    </div>
+      <div className="admin-room-filter-row">
+        <AdminSelect
+          className="admin-user-select-filter"
+          value={dateFilter}
+          icon={<AdminCalendarIcon />}
+          options={[{ value: "all", label: "날짜" }]}
+          onChange={setDateFilter}
+        />
+        <AdminSelect
+          className="admin-user-select-filter"
+          value={roomFilter}
+          icon={<AdminRoomIcon />}
+          options={[
+            { value: "all", label: "합주실" },
+            { value: "allRooms", label: "전체 합주실" },
+            ...rooms.map((room) => ({ value: room.name, label: room.name })),
+          ]}
+          onChange={setRoomFilter}
+        />
+        <AdminSelect
+          className="admin-user-select-filter"
+          value={typeFilter}
+          icon={<AdminStatusIcon />}
+          options={[
+            { value: "all", label: "유형" },
+            { value: "휴무", label: "휴무" },
+            { value: "점검", label: "점검" },
+            { value: "기타", label: "기타" },
+          ]}
+          onChange={setTypeFilter}
+        />
+      </div>
 
-    <div className="admin-room-dayoff-list">
-      {daysOff.map((dayOff) => (
-        <article className="admin-dayoff-card" key={dayOff.id}>
-          <header>
-            <h2>{dayOff.roomName}</h2>
-            <span className={`admin-dayoff-badge is-${dayOff.type}`}>
-              {dayOff.type}
-            </span>
-          </header>
-          <div className="admin-dayoff-grid">
-            <p>
-              <span>날짜</span>
-              <strong>{dayOff.dateLabel}</strong>
-            </p>
-            <p>
-              <span>시간</span>
-              <strong>{dayOff.timeLabel}</strong>
-            </p>
-          </div>
-          <section className="admin-dayoff-reason">
-            <AdminClockIcon />
-            <div>
-              <span>사유</span>
-              <strong>{dayOff.reason}</strong>
+      <div className="admin-room-dayoff-list">
+        {daysOff.map((dayOff) => (
+          <article className="admin-dayoff-card" key={dayOff.id}>
+            <header>
+              <h2>{dayOff.roomName}</h2>
+              <span className={`admin-dayoff-badge is-${dayOff.type}`}>
+                {dayOff.type}
+              </span>
+            </header>
+            <div className="admin-dayoff-grid">
+              <p>
+                <span>날짜</span>
+                <strong>{dayOff.dateLabel}</strong>
+              </p>
+              <p>
+                <span>시간</span>
+                <strong>{dayOff.timeLabel}</strong>
+              </p>
             </div>
-          </section>
-        </article>
-      ))}
-    </div>
+            <section className="admin-dayoff-reason">
+              <AdminClockIcon />
+              <div>
+                <span>사유</span>
+                <strong>{dayOff.reason}</strong>
+              </div>
+            </section>
+          </article>
+        ))}
+      </div>
     </>
   );
 };
@@ -819,14 +833,19 @@ const DayOffCreateScreen = ({
   const updateDraft = (nextDraft: Partial<AdminRoomDayOffDraft>) =>
     setDraft((currentDraft) => ({ ...currentDraft, ...nextDraft }));
 
-  const endTimeSelectOptions = halfHourTimeOptions.filter((o) => o.value > draft.startTime);
+  const endTimeSelectOptions = halfHourTimeOptions.filter(
+    (o) => o.value > draft.startTime,
+  );
 
   const handleStartTimeChange = (startTime: string) => {
     updateDraft({
       startTime,
-      endTime: draft.endTime <= startTime
-        ? (halfHourTimeOptions[halfHourTimeOptions.findIndex((o) => o.value === startTime) + 1]?.value ?? "24:00")
-        : draft.endTime,
+      endTime:
+        draft.endTime <= startTime
+          ? (halfHourTimeOptions[
+              halfHourTimeOptions.findIndex((o) => o.value === startTime) + 1
+            ]?.value ?? "24:00")
+          : draft.endTime,
     });
   };
 
@@ -870,7 +889,10 @@ const DayOffCreateScreen = ({
             <AdminSelect
               className="admin-room-form-select"
               value={draft.roomName}
-              options={rooms.map((room) => ({ value: room.name, label: room.name }))}
+              options={rooms.map((room) => ({
+                value: room.name,
+                label: room.name,
+              }))}
               onChange={(roomName) => updateDraft({ roomName })}
             />
           )}
@@ -915,7 +937,9 @@ const DayOffCreateScreen = ({
               <textarea
                 value={draft.reason}
                 maxLength={100}
-                onChange={(event) => updateDraft({ reason: event.target.value })}
+                onChange={(event) =>
+                  updateDraft({ reason: event.target.value })
+                }
               />
               <em>{draft.reason.length}/100</em>
             </label>
@@ -962,7 +986,9 @@ const DayOffCreateScreen = ({
                 <textarea
                   value={draft.reason}
                   maxLength={100}
-                  onChange={(event) => updateDraft({ reason: event.target.value })}
+                  onChange={(event) =>
+                    updateDraft({ reason: event.target.value })
+                  }
                 />
                 <em>{draft.reason.length}/100</em>
               </label>

@@ -6,7 +6,7 @@ import AdminReservationCard from "./AdminReservationCard";
 import AdminReservationDetail from "./AdminReservationDetail";
 import AdminReservationFilters from "./AdminReservationFilters";
 import AdminReservationTabs from "./AdminReservationTabs";
-import * as adminApi from "../../../api/adminApi";
+import * as adminApi from "../../../apis/adminApi";
 import type {
   AdminReservation,
   AdminReservationStatus,
