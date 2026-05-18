@@ -23,20 +23,44 @@ const AdminReservationTabs = ({
         className={`admin-reservation-tabs__item${activeStatus === "pending" ? " is-active" : ""}`}
         type="button"
         role="tab"
-        aria-selected={activeStatus === "pending"}
+        aria-selected="true"
         onClick={() => onChange("pending")}
+        hidden={activeStatus !== "pending" ? true : undefined}
       >
         승인 대기 {pendingCount}
       </button>
+      {activeStatus !== "pending" && (
+        <button
+          className="admin-reservation-tabs__item"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          onClick={() => onChange("pending")}
+        >
+          승인 대기 {pendingCount}
+        </button>
+      )}
       <button
         className={`admin-reservation-tabs__item${activeStatus === "approved" ? " is-active" : ""}`}
         type="button"
         role="tab"
-        aria-selected={activeStatus === "approved"}
+        aria-selected="true"
         onClick={() => onChange("approved")}
+        hidden={activeStatus !== "approved" ? true : undefined}
       >
         승인 완료 {approvedCount}
       </button>
+      {activeStatus !== "approved" && (
+        <button
+          className="admin-reservation-tabs__item"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          onClick={() => onChange("approved")}
+        >
+          승인 완료 {approvedCount}
+        </button>
+      )}
     </div>
   );
 };
