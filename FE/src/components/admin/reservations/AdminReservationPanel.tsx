@@ -55,7 +55,7 @@ const AdminReservationPanel = ({
         setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
       }
     }).catch(console.error);
-  }, []);
+  }, [initialReservationId]);
 
   const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
   const approvedCount = reservations.filter((reservation) => {

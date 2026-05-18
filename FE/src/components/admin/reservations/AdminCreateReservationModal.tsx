@@ -81,7 +81,7 @@ const AdminCreateReservationModal = ({
   const [room, setRoom]= useState<AdminRoom>(rooms[0] ?? "");
   const [reservationOwnerType, setReservationOwnerType] = useState<"owner" | "team">("owner");
   const [selectedTeamId, setSelectedTeamId] = useState(String(teamOptions[0]?.id ?? ""));
-  const [title, setTitle] = useState("사장님 개인 사용");
+  const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [pendingReservation, setPendingReservation] = useState<NewAdminReservation | null>(null);
   const [conflicts, setConflicts] = useState<AdminReservationConflict[]>([]);
@@ -239,7 +239,7 @@ const AdminCreateReservationModal = ({
               value={title}
               maxLength={30}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="예약명을 입력하세요"
+              placeholder="ex ) 사장님 개인 사용"
             />
           </div>
         </label>

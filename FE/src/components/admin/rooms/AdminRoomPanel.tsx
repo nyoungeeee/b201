@@ -676,7 +676,7 @@ const RoomFormScreen = ({
 }) => {
   const [name, setName] = useState(initialRoom?.name ?? "E룸");
   const [description, setDescription] = useState(
-    initialRoom?.description ?? "보컬 연습 중심의 소형 합주실",
+    initialRoom?.description ?? "",
   );
   const [openTime, setOpenTime] = useState(initialRoom?.openTime ?? "10:00");
   const [closeTime, setCloseTime] = useState(initialRoom?.closeTime ?? "22:00");
@@ -731,6 +731,7 @@ const RoomFormScreen = ({
             value={description}
             maxLength={100}
             onChange={(event) => setDescription(event.target.value)}
+            placeholder="ex ) 보컬 연습 중심의 소형 합주실"
           />
           <em>{descriptionCount}/100</em>
         </label>
