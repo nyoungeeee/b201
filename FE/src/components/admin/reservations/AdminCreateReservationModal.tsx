@@ -2,12 +2,12 @@ import { useState } from "react";
 
 import {
   AdminArrowLeftIcon,
-  AdminCalendarIcon,
   AdminClockIcon,
   AdminReservationIcon,
   AdminWarningIcon,
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
+import AdminDayPicker from "../common/AdminDayPicker";
 import AdminCreateConflictReview from "./AdminCreateConflictReview";
 import type { AdminReservationConflict, AdminRoom, NewAdminReservation } from "./types";
 
@@ -60,22 +60,33 @@ const mockCheckReservationConflicts = async (
   ];
 };
 
-const reservationDateOptions = [
-  { value: "2026-05-15", label: "2026.05.15 금요일" },
-  { value: "2026-05-16", label: "2026.05.16 토요일" },
-  { value: "2026-05-17", label: "2026.05.17 일요일" },
-  { value: "2026-05-18", label: "2026.05.18 월요일" },
-  { value: "2026-05-19", label: "2026.05.19 화요일" },
-  { value: "2026-05-20", label: "2026.05.20 수요일" },
-  { value: "2026-05-21", label: "2026.05.21 목요일" },
-];
+const getTodayDateDot = () => {
+  const today = new Date();
+  return `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+};
 
-const halfHourTimeOptions = Array.from({ length: 49 }, (_, index) => {
+const dotToHyphen = (dateDot: string) => dateDot.replace(/\./g, "-");
+
+const halfHourTimeOptions= Array.from({ length: 49 }, (_, index) => {
   const hour = Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
   const label = `${String(hour).padStart(2, "0")}:${minute}`;
-
   return { value: label, label };
+});
+
+// 24:00을 시작 시간으로 선택하면 종료 시간이 없어지므로 시작 시간에서 제외
+const startTimeOptions = halfHourTimeOptions.slice(0, 48);
+
+// 다음날 시간: value는 "24:30"~"30:00" (문자열 정렬로 당일 시간보다 항상 크게 유지)
+// 표시: "다음날 00:30"~"다음날 06:00"
+const nextDayTimeOptions = Array.from({ length: 12 }, (_, i) => {
+  const totalHalfHours = 49 + i; // 49번째(=24:00) 이후부터
+  const hour = Math.floor(totalHalfHours / 2); // 24, 24, 25, 25, ...
+  const minute = totalHalfHours % 2 === 0 ? "00" : "30";
+  const displayHour = hour - 24;
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
+  const label = `다음날 ${String(displayHour).padStart(2, "0")}:${minute}`;
+  return { value, label };
 });
 
 const AdminCreateReservationModal = ({
@@ -84,10 +95,26 @@ const AdminCreateReservationModal = ({
   rooms,
   teamOptions,
 }: AdminCreateReservationModalProps) => {
-  const [date, setDate] = useState("2026-05-15");
+  const [date, setDate] = useState(getTodayDateDot());
   const [startTime, setStartTime] = useState("19:00");
   const [endTime, setEndTime] = useState("22:00");
-  const [room, setRoom] = useState<AdminRoom>(rooms[0] ?? "");
+
+  const endTimeOptions = [
+    ...halfHourTimeOptions.filter((option) => option.value > startTime),
+    ...nextDayTimeOptions,
+  ];
+
+  const handleStartTimeChange = (newStartTime: string) => {
+    setStartTime(newStartTime);
+    // 다음날 시간("24:30" 이상)이면 시작 시간 변경에 관계없이 유지
+    const isEndTimeNextDay = endTime >= "24:30";
+    if (!isEndTimeNextDay && endTime <= newStartTime) {
+      const nextIndex = startTimeOptions.findIndex((o) => o.value === newStartTime) + 1;
+      setEndTime(halfHourTimeOptions[nextIndex]?.value ?? halfHourTimeOptions[48].value);
+    }
+  };
+
+  const [room, setRoom]= useState<AdminRoom>(rooms[0] ?? "");
   const [reservationOwnerType, setReservationOwnerType] = useState<"owner" | "team">("owner");
   const [selectedTeamId, setSelectedTeamId] = useState(String(teamOptions[0]?.id ?? ""));
   const [title, setTitle] = useState("사장님 개인 사용");
@@ -106,7 +133,7 @@ const AdminCreateReservationModal = ({
         : teamOptions.find((team) => String(team.id) === selectedTeamId) ?? null;
 
     const nextReservation = {
-      date,
+      date: dotToHyphen(date),
       startTime,
       endTime,
       room,
@@ -158,11 +185,9 @@ const AdminCreateReservationModal = ({
           <span>
             예약 날짜 <strong>*</strong>
           </span>
-          <AdminSelect
+          <AdminDayPicker
             className="admin-create-control admin-create-control--picker"
             value={date}
-            icon={<AdminCalendarIcon size={28} />}
-            options={reservationDateOptions}
             onChange={setDate}
           />
         </label>
@@ -176,15 +201,15 @@ const AdminCreateReservationModal = ({
               className="admin-create-control admin-create-control--picker"
               value={startTime}
               icon={<AdminClockIcon size={28} />}
-              options={halfHourTimeOptions}
-              onChange={setStartTime}
+              options={startTimeOptions}
+              onChange={handleStartTimeChange}
             />
             <span className="admin-create-time-row__dash">~</span>
             <AdminSelect
               className="admin-create-control admin-create-control--picker"
               value={endTime}
               icon={<AdminClockIcon size={28} />}
-              options={halfHourTimeOptions}
+              options={endTimeOptions}
               onChange={setEndTime}
             />
           </div>

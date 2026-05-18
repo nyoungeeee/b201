@@ -12,6 +12,7 @@ import {
   AdminWarningIcon,
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
+import AdminDayPicker from "../common/AdminDayPicker";
 import {
   mockAdminRoomDayOffs,
   mockCheckRoomDayOffConflicts,
@@ -44,23 +45,41 @@ type AdminRoomPanelProps = {
   onToast?: (message: string) => void;
 };
 
-const defaultDayOffDraft: AdminRoomDayOffDraft = {
-  targetType: "all",
-  roomName: "전체 합주실",
-  dateLabel: "2026.05.15",
-  type: "점검",
-  isAllDay: false,
-  startTime: "09:00",
-  endTime: "18:00",
-  reason: "전기 점검",
+const DAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+
+const getDateLabelWithDay = (dateLabel: string) => {
+  const [year, month, day] = dateLabel.split(".").map(Number);
+  const dayName = DAY_NAMES[new Date(year, month - 1, day).getDay()];
+  return `${dateLabel} ${dayName}`;
+};
+
+const getTodayDateLabel = () => {
+  const today = new Date();
+  return `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
 };
 
 const halfHourTimeOptions = Array.from({ length: 49 }, (_, index) => {
   const hour = Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
 
-  return `${hour}:${minute}`;
+  return { value, label: value };
 });
+
+const startTimeSelectOptions = halfHourTimeOptions.slice(0, 48);
+
+const defaultDayOffDraft: AdminRoomDayOffDraft = {
+  targetType: "all",
+  roomName: "전체 합주실",
+  dateLabel: getTodayDateLabel(),
+  endDateLabel: getTodayDateLabel(),
+  type: "점검",
+  isAllDay: false,
+  startTime: "09:00",
+  endTime: "18:00",
+  reason: "",
+};
+
 
 const AdminRoomPanel = ({
   rooms,
@@ -120,13 +139,20 @@ const AdminRoomPanel = ({
 
   const handleConfirmDayOff = (draft: AdminRoomDayOffDraft) => {
     const nextId = Math.max(...daysOff.map((dayOff) => dayOff.id)) + 1;
+    const isVacation = draft.type === "휴무";
+    const dateLabel = isVacation
+      ? `${getDateLabelWithDay(draft.dateLabel)} ~ ${getDateLabelWithDay(draft.endDateLabel)}`
+      : getDateLabelWithDay(draft.dateLabel);
+    const timeLabel = isVacation
+      ? "하루전체"
+      : draft.isAllDay
+        ? "하루전체"
+        : `${draft.startTime}~${draft.endTime}`;
     const nextDayOff: AdminRoomDayOff = {
       id: nextId,
       roomName: draft.targetType === "all" ? "전체 합주실" : draft.roomName,
-      dateLabel: `${draft.dateLabel} (금)`,
-      timeLabel: draft.isAllDay
-        ? "하루전체"
-        : `${draft.startTime}~${draft.endTime}`,
+      dateLabel,
+      timeLabel,
       type: draft.type,
       reason: draft.reason.trim() || "사유 없음",
     };
@@ -725,7 +751,7 @@ const RoomFormScreen = ({
               <AdminSelect
                 className="admin-room-form-select"
                 value={openTime}
-                options={halfHourTimeOptions.map((time) => ({ value: time, label: time }))}
+                options={halfHourTimeOptions}
                 onChange={setOpenTime}
               />
             </label>
@@ -735,7 +761,7 @@ const RoomFormScreen = ({
                 <AdminSelect
                   className="admin-room-form-select"
                   value={closeTime}
-                  options={halfHourTimeOptions.map((time) => ({ value: time, label: time }))}
+                  options={halfHourTimeOptions}
                   onChange={setCloseTime}
                 />
               </label>
@@ -814,6 +840,19 @@ const DayOffCreateScreen = ({
   const updateDraft = (nextDraft: Partial<AdminRoomDayOffDraft>) =>
     setDraft((currentDraft) => ({ ...currentDraft, ...nextDraft }));
 
+  const endTimeSelectOptions = halfHourTimeOptions.filter((o) => o.value > draft.startTime);
+
+  const handleStartTimeChange = (startTime: string) => {
+    updateDraft({
+      startTime,
+      endTime: draft.endTime <= startTime
+        ? (halfHourTimeOptions[halfHourTimeOptions.findIndex((o) => o.value === startTime) + 1]?.value ?? "24:00")
+        : draft.endTime,
+    });
+  };
+
+  const isVacation = draft.type === "휴무";
+
   return (
     <section className="admin-sub-screen">
       <ScreenHeader title="쉬는날 추가" onBack={onBack} />
@@ -821,6 +860,8 @@ const DayOffCreateScreen = ({
         <p className="admin-room-form-description">
           설정한 날짜/시간은 신규 예약이 불가능합니다.
         </p>
+
+        {/* ── 적용 대상 ── */}
         <section className="admin-room-form-card">
           <h3>적용 대상 *</h3>
           <div className="admin-room-target-tabs">
@@ -855,62 +896,101 @@ const DayOffCreateScreen = ({
             />
           )}
         </section>
-        <label className="admin-form-field">
-          <span>날짜 *</span>
-          <input
-            value={draft.dateLabel}
-            onChange={(event) => updateDraft({ dateLabel: event.target.value })}
-          />
-        </label>
+
+        {/* ── 쉬는날 유형 ── */}
         <label className="admin-form-field">
           <span>쉬는날 유형 *</span>
           <AdminSelect<AdminRoomDayOffType>
-            className="admin-room-form-select"
+            className="admin-room-form-select admin-room-form-select--sm"
             value={draft.type}
             options={[
-              { value: "휴무", label: "휴무" },
               { value: "점검", label: "점검" },
+              { value: "휴무", label: "휴무" },
               { value: "기타", label: "기타" },
             ]}
             onChange={(type) => updateDraft({ type })}
           />
         </label>
-        <section className="admin-room-form-card">
-          <ToggleRow
-            label="하루 전체"
-            checked={draft.isAllDay}
-            onChange={(checked) => updateDraft({ isAllDay: checked })}
-          />
-          <label className="admin-form-field">
-            <span>시작 시간 *</span>
-            <AdminSelect
-              className="admin-room-form-select"
-              value={draft.startTime}
-              disabled={draft.isAllDay}
-              options={["09:00", "10:00", "13:00", "17:00"].map((time) => ({ value: time, label: time }))}
-              onChange={(startTime) => updateDraft({ startTime })}
-            />
-          </label>
-          <label className="admin-form-field">
-            <span>종료 시간 *</span>
-            <AdminSelect
-              className="admin-room-form-select"
-              value={draft.endTime}
-              disabled={draft.isAllDay}
-              options={["11:00", "12:00", "15:00", "18:00"].map((time) => ({ value: time, label: time }))}
-              onChange={(endTime) => updateDraft({ endTime })}
-            />
-          </label>
-          <label className="admin-form-field">
-            <span>사유</span>
-            <textarea
-              value={draft.reason}
-              maxLength={100}
-              onChange={(event) => updateDraft({ reason: event.target.value })}
-            />
-            <em>{draft.reason.length}/100</em>
-          </label>
-        </section>
+
+        {isVacation ? (
+          /* ── 휴무: 시작 날짜 / 종료 날짜 / 사유 ── */
+          <>
+            <label className="admin-form-field">
+              <span>시작 날짜 *</span>
+              <AdminDayPicker
+                className="admin-room-form-select admin-room-form-select--sm"
+                value={draft.dateLabel}
+                onChange={(dateLabel) => updateDraft({ dateLabel })}
+              />
+            </label>
+            <label className="admin-form-field">
+              <span>종료 날짜 *</span>
+              <AdminDayPicker
+                className="admin-room-form-select admin-room-form-select--sm"
+                value={draft.endDateLabel}
+                onChange={(endDateLabel) => updateDraft({ endDateLabel })}
+              />
+            </label>
+            <label className="admin-form-field">
+              <span>사유</span>
+              <textarea
+                value={draft.reason}
+                maxLength={100}
+                onChange={(event) => updateDraft({ reason: event.target.value })}
+              />
+              <em>{draft.reason.length}/100</em>
+            </label>
+          </>
+        ) : (
+          /* ── 점검 / 기타: 날짜 + 시간대 + 사유 ── */
+          <>
+            <label className="admin-form-field">
+              <span>날짜 *</span>
+              <AdminDayPicker
+                className="admin-room-form-select admin-room-form-select--sm"
+                value={draft.dateLabel}
+                onChange={(dateLabel) => updateDraft({ dateLabel })}
+              />
+            </label>
+            <section className="admin-room-form-card">
+              <ToggleRow
+                label="하루 전체"
+                checked={draft.isAllDay}
+                onChange={(checked) => updateDraft({ isAllDay: checked })}
+              />
+              <label className="admin-form-field">
+                <span>시작 시간 *</span>
+                <AdminSelect
+                  className="admin-room-form-select admin-room-form-select--sm"
+                  value={draft.startTime}
+                  disabled={draft.isAllDay}
+                  options={startTimeSelectOptions}
+                  onChange={handleStartTimeChange}
+                />
+              </label>
+              <label className="admin-form-field">
+                <span>종료 시간 *</span>
+                <AdminSelect
+                  className="admin-room-form-select admin-room-form-select--sm"
+                  value={draft.endTime}
+                  disabled={draft.isAllDay}
+                  options={endTimeSelectOptions}
+                  onChange={(endTime) => updateDraft({ endTime })}
+                />
+              </label>
+              <label className="admin-form-field">
+                <span>사유</span>
+                <textarea
+                  value={draft.reason}
+                  maxLength={100}
+                  onChange={(event) => updateDraft({ reason: event.target.value })}
+                />
+                <em>{draft.reason.length}/100</em>
+              </label>
+            </section>
+          </>
+        )}
+
         <div className="admin-room-warning-box">
           <AdminWarningIcon />
           <p>승인 대기 및 승인 완료된 예약이 있는지 함께 확인해주세요.</p>
@@ -955,13 +1035,17 @@ const DayOffImpactScreen = ({
           </p>
           <p>
             <span>날짜</span>
-            <strong>{draft.dateLabel} (금)</strong>
+            <strong>
+              {draft.type === "휴무"
+                ? `${getDateLabelWithDay(draft.dateLabel)} ~ ${getDateLabelWithDay(draft.endDateLabel)}`
+                : getDateLabelWithDay(draft.dateLabel)}
+            </strong>
           </p>
           <p>
             <span>시간</span>
             <strong>
-              {draft.isAllDay
-                ? "00:00~24:00"
+              {draft.type === "휴무" || draft.isAllDay
+                ? "하루전체"
                 : `${draft.startTime}~${draft.endTime}`}
             </strong>
           </p>

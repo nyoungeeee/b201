@@ -24,7 +24,8 @@ export type AdminRoomDayOff = {
 export type AdminRoomDayOffDraft = {
   targetType: "all" | "single";
   roomName: string;
-  dateLabel: string;
+  dateLabel: string;       // 점검/기타: 단일 날짜
+  endDateLabel: string;    // 휴무: 종료 날짜
   type: AdminRoomDayOffType;
   isAllDay: boolean;
   startTime: string;
