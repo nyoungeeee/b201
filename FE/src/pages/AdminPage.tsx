@@ -7,9 +7,9 @@ import AdminLogPanel, {
 } from "../components/admin/logs/AdminLogPanel";
 import AdminReservationPanel from "../components/admin/reservations/AdminReservationPanel";
 import AdminRoomPanel from "../components/admin/rooms/AdminRoomPanel";
-import { mockAdminPracticeRooms } from "../components/admin/rooms/mockAdminRooms";
+import type { AdminPracticeRoom } from "../components/admin/rooms/types";
 import AdminUserPanel, { type AdminUserView } from "../components/admin/users/AdminUserPanel";
-import { mockAdminTeams } from "../components/admin/users/mockAdminUsers";
+import * as adminApi from "../api/adminApi";
 
 const initialAdminLogs: AdminLogEntry[] = [
   {
@@ -74,7 +74,8 @@ const AdminPage = () => {
   const [externalReservationId, setExternalReservationId] = useState<number | null>(null);
   const [navResetKey, setNavResetKey] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [rooms, setRooms] = useState(mockAdminPracticeRooms);
+  const [rooms, setRooms] = useState<AdminPracticeRoom[]>([]);
+  const [ownerTeamOptions, setOwnerTeamOptions] = useState<{ id: number; name: string }[]>([]);
   const [logs, setLogs] = useState<AdminLogEntry[]>(initialAdminLogs);
   const userPanelKey = externalUserView
     ? `${externalUserView.name}-${"userId" in externalUserView ? externalUserView.userId : ""}${"teamId" in externalUserView ? externalUserView.teamId : ""}`
@@ -85,10 +86,6 @@ const AdminPage = () => {
     .filter((room) => room.isActive)
     .sort((leftRoom, rightRoom) => leftRoom.sortOrder - rightRoom.sortOrder)
     .map((room) => room.name);
-  const ownerTeamOptions = mockAdminTeams.map((team) => ({
-    id: team.id,
-    name: team.name,
-  }));
   const showToast = (message: string) => {
     setToastMessage(null);
     window.setTimeout(() => setToastMessage(message), 0);
@@ -104,6 +101,13 @@ const AdminPage = () => {
       ...currentLogs,
     ]);
   };
+
+  useEffect(() => {
+    adminApi.getRooms().then(setRooms).catch(console.error);
+    adminApi.getTeams().then((teams) => {
+      setOwnerTeamOptions(teams.map((team) => ({ id: team.id, name: team.name })));
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (!toastMessage) {

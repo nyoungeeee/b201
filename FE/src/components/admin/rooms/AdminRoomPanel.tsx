@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -13,10 +13,7 @@ import {
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
 import AdminDayPicker from "../common/AdminDayPicker";
-import {
-  mockAdminRoomDayOffs,
-  mockCheckRoomDayOffConflicts,
-} from "./mockAdminRooms";
+import * as adminApi from "../../../api/adminApi";
 import type {
   AdminPracticeRoom,
   AdminRoomAffectedReservation,
@@ -91,7 +88,11 @@ const AdminRoomPanel = ({
   const [viewStack, setViewStack] = useState<AdminRoomView[]>([
     { name: "list" },
   ]);
-  const [daysOff, setDaysOff] = useState(mockAdminRoomDayOffs);
+  const [daysOff, setDaysOff] = useState<AdminRoomDayOff[]>([]);
+
+  useEffect(() => {
+    adminApi.getDayOffs().then(setDaysOff).catch(console.error);
+  }, []);
   const activeRooms = rooms.filter((room) => room.isActive);
   const view = viewStack[viewStack.length - 1] ?? { name: "list" };
   const navigate = (nextView: AdminRoomView) =>
@@ -107,6 +108,7 @@ const AdminRoomPanel = ({
   const resetView = () => setViewStack([{ name: "list" }]);
 
   const handleSaveRoom = (nextRoom: AdminPracticeRoom) => {
+    adminApi.updateRoom(nextRoom.id, nextRoom).catch(console.error);
     onRoomsChange((currentRooms) =>
       currentRooms.map((room) =>
         room.id === nextRoom.id
@@ -121,50 +123,26 @@ const AdminRoomPanel = ({
     onToast?.("합주실을 저장했습니다.");
   };
 
-  const handleCreateRoom = (
+  const handleCreateRoom = async (
     draft: Omit<AdminPracticeRoom, "id" | "updatedAt">,
   ) => {
-    const nextId = Math.max(...rooms.map((room) => room.id)) + 1;
-    const nextRoom: AdminPracticeRoom = {
-      id: nextId,
-      updatedAt: "2026.05.14",
-      ...draft,
-    };
-
-    onRoomsChange((currentRooms) => [...currentRooms, nextRoom]);
+    const created = await adminApi.createRoom(draft);
+    onRoomsChange((currentRooms) => [...currentRooms, created]);
     setActiveTab("rooms");
-    setViewStack([{ name: "list" }, { name: "room-detail", roomId: nextId }]);
+    setViewStack([{ name: "list" }, { name: "room-detail", roomId: created.id }]);
     onToast?.("합주실을 추가했습니다.");
   };
 
-  const handleConfirmDayOff = (draft: AdminRoomDayOffDraft) => {
-    const nextId = Math.max(...daysOff.map((dayOff) => dayOff.id)) + 1;
-    const isVacation = draft.type === "휴무";
-    const dateLabel = isVacation
-      ? `${getDateLabelWithDay(draft.dateLabel)} ~ ${getDateLabelWithDay(draft.endDateLabel)}`
-      : getDateLabelWithDay(draft.dateLabel);
-    const timeLabel = isVacation
-      ? "하루전체"
-      : draft.isAllDay
-        ? "하루전체"
-        : `${draft.startTime}~${draft.endTime}`;
-    const nextDayOff: AdminRoomDayOff = {
-      id: nextId,
-      roomName: draft.targetType === "all" ? "전체 합주실" : draft.roomName,
-      dateLabel,
-      timeLabel,
-      type: draft.type,
-      reason: draft.reason.trim() || "사유 없음",
-    };
-
-    setDaysOff((currentDaysOff) => [nextDayOff, ...currentDaysOff]);
+  const handleConfirmDayOff = async (draft: AdminRoomDayOffDraft) => {
+    const created = await adminApi.createDayOff(draft);
+    setDaysOff((currentDaysOff) => [created, ...currentDaysOff]);
     setActiveTab("daysOff");
     resetView();
     onToast?.(`쉬는날 - ${draft.type}을 설정했습니다.`);
   };
 
   const handleCheckDayOff = async (draft: AdminRoomDayOffDraft) => {
-    const affectedReservations = await mockCheckRoomDayOffConflicts(draft);
+    const affectedReservations = await adminApi.checkDayOffConflicts(draft);
 
     if (affectedReservations.length === 0) {
       handleConfirmDayOff(draft);
@@ -218,6 +196,7 @@ const AdminRoomPanel = ({
         room={room}
         onBack={goBack}
         onConfirm={() => {
+          adminApi.deleteRoom(room.id).catch(console.error);
           onRoomsChange((currentRooms) =>
             currentRooms.map((currentRoom) =>
               currentRoom.id === room.id

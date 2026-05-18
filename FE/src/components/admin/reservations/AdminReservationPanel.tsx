@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AdminPlusIcon } from "../icons";
 import AdminCreateReservationModal from "./AdminCreateReservationModal";
@@ -6,7 +6,7 @@ import AdminReservationCard from "./AdminReservationCard";
 import AdminReservationDetail from "./AdminReservationDetail";
 import AdminReservationFilters from "./AdminReservationFilters";
 import AdminReservationTabs from "./AdminReservationTabs";
-import { mockAdminReservations } from "./mockReservations";
+import * as adminApi from "../../../api/adminApi";
 import type {
   AdminReservation,
   AdminReservationStatus,
@@ -30,14 +30,6 @@ type AdminReservationPanelProps = {
   onToast?: (message: string) => void;
 };
 
-const formatCreatedDate = (date: string) => {
-  const parsedDate = new Date(`${date}T00:00:00`);
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-  const day = String(parsedDate.getDate()).padStart(2, "0");
-
-  return `${month}.${day} (${weekdays[parsedDate.getDay()]})`;
-};
 
 const AdminReservationPanel = ({
   initialReservationId = null,
@@ -48,17 +40,22 @@ const AdminReservationPanel = ({
   onOpenTeam,
   onToast,
 }: AdminReservationPanelProps) => {
-  const [reservations, setReservations] = useState<AdminReservation[]>(mockAdminReservations);
+  const [reservations, setReservations] = useState<AdminReservation[]>([]);
   const [activeStatus, setActiveStatus] = useState<AdminReservationStatus>("pending");
   const [dateRange, setDateRange] = useState("7");
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(() =>
-    initialReservationId === null
-      ? null
-      : mockAdminReservations.find((reservation) => reservation.id === initialReservationId) ?? null,
-  );
+  const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
+
+  useEffect(() => {
+    adminApi.getReservations().then((data) => {
+      setReservations(data);
+      if (initialReservationId !== null) {
+        setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
+      }
+    }).catch(console.error);
+  }, []);
 
   const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
   const approvedCount = reservations.filter((reservation) => {
@@ -116,6 +113,7 @@ const AdminReservationPanel = ({
   }, [activeStatus, dateRange, reservations, roomFilter, teamFilter]);
 
   const handleApprove = (id: number) => {
+    adminApi.approveReservation(id).catch(console.error);
     setReservations((currentReservations) =>
       currentReservations.map((reservation) =>
         reservation.id === id ? { ...reservation, status: "approved" } : reservation,
@@ -126,6 +124,7 @@ const AdminReservationPanel = ({
   };
 
   const handleReject = (id: number) => {
+    adminApi.cancelReservation(id).catch(console.error);
     setReservations((currentReservations) =>
       currentReservations.filter((reservation) => reservation.id !== id),
     );
@@ -134,6 +133,7 @@ const AdminReservationPanel = ({
   };
 
   const handleRejectOccurrences = (id: number, canceledDates: string[]) => {
+    adminApi.cancelOccurrences(id, canceledDates).catch(console.error);
     setReservations((currentReservations) =>
       currentReservations.map((reservation) => {
         if (reservation.id !== id) {
@@ -166,23 +166,10 @@ const AdminReservationPanel = ({
     onToast?.(`${canceledDates.length}개의 반복 예약을 취소했습니다.`);
   };
 
-  const handleCreate = (newReservation: NewAdminReservation, canceledConflictIds: number[] = []) => {
-    const nextReservation: AdminReservation = {
-      id: Date.now(),
-      status: "approved",
-      kind: "single",
-      dateLabel: formatCreatedDate(newReservation.date),
-      dayOffset: 0,
-      timeLabel: `${newReservation.startTime}~${newReservation.endTime}`,
-      room: newReservation.room,
-      teamId: newReservation.teamId,
-      teamName: newReservation.teamName,
-      reserverName: newReservation.title,
-      memo: newReservation.memo,
-    };
-
+  const handleCreate = async (newReservation: NewAdminReservation, canceledConflictIds: number[] = []) => {
+    const created = await adminApi.createReservation(newReservation, canceledConflictIds);
     setReservations((currentReservations) => [
-      nextReservation,
+      created,
       ...currentReservations.filter((reservation) => !canceledConflictIds.includes(reservation.id)),
     ]);
     setActiveStatus("approved");

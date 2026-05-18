@@ -9,6 +9,7 @@ import {
 import AdminSelect from "../common/AdminSelect";
 import AdminDayPicker from "../common/AdminDayPicker";
 import AdminCreateConflictReview from "./AdminCreateConflictReview";
+import * as adminApi from "../../../api/adminApi";
 import type { AdminReservationConflict, AdminRoom, NewAdminReservation } from "./types";
 
 type AdminReservationTeamOption = {
@@ -21,43 +22,6 @@ type AdminCreateReservationModalProps = {
   onCreate: (reservation: NewAdminReservation, canceledConflictIds?: number[]) => void;
   rooms: AdminRoom[];
   teamOptions: AdminReservationTeamOption[];
-};
-
-const mockCheckReservationConflicts = async (
-  reservation: NewAdminReservation,
-): Promise<AdminReservationConflict[]> => {
-  const hasConflict = reservation.room === "B201" && reservation.date === "2026-05-15";
-
-  if (!hasConflict) {
-    return [];
-  }
-
-  return [
-    {
-      id: 1,
-      room: "B201",
-      date: "2026.05.15",
-      timeLabel: "19:00~21:00",
-      ownerLabel: "팀: 사운드웨이브",
-      status: "approved",
-    },
-    {
-      id: 3,
-      room: "B201",
-      date: "2026.05.15",
-      timeLabel: "21:00~22:00",
-      ownerLabel: "개인 예약: 박지훈",
-      status: "approved",
-    },
-    {
-      id: 4,
-      room: "B201",
-      date: "2026.05.15",
-      timeLabel: "18:30~19:30",
-      ownerLabel: "팀: 블루코드",
-      status: "pending",
-    },
-  ];
 };
 
 const getTodayDateDot = () => {
@@ -144,7 +108,7 @@ const AdminCreateReservationModal = ({
     };
 
     setIsChecking(true);
-    const conflictResults = await mockCheckReservationConflicts(nextReservation);
+    const conflictResults = await adminApi.checkReservationConflicts(nextReservation);
     setIsChecking(false);
 
     if (conflictResults.length > 0) {

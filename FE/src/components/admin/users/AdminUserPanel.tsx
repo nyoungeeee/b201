@@ -11,13 +11,7 @@ import {
   AdminWarningIcon,
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
-import {
-  fetchAvailableTeamColors,
-  fetchTeamLeaderFilterOptions,
-  mockAdminTeams,
-  mockAdminUsers,
-  mockTeamColors,
-} from "./mockAdminUsers";
+import * as adminApi from "../../../api/adminApi";
 import type {
   AdminManagedTeam,
   AdminManagedUser,
@@ -97,9 +91,9 @@ const TeamAvatar = ({
 );
 
 const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelProps) => {
-  const [users, setUsers] = useState(mockAdminUsers);
-  const [teams, setTeams] = useState(mockAdminTeams);
-  const [colors, setColors] = useState(mockTeamColors);
+  const [users, setUsers] = useState<AdminManagedUser[]>([]);
+  const [teams, setTeams] = useState<AdminManagedTeam[]>([]);
+  const [colors, setColors] = useState<AdminTeamColor[]>([]);
   const [activeTab, setActiveTab] = useState<"users" | "teams">("users");
   const [viewStack, setViewStack] = useState<AdminUserView[]>([initialView ?? { name: "list" }]);
   const [teamLeaderOptions, setTeamLeaderOptions] = useState<AdminTeamLeaderFilterOption[]>([]);
@@ -110,11 +104,13 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   const [teamLeaderFilter, setTeamLeaderFilter] = useState("all");
 
   useEffect(() => {
-    fetchAvailableTeamColors().then(setColors);
+    adminApi.getUsers().then(setUsers).catch(console.error);
+    adminApi.getTeams().then(setTeams).catch(console.error);
+    adminApi.getTeamColors().then(setColors).catch(console.error);
   }, []);
 
   useEffect(() => {
-    fetchTeamLeaderFilterOptions(teams, users).then(setTeamLeaderOptions);
+    adminApi.getTeamLeaderOptions(teams, users).then(setTeamLeaderOptions).catch(console.error);
   }, [teams, users]);
 
   const view = viewStack[viewStack.length - 1] ?? { name: "list" };
@@ -176,6 +172,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   });
 
   const handleBlockUser = (userId: number) => {
+    adminApi.blockUser(userId).catch(console.error);
     setUsers((currentUsers) =>
       currentUsers.map((user) => (user.id === userId ? { ...user, status: "blocked" } : user)),
     );
@@ -184,38 +181,33 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   };
 
   const handleUnblockUser = (userId: number) => {
+    adminApi.unblockUser(userId).catch(console.error);
     setUsers((currentUsers) =>
       currentUsers.map((user) => (user.id === userId ? { ...user, status: "normal" } : user)),
     );
     onToast?.("사용자 블락을 해제했습니다.");
   };
 
-  const handleCreateTeam = (teamName: string, colorId: string, leaderId: number) => {
-    const newTeamId = Math.max(...teams.map((team) => team.id)) + 1;
+  const handleCreateTeam = async (teamName: string, colorId: string, leaderId: number) => {
     const isOwnerLeader = leaderId === OWNER_LEADER_ID;
-    const nextTeam: AdminManagedTeam = {
-      id: newTeamId,
-      name: teamName,
-      colorId,
-      leaderId,
-      memberIds: isOwnerLeader ? [] : [leaderId],
-      updatedAt: "2026.05.14",
-    };
+    const memberIds = isOwnerLeader ? [] : [leaderId];
+    const created = await adminApi.createTeam({ name: teamName, colorId, leaderId, memberIds });
 
-    setTeams((currentTeams) => [nextTeam, ...currentTeams]);
+    setTeams((currentTeams) => [created, ...currentTeams]);
     if (!isOwnerLeader) {
       setUsers((currentUsers) =>
         currentUsers.map((user) =>
-          user.id === leaderId ? { ...user, teams: [...user.teams, newTeamId] } : user,
+          user.id === leaderId ? { ...user, teams: [...user.teams, created.id] } : user,
         ),
       );
     }
     setActiveTab("teams");
-    replaceView({ name: "team-detail", teamId: newTeamId });
+    replaceView({ name: "team-detail", teamId: created.id });
     onToast?.("팀을 생성했습니다.");
   };
 
   const handleSaveTeamSettings = (teamId: number, teamName: string, colorId: string) => {
+    adminApi.updateTeam(teamId, { name: teamName, colorId }).catch(console.error);
     setTeams((currentTeams) =>
       currentTeams.map((team) =>
         team.id === teamId ? { ...team, name: teamName, colorId, updatedAt: "2026.05.14" } : team,
@@ -226,6 +218,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   };
 
   const handleAddMembers = (teamId: number, memberIds: number[]) => {
+    adminApi.addTeamMembers(teamId, memberIds).catch(console.error);
     setTeams((currentTeams) =>
       currentTeams.map((team) => {
         if (team.id !== teamId) {
@@ -251,6 +244,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   };
 
   const handleChangeLeader = (teamId: number, leaderId: number) => {
+    adminApi.changeTeamLeader(teamId, leaderId).catch(console.error);
     setTeams((currentTeams) =>
       currentTeams.map((team) => {
         if (team.id !== teamId) {
@@ -282,7 +276,8 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   };
 
   const handleDeleteTeam = (teamId: number) => {
-    setTeams((currentTeams) => currentTeams.filter((team) => team.id !== teamId));
+    adminApi.deleteTeam(teamId).catch(console.error);
+    setTeams((currentTeams) =>currentTeams.filter((team) => team.id !== teamId));
     setUsers((currentUsers) =>
       currentUsers.map((user) => ({ ...user, teams: user.teams.filter((id) => id !== teamId) })),
     );
