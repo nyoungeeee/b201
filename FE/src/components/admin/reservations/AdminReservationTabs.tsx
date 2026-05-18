@@ -14,7 +14,11 @@ const AdminReservationTabs = ({
   onChange,
 }: AdminReservationTabsProps) => {
   return (
-    <div className="admin-reservation-tabs" role="tablist" aria-label="예약 상태">
+    <div
+      className="admin-reservation-tabs"
+      role="tablist"
+      aria-label="예약 상태"
+    >
       <button
         className={`admin-reservation-tabs__item${activeStatus === "pending" ? " is-active" : ""}`}
         type="button"

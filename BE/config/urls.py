@@ -36,7 +36,7 @@ urlpatterns = [
 ]
 
 # Admin site
-urlpatterns += [path("admin/", admin.site.urls)]
+urlpatterns += [path("api/admin/", admin.site.urls)]
 
 # API schema and documentation
 urlpatterns += [

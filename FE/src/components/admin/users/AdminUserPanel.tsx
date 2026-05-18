@@ -10,6 +10,7 @@ import {
   AdminUserIcon,
   AdminWarningIcon,
 } from "../icons";
+import AdminSelect from "../common/AdminSelect";
 import {
   fetchAvailableTeamColors,
   fetchTeamLeaderFilterOptions,
@@ -38,6 +39,7 @@ export type AdminUserView =
 type AdminUserPanelProps = {
   initialView?: AdminUserView | null;
   onInitialBack?: () => void;
+  onToast?: (message: string) => void;
 };
 
 const getInitial = (name: string) => name.slice(0, 1);
@@ -94,7 +96,7 @@ const TeamAvatar = ({
   </span>
 );
 
-const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => {
+const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelProps) => {
   const [users, setUsers] = useState(mockAdminUsers);
   const [teams, setTeams] = useState(mockAdminTeams);
   const [colors, setColors] = useState(mockTeamColors);
@@ -178,6 +180,14 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
       currentUsers.map((user) => (user.id === userId ? { ...user, status: "blocked" } : user)),
     );
     replaceView({ name: "user-detail", userId });
+    onToast?.("사용자를 블락했습니다.");
+  };
+
+  const handleUnblockUser = (userId: number) => {
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === userId ? { ...user, status: "normal" } : user)),
+    );
+    onToast?.("사용자 블락을 해제했습니다.");
   };
 
   const handleCreateTeam = (teamName: string, colorId: string, leaderId: number) => {
@@ -202,6 +212,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
     }
     setActiveTab("teams");
     replaceView({ name: "team-detail", teamId: newTeamId });
+    onToast?.("팀을 생성했습니다.");
   };
 
   const handleSaveTeamSettings = (teamId: number, teamName: string, colorId: string) => {
@@ -211,6 +222,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
       ),
     );
     goBack();
+    onToast?.("팀 설정을 저장했습니다.");
   };
 
   const handleAddMembers = (teamId: number, memberIds: number[]) => {
@@ -235,6 +247,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
       ),
     );
     goBack();
+    onToast?.("팀 멤버를 추가했습니다.");
   };
 
   const handleChangeLeader = (teamId: number, leaderId: number) => {
@@ -265,6 +278,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
       );
     }
     goBack();
+    onToast?.("팀장을 변경했습니다.");
   };
 
   const handleDeleteTeam = (teamId: number) => {
@@ -274,6 +288,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
     );
     setActiveTab("teams");
     replaceView({ name: "list" });
+    onToast?.("팀을 삭제했습니다.");
   };
 
   if (view.name === "user-detail") {
@@ -290,6 +305,7 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
         colors={colors}
         onBack={goBack}
         onBlock={() => navigate({ name: "block-user", userId: user.id })}
+        onUnblock={() => handleUnblockUser(user.id)}
         onTeamSelect={(teamId) => navigate({ name: "team-detail", teamId })}
       />
     );
@@ -436,33 +452,35 @@ const AdminUserPanel = ({ initialView, onInitialBack }: AdminUserPanelProps) => 
         </button>
       </div>
 
-      {activeTab === "users" ? (
-        <UserList
-          users={filteredUsers}
-          teams={teams}
-          colors={colors}
-          query={userQuery}
-          selectedTeamId={userTeamFilter}
-          selectedStatus={userStatusFilter}
-          onQueryChange={setUserQuery}
-          onTeamFilterChange={setUserTeamFilter}
-          onStatusFilterChange={setUserStatusFilter}
-          onSelect={(userId) => navigate({ name: "user-detail", userId })}
-        />
-      ) : (
-        <TeamList
-          teams={filteredTeams}
-          users={users}
-          colors={colors}
-          leaderOptions={teamLeaderOptions}
-          query={teamQuery}
-          selectedLeaderId={selectedTeamLeaderFilter}
-          onQueryChange={setTeamQuery}
-          onLeaderFilterChange={setTeamLeaderFilter}
-          onCreate={() => navigate({ name: "create-team" })}
-          onSelect={(teamId) => navigate({ name: "team-detail", teamId })}
-        />
-      )}
+      <div className="admin-panel-scroll">
+        {activeTab === "users" ? (
+          <UserList
+            users={filteredUsers}
+            teams={teams}
+            colors={colors}
+            query={userQuery}
+            selectedTeamId={userTeamFilter}
+            selectedStatus={userStatusFilter}
+            onQueryChange={setUserQuery}
+            onTeamFilterChange={setUserTeamFilter}
+            onStatusFilterChange={setUserStatusFilter}
+            onSelect={(userId) => navigate({ name: "user-detail", userId })}
+          />
+        ) : (
+          <TeamList
+            teams={filteredTeams}
+            users={users}
+            colors={colors}
+            leaderOptions={teamLeaderOptions}
+            query={teamQuery}
+            selectedLeaderId={selectedTeamLeaderFilter}
+            onQueryChange={setTeamQuery}
+            onLeaderFilterChange={setTeamLeaderFilter}
+            onCreate={() => navigate({ name: "create-team" })}
+            onSelect={(teamId) => navigate({ name: "team-detail", teamId })}
+          />
+        )}
+      </div>
     </section>
   );
 };
@@ -518,30 +536,27 @@ const UserList = ({
           />
           <AdminChevronDownIcon />
         </label>
-        <label className="admin-user-select-filter">
-          <AdminTeamIcon />
-          <select value={selectedTeamId} onChange={(event) => onTeamFilterChange(event.target.value)}>
-            <option value="all">팀 전체</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-          <AdminChevronDownIcon />
-        </label>
-        <label className="admin-user-select-filter">
-          <AdminWarningIcon />
-          <select
-            value={selectedStatus}
-            onChange={(event) => onStatusFilterChange(event.target.value as "all" | AdminManagedUser["status"])}
-          >
-            <option value="all">상태 전체</option>
-            <option value="normal">일반</option>
-            <option value="blocked">블락됨</option>
-          </select>
-          <AdminChevronDownIcon />
-        </label>
+        <AdminSelect
+          className="admin-user-select-filter"
+          value={selectedTeamId}
+          icon={<AdminTeamIcon />}
+          options={[
+            { value: "all", label: "팀 전체" },
+            ...teams.map((team) => ({ value: String(team.id), label: team.name })),
+          ]}
+          onChange={onTeamFilterChange}
+        />
+        <AdminSelect<"all" | AdminManagedUser["status"]>
+          className="admin-user-select-filter"
+          value={selectedStatus}
+          icon={<AdminWarningIcon />}
+          options={[
+            { value: "all", label: "상태 전체" },
+            { value: "normal", label: "일반" },
+            { value: "blocked", label: "블락됨" },
+          ]}
+          onChange={onStatusFilterChange}
+        />
       </div>
 
       <h2 className="admin-users__section-title">등록된 사용자</h2>
@@ -654,18 +669,16 @@ const TeamList = ({
         />
         <AdminChevronDownIcon />
       </label>
-      <label className="admin-user-select-filter">
-        <AdminPersonIcon />
-        <select value={selectedLeaderId} onChange={(event) => onLeaderFilterChange(event.target.value)}>
-          <option value="all">팀장 전체</option>
-          {leaderOptions.map((leader) => (
-            <option key={leader.id} value={leader.id}>
-              {leader.nickname}
-            </option>
-          ))}
-        </select>
-        <AdminChevronDownIcon />
-      </label>
+      <AdminSelect
+        className="admin-user-select-filter"
+        value={selectedLeaderId}
+        icon={<AdminPersonIcon />}
+        options={[
+          { value: "all", label: "팀장 전체" },
+          ...leaderOptions.map((leader) => ({ value: String(leader.id), label: leader.nickname })),
+        ]}
+        onChange={onLeaderFilterChange}
+      />
     </div>
     <h2 className="admin-users__section-title">등록된 팀</h2>
     <div className="admin-team-list">
@@ -711,6 +724,7 @@ const UserDetailScreen = ({
   colors,
   onBack,
   onBlock,
+  onUnblock,
   onTeamSelect,
 }: {
   user: AdminManagedUser;
@@ -718,6 +732,7 @@ const UserDetailScreen = ({
   colors: AdminTeamColor[];
   onBack: () => void;
   onBlock: () => void;
+  onUnblock: () => void;
   onTeamSelect: (teamId: number) => void;
 }) => {
   const userTeams = user.teams
@@ -771,7 +786,11 @@ const UserDetailScreen = ({
       </div>
       <footer className="admin-sub-actions">
         <button type="button" onClick={onBack}>닫기</button>
-        <button className="is-danger" type="button" onClick={onBlock}>블락하기</button>
+        {user.status === "blocked" ? (
+          <button className="is-outline-primary" type="button" onClick={onUnblock}>블락 해제하기</button>
+        ) : (
+          <button className="is-danger" type="button" onClick={onBlock}>블락하기</button>
+        )}
       </footer>
     </section>
   );
@@ -881,7 +900,9 @@ const TeamDetailScreen = ({
             <button className="admin-member-list__user" key={member.id} type="button" onClick={() => onUserSelect(member.id)}>
               <strong>{member.nickname}</strong>
               <span>{member.email}</span>
-              {member.id === team.leaderId && <em>팀장</em>}
+              <span className="admin-member-list__role">
+                {member.id === team.leaderId && <em>팀장</em>}
+              </span>
               <AdminChevronRightIcon />
             </button>
           ))}
@@ -955,9 +976,6 @@ const TeamSettingsScreen = ({
           <AdminChevronRightIcon />
         </button>
         <p className="admin-settings-help">각 팀은 반드시 팀장이 1명 지정되어야 합니다.</p>
-        <section className="admin-info-card">
-          <p><span>팀원 수</span><strong>{team.memberIds.length}명</strong></p>
-        </section>
         <div className="admin-info-box">
           <AdminWarningIcon />
           <p>모든 팀은 반드시 팀장이 1명 있어야 합니다.</p>
@@ -1072,13 +1090,17 @@ const CreateTeamScreen = ({
         {selectedLeader && (
           <section className="admin-selected-leader">
             <span>선택된 팀장</span>
-            {isOwnerLeader ? (
-              <strong className="admin-owner-avatar">사</strong>
-            ) : (
-              <UserAvatar user={selectedLeader as AdminManagedUser} size="sm" />
-            )}
-            <strong>{selectedLeader.nickname}</strong>
-            <small>{selectedLeader.email}</small>
+            <div className="admin-selected-leader__body">
+              {isOwnerLeader ? (
+                <strong className="admin-owner-avatar">사</strong>
+              ) : (
+                <UserAvatar user={selectedLeader as AdminManagedUser} size="sm" />
+              )}
+              <div>
+                <strong>{selectedLeader.nickname}</strong>
+                <small>{selectedLeader.email}</small>
+              </div>
+            </div>
             <button type="button" aria-label="선택된 팀장 해제" onClick={clearLeader}>×</button>
           </section>
         )}
@@ -1132,7 +1154,7 @@ const AddMembersScreen = ({
   onAdd: (memberIds: number[]) => void;
 }) => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const candidates = users;
+  const candidates = users.filter((user) => user.status !== "blocked");
 
   return (
     <section className="admin-sub-screen">
@@ -1145,17 +1167,15 @@ const AddMembersScreen = ({
         </label>
         <div className="admin-member-list">
           {candidates.map((user) => {
-            const isBlocked = user.status === "blocked";
             const checked = selectedIds.includes(user.id);
 
             return (
-              <label className={`admin-selectable-user admin-selectable-user--no-avatar${isBlocked ? " is-disabled" : ""}`} key={user.id}>
+              <label className="admin-selectable-user admin-selectable-user--no-avatar" key={user.id}>
                 <strong>{user.nickname}</strong>
                 <span>{user.email}</span>
                 <input
                   type="checkbox"
                   checked={checked}
-                  disabled={isBlocked}
                   onChange={() =>
                     setSelectedIds((currentIds) =>
                       checked ? currentIds.filter((id) => id !== user.id) : [...currentIds, user.id],

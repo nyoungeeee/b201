@@ -12,6 +12,11 @@ import {
   AdminStatusIcon,
   AdminTeamIcon,
 } from "../icons";
+import {
+  formatRepeatWeekdays,
+  formatReservationDetailDate,
+  formatReservationPeriod,
+} from "./formatReservation";
 import type { AdminReservation } from "./types";
 
 type AdminReservationDetailProps = {
@@ -48,11 +53,12 @@ const toDateKey = (date: Date) => {
 };
 
 const formatOccurrenceLabel = (date: Date, timeLabel: string) => {
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
-  return `${month}.${day} (${weekdays[date.getDay()]}) ${timeLabel}`;
+  return `${year}.${month}.${day} ${weekdays[date.getDay()]} ${timeLabel}`;
 };
 
 const parsePeriodDate = (value: string, year: number) => {
@@ -149,7 +155,7 @@ const AdminReservationDetail = ({
   const reservationType = reservation.kind === "repeat" ? "반복 예약" : "단건 예약";
   const statusLabel = isPending ? "승인 대기" : "승인 완료";
   const isRepeatReservation = reservation.kind === "repeat";
-  const repeatDays = reservation.dateLabel.replace("매주 ", "");
+  const repeatDays = formatRepeatWeekdays(reservation.dateLabel);
   const [selectedOccurrenceDates, setSelectedOccurrenceDates] = useState<string[]>([]);
   const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
   const remainingOccurrences = useMemo(() => getRemainingOccurrences(reservation), [reservation]);
@@ -218,12 +224,16 @@ const AdminReservationDetail = ({
             <DetailRow
               icon={<AdminClockIcon />}
               label="예약 시간"
-              value={`${reservation.dateLabel} ${reservation.timeLabel}`}
+              value={reservation.timeLabel}
             />
             <DetailRow
               icon={<AdminCalendarIcon />}
               label={isRepeatReservation ? "반복 기간" : "예약 날짜"}
-              value={reservation.periodLabel || reservation.dateLabel}
+              value={
+                isRepeatReservation
+                  ? formatReservationPeriod(reservation.periodLabel)
+                  : formatReservationDetailDate(reservation.dateLabel)
+              }
             />
             {isRepeatReservation && (
               <DetailRow icon={<AdminRepeatIcon />} label="반복 요일" value={repeatDays} />
@@ -332,7 +342,7 @@ const AdminReservationDetail = ({
             type="button"
             onClick={handleApprovedReject}
           >
-            거절하기
+            취소하기
           </button>
         )}
       </footer>

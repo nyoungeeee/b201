@@ -1,15 +1,16 @@
 import {
   AdminCalendarIcon,
-  AdminChevronDownIcon,
   AdminReservationIcon,
   AdminTeamIcon,
 } from "../icons";
+import AdminSelect from "../common/AdminSelect";
 import type { AdminRoomFilter, AdminTeamFilter } from "./types";
 
 type AdminReservationFiltersProps = {
   dateRange: string;
   teamFilter: AdminTeamFilter;
   roomFilter: AdminRoomFilter;
+  roomOptions: string[];
   onDateRangeChange: (value: string) => void;
   onTeamFilterChange: (value: AdminTeamFilter) => void;
   onRoomFilterChange: (value: AdminRoomFilter) => void;
@@ -19,49 +20,44 @@ const AdminReservationFilters = ({
   dateRange,
   teamFilter,
   roomFilter,
+  roomOptions,
   onDateRangeChange,
   onTeamFilterChange,
   onRoomFilterChange,
 }: AdminReservationFiltersProps) => {
   return (
     <div className="admin-reservation-filters" aria-label="예약 목록 조건">
-      <label className="admin-select-chip">
-        <AdminCalendarIcon />
-        <select value={dateRange} onChange={(event) => onDateRangeChange(event.target.value)}>
-          <option value="7">오늘~7일</option>
-          <option value="14">오늘~14일</option>
-          <option value="30">오늘~30일</option>
-        </select>
-        <AdminChevronDownIcon />
-      </label>
+      <AdminSelect
+        value={dateRange}
+        icon={<AdminCalendarIcon />}
+        options={[
+          { value: "7", label: "오늘~7일" },
+          { value: "14", label: "오늘~14일" },
+          { value: "30", label: "오늘~30일" },
+        ]}
+        onChange={onDateRangeChange}
+      />
 
-      <label className="admin-select-chip">
-        <AdminTeamIcon />
-        <select
-          value={teamFilter}
-          onChange={(event) => onTeamFilterChange(event.target.value as AdminTeamFilter)}
-        >
-          <option value="all">팀 전체</option>
-          <option value="team">팀 예약</option>
-          <option value="private">개인 예약</option>
-        </select>
-        <AdminChevronDownIcon />
-      </label>
+      <AdminSelect<AdminTeamFilter>
+        value={teamFilter}
+        icon={<AdminTeamIcon />}
+        options={[
+          { value: "all", label: "팀 전체" },
+          { value: "team", label: "팀 예약" },
+          { value: "private", label: "개인 예약" },
+        ]}
+        onChange={onTeamFilterChange}
+      />
 
-      <label className="admin-select-chip">
-        <AdminReservationIcon />
-        <select
-          value={roomFilter}
-          onChange={(event) => onRoomFilterChange(event.target.value as AdminRoomFilter)}
-        >
-          <option value="all">룸 전체</option>
-          <option value="A룸">A룸</option>
-          <option value="B룸">B룸</option>
-          <option value="C룸">C룸</option>
-          <option value="D룸">D룸</option>
-        </select>
-        <AdminChevronDownIcon />
-      </label>
+      <AdminSelect<AdminRoomFilter>
+        value={roomFilter}
+        icon={<AdminReservationIcon />}
+        options={[
+          { value: "all", label: "룸 전체" },
+          ...roomOptions.map((roomName) => ({ value: roomName, label: roomName })),
+        ]}
+        onChange={onRoomFilterChange}
+      />
     </div>
   );
 };

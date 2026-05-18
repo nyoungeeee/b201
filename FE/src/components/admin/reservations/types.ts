@@ -1,6 +1,6 @@
 export type AdminReservationStatus = "pending" | "approved";
 export type AdminReservationKind = "single" | "repeat";
-export type AdminRoom = "A룸" | "B룸" | "C룸" | "D룸";
+export type AdminRoom = string;
 export type AdminTeamFilter = "all" | "team" | "private";
 export type AdminRoomFilter = "all" | AdminRoom;
 
@@ -26,6 +26,8 @@ export type NewAdminReservation = {
   startTime: string;
   endTime: string;
   room: AdminRoom;
+  teamId?: number;
+  teamName?: string;
   title: string;
   memo: string;
 };

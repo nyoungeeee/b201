@@ -4,23 +4,31 @@ import {
   AdminReservationIcon,
   AdminRoomIcon,
   AdminUserIcon,
+  AdminMemoIcon,
 } from "./icons";
 
 type AdminLayoutProps = {
   children?: ReactNode | ((activeNavId: AdminNavId, setActiveNavId: (navId: AdminNavId) => void) => ReactNode);
+  onNavChange?: (navId: AdminNavId) => void;
+  toastMessage?: string | null;
 };
 
 const adminNavItems = [
   { id: "reservation", label: "예약 관리", icon: AdminReservationIcon },
   { id: "user", label: "사용자 관리", icon: AdminUserIcon },
   { id: "room", label: "합주실 관리", icon: AdminRoomIcon },
+  { id: "log", label: "기록보기", icon: AdminMemoIcon },
 ] as const;
 
 export type AdminNavId = (typeof adminNavItems)[number]["id"];
 
-const AdminLayout = ({ children }: AdminLayoutProps) => {
+const AdminLayout = ({ children, onNavChange, toastMessage }: AdminLayoutProps) => {
   const [activeNavId, setActiveNavId] = useState<AdminNavId>(adminNavItems[0].id);
   const activeNavItem = adminNavItems.find((item) => item.id === activeNavId) ?? adminNavItems[0];
+  const handleNavChange = (navId: AdminNavId) => {
+    onNavChange?.(navId);
+    setActiveNavId(navId);
+  };
 
   return (
     <div className="app-shell">
@@ -33,6 +41,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           <main className="admin-content">
             {typeof children === "function" ? children(activeNavId, setActiveNavId) : children}
           </main>
+
+          {toastMessage && (
+            <div className="admin-toast" role="status" aria-live="polite">
+              {toastMessage}
+            </div>
+          )}
 
           <nav className="admin-bottom-nav" aria-label="관리자 메뉴">
             {adminNavItems.map((item) => {
@@ -47,7 +61,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                   aria-current={isActive ? "page" : undefined}
                   aria-label={item.label}
                   title={item.label}
-                  onClick={() => setActiveNavId(item.id)}
+                  onClick={() => handleNavChange(item.id)}
                 >
                   <Icon />
                   <span>{item.label}</span>

@@ -3,24 +3,30 @@ import { useState } from "react";
 import {
   AdminArrowLeftIcon,
   AdminCalendarIcon,
-  AdminChevronDownIcon,
   AdminClockIcon,
+  AdminReservationIcon,
   AdminWarningIcon,
 } from "../icons";
+import AdminSelect from "../common/AdminSelect";
 import AdminCreateConflictReview from "./AdminCreateConflictReview";
 import type { AdminReservationConflict, AdminRoom, NewAdminReservation } from "./types";
+
+type AdminReservationTeamOption = {
+  id: number;
+  name: string;
+};
 
 type AdminCreateReservationModalProps = {
   onClose: () => void;
   onCreate: (reservation: NewAdminReservation, canceledConflictIds?: number[]) => void;
+  rooms: AdminRoom[];
+  teamOptions: AdminReservationTeamOption[];
 };
-
-const rooms: AdminRoom[] = ["A룸", "B룸", "C룸", "D룸"];
 
 const mockCheckReservationConflicts = async (
   reservation: NewAdminReservation,
 ): Promise<AdminReservationConflict[]> => {
-  const hasConflict = reservation.room === "B룸" && reservation.date === "2026-05-15";
+  const hasConflict = reservation.room === "B201" && reservation.date === "2026-05-15";
 
   if (!hasConflict) {
     return [];
@@ -29,7 +35,7 @@ const mockCheckReservationConflicts = async (
   return [
     {
       id: 1,
-      room: "B룸",
+      room: "B201",
       date: "2026.05.15",
       timeLabel: "19:00~21:00",
       ownerLabel: "팀: 사운드웨이브",
@@ -37,7 +43,7 @@ const mockCheckReservationConflicts = async (
     },
     {
       id: 3,
-      room: "B룸",
+      room: "B201",
       date: "2026.05.15",
       timeLabel: "21:00~22:00",
       ownerLabel: "개인 예약: 박지훈",
@@ -45,7 +51,7 @@ const mockCheckReservationConflicts = async (
     },
     {
       id: 4,
-      room: "B룸",
+      room: "B201",
       date: "2026.05.15",
       timeLabel: "18:30~19:30",
       ownerLabel: "팀: 블루코드",
@@ -54,11 +60,36 @@ const mockCheckReservationConflicts = async (
   ];
 };
 
-const AdminCreateReservationModal = ({ onClose, onCreate }: AdminCreateReservationModalProps) => {
+const reservationDateOptions = [
+  { value: "2026-05-15", label: "2026.05.15 금요일" },
+  { value: "2026-05-16", label: "2026.05.16 토요일" },
+  { value: "2026-05-17", label: "2026.05.17 일요일" },
+  { value: "2026-05-18", label: "2026.05.18 월요일" },
+  { value: "2026-05-19", label: "2026.05.19 화요일" },
+  { value: "2026-05-20", label: "2026.05.20 수요일" },
+  { value: "2026-05-21", label: "2026.05.21 목요일" },
+];
+
+const halfHourTimeOptions = Array.from({ length: 49 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? "00" : "30";
+  const label = `${String(hour).padStart(2, "0")}:${minute}`;
+
+  return { value: label, label };
+});
+
+const AdminCreateReservationModal = ({
+  onClose,
+  onCreate,
+  rooms,
+  teamOptions,
+}: AdminCreateReservationModalProps) => {
   const [date, setDate] = useState("2026-05-15");
   const [startTime, setStartTime] = useState("19:00");
   const [endTime, setEndTime] = useState("22:00");
-  const [room, setRoom] = useState<AdminRoom>("B룸");
+  const [room, setRoom] = useState<AdminRoom>(rooms[0] ?? "");
+  const [reservationOwnerType, setReservationOwnerType] = useState<"owner" | "team">("owner");
+  const [selectedTeamId, setSelectedTeamId] = useState(String(teamOptions[0]?.id ?? ""));
   const [title, setTitle] = useState("사장님 개인 사용");
   const [memo, setMemo] = useState("");
   const [pendingReservation, setPendingReservation] = useState<NewAdminReservation | null>(null);
@@ -66,15 +97,21 @@ const AdminCreateReservationModal = ({ onClose, onCreate }: AdminCreateReservati
   const [isChecking, setIsChecking] = useState(false);
 
   const handleSubmit = async () => {
-    if (!date || !startTime || !endTime || !title.trim()) {
+    if (!date || !startTime || !endTime || !room || !title.trim()) {
       return;
     }
+    const selectedTeam =
+      reservationOwnerType === "owner"
+        ? null
+        : teamOptions.find((team) => String(team.id) === selectedTeamId) ?? null;
 
     const nextReservation = {
       date,
       startTime,
       endTime,
       room,
+      teamId: selectedTeam?.id,
+      teamName: selectedTeam?.name,
       title: title.trim(),
       memo: memo.trim(),
     };
@@ -121,11 +158,13 @@ const AdminCreateReservationModal = ({ onClose, onCreate }: AdminCreateReservati
           <span>
             예약 날짜 <strong>*</strong>
           </span>
-          <div className="admin-create-control">
-            <AdminCalendarIcon size={28} />
-            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-            <AdminChevronDownIcon size={24} />
-          </div>
+          <AdminSelect
+            className="admin-create-control admin-create-control--picker"
+            value={date}
+            icon={<AdminCalendarIcon size={28} />}
+            options={reservationDateOptions}
+            onChange={setDate}
+          />
         </label>
 
         <div className="admin-create-field">
@@ -133,17 +172,21 @@ const AdminCreateReservationModal = ({ onClose, onCreate }: AdminCreateReservati
             예약 시간 <strong>*</strong>
           </span>
           <div className="admin-create-time-row">
-            <label className="admin-create-control">
-              <AdminClockIcon size={28} />
-              <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
-              <AdminChevronDownIcon size={24} />
-            </label>
+            <AdminSelect
+              className="admin-create-control admin-create-control--picker"
+              value={startTime}
+              icon={<AdminClockIcon size={28} />}
+              options={halfHourTimeOptions}
+              onChange={setStartTime}
+            />
             <span className="admin-create-time-row__dash">~</span>
-            <label className="admin-create-control">
-              <AdminClockIcon size={28} />
-              <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
-              <AdminChevronDownIcon size={24} />
-            </label>
+            <AdminSelect
+              className="admin-create-control admin-create-control--picker"
+              value={endTime}
+              icon={<AdminClockIcon size={28} />}
+              options={halfHourTimeOptions}
+              onChange={setEndTime}
+            />
           </div>
         </div>
 
@@ -165,17 +208,51 @@ const AdminCreateReservationModal = ({ onClose, onCreate }: AdminCreateReservati
           </div>
         </fieldset>
 
+        <fieldset className="admin-create-field admin-create-owner-field">
+          <legend>
+            예약 구분 <strong>*</strong>
+          </legend>
+          <div className="admin-create-owner-radios">
+            <label>
+              <input
+                type="radio"
+                checked={reservationOwnerType === "owner"}
+                onChange={() => setReservationOwnerType("owner")}
+              />
+              <span>사장님 개인</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                checked={reservationOwnerType === "team"}
+                onChange={() => setReservationOwnerType("team")}
+              />
+              <span>팀 예약</span>
+            </label>
+          </div>
+          {reservationOwnerType === "team" && (
+            <AdminSelect
+              className="admin-create-team-select"
+              value={selectedTeamId}
+              options={teamOptions.map((team) => ({ value: String(team.id), label: team.name }))}
+              onChange={setSelectedTeamId}
+            />
+          )}
+        </fieldset>
+
         <label className="admin-create-field">
           <span>
             예약명 <strong>*</strong>
           </span>
-          <input
-            className="admin-create-text-input"
-            value={title}
-            maxLength={30}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="예약명을 입력하세요"
-          />
+          <div className="admin-create-control">
+            <AdminReservationIcon size={28} />
+            <input
+              value={title}
+              maxLength={30}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="예약명을 입력하세요"
+            />
+          </div>
         </label>
 
         <label className="admin-create-field">

@@ -5,6 +5,7 @@ import {
   AdminReservationIcon,
   AdminTeamIcon,
 } from "../icons";
+import { formatReservationCardDate, formatReservationPeriod } from "./formatReservation";
 import type { AdminReservation } from "./types";
 
 type AdminReservationCardProps = {
@@ -15,6 +16,7 @@ type AdminReservationCardProps = {
 
 const AdminReservationCard = ({ reservation, onSelect, onApprove }: AdminReservationCardProps) => {
   const isPending = reservation.status === "pending";
+  const reservationDate = formatReservationCardDate(reservation);
 
   return (
     <article
@@ -40,14 +42,14 @@ const AdminReservationCard = ({ reservation, onSelect, onApprove }: AdminReserva
         </div>
 
         <h3 className="admin-reservation-card__title">
-          {reservation.dateLabel} {reservation.timeLabel}
+          {reservationDate} {reservation.timeLabel}
         </h3>
 
         <div className="admin-reservation-card__meta">
           {reservation.periodLabel && (
             <p>
               <AdminCalendarIcon />
-              <span>기간 {reservation.periodLabel}</span>
+              <span>기간 {formatReservationPeriod(reservation.periodLabel)}</span>
             </p>
           )}
           <p>

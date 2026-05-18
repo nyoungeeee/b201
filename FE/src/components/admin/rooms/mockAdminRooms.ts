@@ -60,21 +60,21 @@ export const mockAdminRoomDayOffs: AdminRoomDayOff[] = [
 export const mockAffectedReservations: AdminRoomAffectedReservation[] = [
   {
     id: 5,
-    roomName: "A룸",
+    roomName: "B201",
     dateTime: "2026.05.15 (금) 10:00~12:00",
     reserver: "팀: 사운드웨이브",
     status: "승인 완료",
   },
   {
     id: 1,
-    roomName: "B룸",
+    roomName: "B203",
     dateTime: "2026.05.15 (금) 13:00~15:00",
     reserver: "개인 예약: 박지훈",
     status: "승인 대기",
   },
   {
     id: 7,
-    roomName: "C룸",
+    roomName: "B201",
     dateTime: "2026.05.15 (금) 17:00~18:00",
     reserver: "팀: 블루코드",
     status: "승인 완료",
