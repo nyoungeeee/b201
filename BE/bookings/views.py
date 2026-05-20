@@ -13,6 +13,7 @@ from bookings.exceptions import (
     ForbiddenTeamBookingError,
     InactiveStudioRoomError,
     InvalidBookingTimeError,
+    NoAvailableRepeatDatesError,
     NotFoundBookingError,
     NotFoundStudioRoomError,
     NotFoundTeamError,
@@ -27,6 +28,7 @@ from bookings.serializers import (
     MyReservationListSerializer,
     PrivateReservationCreateRequestSerializer,
     PrivateReservationCreateResponseSerializer,
+    RepeatReservationCheckResponseSerializer,
     TeamReservationCreateRequestSerializer,
     TeamReservationCreateResponseSerializer,
     TeamReservationListQueryParamsSerializer,
@@ -345,6 +347,111 @@ class PrivateReservationCreateView(APIView):
         )
 
 
+class PrivateRepeatReservationCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=PrivateReservationCreateRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=RepeatReservationCheckResponseSerializer,
+                description="개인 반복 예약 가능 여부 확인 성공",
+            ),
+            400: openapi_exception_response(
+                InvalidBookingTimeError,
+                OutsideOperatingHoursError,
+            ),
+            404: openapi_exception_response(
+                NotFoundStudioRoomError,
+                InactiveStudioRoomError,
+            ),
+            409: openapi_exception_response(NoAvailableRepeatDatesError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="개인 반복 예약 생성 전 주차별 가능 여부를 확인합니다. 충돌 주차는 conflict_occurrences에 담아 반환합니다.",
+    )
+    def post(self, request, room_id: int):
+        serializer = PrivateReservationCreateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = ReservationCommandService.check_repeat_reservation(
+                room_id=room_id,
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
+                start_time=serializer.validated_data["start_time"],
+                end_time=serializer.validated_data["end_time"],
+            )
+        except (InvalidBookingTimeError, OutsideOperatingHoursError) as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except (NotFoundStudioRoomError, InactiveStudioRoomError) as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        data = RepeatReservationCheckResponseSerializer(result).data
+        if not result.available_occurrences:
+            data.update(
+                {
+                    "code": NoAvailableRepeatDatesError.code,
+                    "message": NoAvailableRepeatDatesError.message,
+                }
+            )
+            return Response(data, status=status.HTTP_409_CONFLICT)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PrivateRepeatReservationCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=PrivateReservationCreateRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=PrivateReservationCreateResponseSerializer,
+                description="개인 반복 예약 생성 성공. 충돌 주차는 건너뛰고 가능한 주차만 생성합니다.",
+            ),
+            400: openapi_exception_response(
+                InvalidBookingTimeError,
+                OutsideOperatingHoursError,
+            ),
+            404: openapi_exception_response(
+                NotFoundStudioRoomError,
+                InactiveStudioRoomError,
+            ),
+            409: openapi_exception_response(NoAvailableRepeatDatesError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="개인 반복 예약을 생성합니다. 생성 시점에 다시 충돌을 검사하고, 충돌 주차는 skipped_occurrences로 반환합니다.",
+    )
+    def post(self, request, room_id: int):
+        serializer = PrivateReservationCreateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reservation = ReservationCommandService.create_private_repeat_reservation(
+                user=request.user,
+                room_id=room_id,
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
+                start_time=serializer.validated_data["start_time"],
+                end_time=serializer.validated_data["end_time"],
+            )
+        except (InvalidBookingTimeError, OutsideOperatingHoursError) as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except (NotFoundStudioRoomError, InactiveStudioRoomError) as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except NoAvailableRepeatDatesError as e:
+            raise ConflictException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        return Response(
+            PrivateReservationCreateResponseSerializer(reservation).data,
+            status=status.HTTP_200_OK,
+        )
+
+
 class TeamReservationCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -395,6 +502,130 @@ class TeamReservationCreateView(APIView):
         ) as e:
             raise NotFoundException(code=e.code, message=e.message) from e
         except DuplicatedReservationError as e:
+            raise ConflictException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        return Response(
+            TeamReservationCreateResponseSerializer(reservation).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class TeamRepeatReservationCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TeamReservationCreateRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=RepeatReservationCheckResponseSerializer,
+                description="팀 반복 예약 가능 여부 확인 성공",
+            ),
+            400: openapi_exception_response(
+                InvalidBookingTimeError,
+                OutsideOperatingHoursError,
+            ),
+            403: openapi_exception_response(ForbiddenTeamBookingError),
+            404: openapi_exception_response(
+                NotFoundStudioRoomError,
+                InactiveStudioRoomError,
+                NotFoundTeamError,
+            ),
+            409: openapi_exception_response(NoAvailableRepeatDatesError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="팀 반복 예약 생성 전 주차별 가능 여부를 확인합니다. 충돌 주차는 conflict_occurrences에 담아 반환합니다.",
+    )
+    def post(self, request, room_id: int):
+        serializer = TeamReservationCreateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = ReservationCommandService.check_team_repeat_reservation(
+                user=request.user,
+                room_id=room_id,
+                team_id=serializer.validated_data["team_id"],
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
+                start_time=serializer.validated_data["start_time"],
+                end_time=serializer.validated_data["end_time"],
+            )
+        except (InvalidBookingTimeError, OutsideOperatingHoursError) as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except ForbiddenTeamBookingError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except (
+            NotFoundStudioRoomError,
+            InactiveStudioRoomError,
+            NotFoundTeamError,
+        ) as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        data = RepeatReservationCheckResponseSerializer(result).data
+        if not result.available_occurrences:
+            data.update(
+                {
+                    "code": NoAvailableRepeatDatesError.code,
+                    "message": NoAvailableRepeatDatesError.message,
+                }
+            )
+            return Response(data, status=status.HTTP_409_CONFLICT)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class TeamRepeatReservationCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TeamReservationCreateRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=TeamReservationCreateResponseSerializer,
+                description="팀 반복 예약 생성 성공. 충돌 주차는 건너뛰고 가능한 주차만 생성합니다.",
+            ),
+            400: openapi_exception_response(
+                InvalidBookingTimeError,
+                OutsideOperatingHoursError,
+            ),
+            403: openapi_exception_response(ForbiddenTeamBookingError),
+            404: openapi_exception_response(
+                NotFoundStudioRoomError,
+                InactiveStudioRoomError,
+                NotFoundTeamError,
+            ),
+            409: openapi_exception_response(NoAvailableRepeatDatesError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="팀 반복 예약을 생성합니다. 생성 시점에 다시 충돌을 검사하고, 충돌 주차는 skipped_occurrences로 반환합니다.",
+    )
+    def post(self, request, room_id: int):
+        serializer = TeamReservationCreateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reservation = ReservationCommandService.create_team_repeat_reservation(
+                user=request.user,
+                room_id=room_id,
+                team_id=serializer.validated_data["team_id"],
+                start_date=serializer.validated_data["start_date"],
+                count=serializer.validated_data["count"],
+                start_time=serializer.validated_data["start_time"],
+                end_time=serializer.validated_data["end_time"],
+            )
+        except (InvalidBookingTimeError, OutsideOperatingHoursError) as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except ForbiddenTeamBookingError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except (
+            NotFoundStudioRoomError,
+            InactiveStudioRoomError,
+            NotFoundTeamError,
+        ) as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except NoAvailableRepeatDatesError as e:
             raise ConflictException(code=e.code, message=e.message) from e
         except Exception as e:
             raise InternalServerErrorException() from e

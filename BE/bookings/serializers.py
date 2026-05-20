@@ -108,9 +108,28 @@ class TeamReservationCreateRequestSerializer(PrivateReservationCreateRequestSeri
     team_id = serializers.IntegerField(required=True, min_value=1)
 
 
+class RepeatOccurrenceSerializer(serializers.Serializer):
+    week = serializers.IntegerField(required=True)
+    date = serializers.DateField(required=True)
+
+
+class RepeatConflictOccurrenceSerializer(serializers.Serializer):
+    week = serializers.IntegerField(required=True)
+    date = serializers.DateField(required=True)
+    code = serializers.CharField(required=True)
+    message = serializers.CharField(required=True)
+
+
+class RepeatReservationCheckResponseSerializer(serializers.Serializer):
+    available_occurrences = RepeatOccurrenceSerializer(many=True, required=True)
+    conflict_occurrences = RepeatConflictOccurrenceSerializer(many=True, required=True)
+
+
 class PrivateReservationCreateResponseSerializer(serializers.Serializer):
     reservations = ReservationItemSerializer(many=True, required=True)
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(many=True, required=False)
 
 
 class TeamReservationCreateResponseSerializer(serializers.Serializer):
     reservations = TeamReservationItemSerializer(many=True, required=True)
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(many=True, required=False)
