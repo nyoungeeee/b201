@@ -116,6 +116,16 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
             ).count(),
             3,
         )
+        repeat_group_ids = set(
+            Booking.objects.filter(
+                user=self.user,
+                room=self.room,
+                booking_type=BookingType.PRIVATE,
+                status=BookingStatus.PENDING,
+            ).values_list("repeat_group_id", flat=True)
+        )
+        self.assertEqual(len(repeat_group_ids), 1)
+        self.assertNotIn(None, repeat_group_ids)
 
     # 반복 예약 확인 시 충돌 주차와 예약 가능 주차를 함께 반환하는지 검증한다.
     def test_repeat_check_private_reservation_returns_conflict_weeks(self):

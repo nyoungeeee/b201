@@ -450,6 +450,10 @@ class ReservationCommandService:
     ) -> ReservationList:
         room = ReservationCommandService._get_active_room(room_id)
         bookings: list[Booking] = []
+        repeat_metadata = ReservationCommandService._build_repeat_metadata(
+            start_date=start_date,
+            count=count,
+        )
         for target_date in ReservationCommandService._build_recurring_dates(
             start_date=start_date,
             count=count,
@@ -470,6 +474,7 @@ class ReservationCommandService:
                     start_time=start_time,
                     end_time=end_time,
                     status=BookingStatus.PENDING,
+                    **repeat_metadata,
                 )
             )
 
@@ -494,6 +499,10 @@ class ReservationCommandService:
         room = ReservationCommandService._get_active_room(room_id)
         team = ReservationCommandService._get_user_team(user=user, team_id=team_id)
         bookings: list[Booking] = []
+        repeat_metadata = ReservationCommandService._build_repeat_metadata(
+            start_date=start_date,
+            count=count,
+        )
         for target_date in ReservationCommandService._build_recurring_dates(
             start_date=start_date,
             count=count,
@@ -515,6 +524,7 @@ class ReservationCommandService:
                     start_time=start_time,
                     end_time=end_time,
                     status=BookingStatus.PENDING,
+                    **repeat_metadata,
                 )
             )
 
@@ -964,3 +974,14 @@ class ReservationCommandService:
     @staticmethod
     def _to_spec_weekday(target_date: date) -> int:
         return (target_date.weekday() + 1) % 7
+
+    @staticmethod
+    def _build_repeat_metadata(start_date: date, count: int) -> dict:
+        if count <= 1:
+            return {}
+        return {
+            "repeat_group_id": uuid4(),
+            "repeat_weekdays": [ReservationCommandService._to_spec_weekday(start_date)],
+            "repeat_start_date": start_date,
+            "repeat_end_date": start_date + timedelta(days=7 * (count - 1)),
+        }
