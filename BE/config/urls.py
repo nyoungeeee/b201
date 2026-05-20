@@ -55,6 +55,7 @@ urlpatterns += [
     path("api/v1/rooms/", include("bookings.rooms_urls")),
     path("api/v1/reservations/", include("bookings.reservations_urls")),
     path("api/v1/teams/", include("teams.urls")),
+    path("api/v1/admin/", include("backoffice.urls")),
 ]
 
 

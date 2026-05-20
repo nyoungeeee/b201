@@ -7,6 +7,7 @@ class SlotSerializer(serializers.Serializer):
     start_time = serializers.TimeField(required=True)
     end_time = serializers.TimeField(required=True)
     name = serializers.CharField(required=True)
+    memo = serializers.CharField(required=False, allow_blank=True)
     color = serializers.CharField(required=True)
     status = serializers.CharField(required=False, allow_null=True)
 
@@ -67,6 +68,7 @@ class ReservationItemSerializer(serializers.Serializer):
     end_time = serializers.TimeField(required=True)
     type = serializers.CharField(required=True)
     name = serializers.CharField(required=True)
+    memo = serializers.CharField(required=False, allow_blank=True)
     color = serializers.CharField(required=True)
     status = serializers.CharField(required=True)
 

@@ -46,8 +46,13 @@ class Booking(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
-    # display_name = models.CharField(max_length=50)
-    # color = models.CharField(max_length=6)
+    title = models.CharField(max_length=100, blank=True, null=True)
+    memo = models.TextField(blank=True, default="")
+    repeat_group_id = models.UUIDField(blank=True, null=True, db_index=True)
+    repeat_weekdays = models.JSONField(blank=True, null=True)
+    repeat_start_date = models.DateField(blank=True, null=True)
+    repeat_end_date = models.DateField(blank=True, null=True)
+    canceled_occurrence_dates = models.JSONField(default=list, blank=True)
 
     status = models.CharField(
         max_length=20,
@@ -67,6 +72,7 @@ class Booking(models.Model):
             models.Index(fields=["user", "status", "reservation_date"]),
             models.Index(fields=["team", "status", "reservation_date"]),
             models.Index(fields=["reservation_date", "status"]),
+            models.Index(fields=["repeat_group_id"]),
         ]
         ordering = ["reservation_date", "start_time", "reservation_number"]
 
