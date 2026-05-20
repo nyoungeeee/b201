@@ -285,3 +285,122 @@ class AdminLogSerializer(serializers.Serializer):
     target = serializers.CharField(required=True)
     detail = serializers.CharField(required=True)
     created_at = serializers.DateTimeField(required=True)
+
+
+class AdminPagePaginationSerializer(serializers.Serializer):
+    page = serializers.IntegerField(required=True)
+    page_size = serializers.IntegerField(required=True)
+    total_count = serializers.IntegerField(required=True)
+    total_pages = serializers.IntegerField(required=True)
+
+
+class AdminCursorPaginationSerializer(serializers.Serializer):
+    next_cursor = serializers.CharField(required=False, allow_null=True)
+    has_next = serializers.BooleanField(required=True)
+    page_size = serializers.IntegerField(required=True)
+
+
+class AdminBusinessErrorSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    error_code = serializers.CharField(required=True)
+    message = serializers.CharField(required=True)
+    data = serializers.JSONField(required=False)
+
+
+class AdminEmptySuccessSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+
+
+class AdminUserListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminUserSerializer(many=True)
+    pagination = AdminPagePaginationSerializer(required=True)
+
+
+class AdminUserResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminUserSerializer(required=True)
+
+
+class AdminTeamColorListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminTeamColorSerializer(many=True)
+
+
+class AdminTeamListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminTeamSerializer(many=True)
+    pagination = AdminPagePaginationSerializer(required=True)
+
+
+class AdminTeamDetailResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminTeamDetailSerializer(required=True)
+
+
+class AdminTeamMemberAddDataSerializer(serializers.Serializer):
+    added_user_ids = serializers.ListField(child=serializers.IntegerField())
+    member_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class AdminTeamMemberAddResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminTeamMemberAddDataSerializer(required=True)
+
+
+class AdminTeamLeaderDataSerializer(serializers.Serializer):
+    leader_id = serializers.IntegerField(required=True)
+    leader_nickname = serializers.CharField(required=False, allow_null=True)
+
+
+class AdminTeamLeaderResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminTeamLeaderDataSerializer(required=True)
+
+
+class AdminRoomListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminRoomSerializer(many=True)
+
+
+class AdminRoomResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminRoomSerializer(required=True)
+
+
+class AdminReservationListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminReservationSerializer(many=True)
+    pagination = AdminPagePaginationSerializer(required=True)
+
+
+class AdminReservationResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminReservationSerializer(required=True)
+
+
+class AdminReservationConflictListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminReservationConflictSerializer(many=True)
+
+
+class AdminReservationCancelOccurrencesResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminReservationCancelOccurrencesSerializer(required=True)
+
+
+class AdminDayOffListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminDayOffSerializer(many=True)
+    pagination = AdminPagePaginationSerializer(required=True)
+
+
+class AdminDayOffResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminDayOffSerializer(required=True)
+
+
+class AdminLogListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True)
+    data = AdminLogSerializer(many=True)
+    pagination = AdminCursorPaginationSerializer(required=True)
