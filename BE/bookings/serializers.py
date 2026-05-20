@@ -62,7 +62,8 @@ class ReservationStatusListField(serializers.ListField):
 class ReservationItemSerializer(serializers.Serializer):
     reservation_number = serializers.IntegerField(required=True)
     kind = serializers.CharField(
-        required=True, help_text="개인 예약인지 팀 예약인지 구분하는 필드"
+        required=True,
+        help_text="단건 예약(single)인지 반복 예약(repeat)인지 구분하는 필드",
     )
     repeat_count = serializers.IntegerField(required=False, allow_null=True)
     room_id = serializers.IntegerField(required=True)
