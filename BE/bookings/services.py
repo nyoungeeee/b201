@@ -65,6 +65,8 @@ class MonthBookingCheck:
 @dataclass
 class ReservationItem:
     reservation_number: int
+    kind: str
+    repeat_count: int | None
     room_id: int
     room_name: str
     date: date
@@ -350,6 +352,8 @@ class ReservationQueryService:
         if booking.booking_type == BookingType.PRIVATE:
             return ReservationItem(
                 reservation_number=booking.reservation_number,
+                kind=ReservationQueryService._resolve_reservation_kind(booking),
+                repeat_count=ReservationQueryService._resolve_repeat_count(booking),
                 room_id=booking.room_id,
                 room_name=booking.room.name,
                 date=booking.reservation_date,
@@ -364,6 +368,8 @@ class ReservationQueryService:
 
         return ReservationItem(
             reservation_number=booking.reservation_number,
+            kind=ReservationQueryService._resolve_reservation_kind(booking),
+            repeat_count=ReservationQueryService._resolve_repeat_count(booking),
             room_id=booking.room_id,
             room_name=booking.room.name,
             date=booking.reservation_date,
@@ -417,6 +423,18 @@ class ReservationQueryService:
         if booking.user.is_staff and booking.title:
             return booking.title
         return booking.user.nickname or ""
+
+    @staticmethod
+    def _resolve_reservation_kind(booking: Booking) -> str:
+        return "repeat" if booking.repeat_group_id else "single"
+
+    @staticmethod
+    def _resolve_repeat_count(booking: Booking) -> int | None:
+        if not booking.repeat_group_id:
+            return None
+        if not booking.repeat_start_date or not booking.repeat_end_date:
+            return None
+        return ((booking.repeat_end_date - booking.repeat_start_date).days // 7) + 1
 
 
 class ReservationCommandService:

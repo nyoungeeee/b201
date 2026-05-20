@@ -1,4 +1,5 @@
-from datetime import time
+from datetime import time, timedelta
+from uuid import uuid4
 
 from rest_framework import status
 
@@ -149,3 +150,43 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             response.data["reservations"][0]["reservation_number"],
             first.reservation_number,
         )
+
+    # 내 예약 조회 시 반복 예약과 단건 예약을 구분해서 반환하는지 검증한다.
+    def test_get_my_reservations_returns_reservation_kind(self):
+        repeat_group_id = uuid4()
+        repeat_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[1],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=7),
+        )
+        single_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(11, 0),
+            end_time=time(12, 0),
+        )
+
+        response = self.client.get("/api/v1/reservations/me")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        kind_by_number = {
+            item["reservation_number"]: item["kind"]
+            for item in response.data["reservations"]
+        }
+        repeat_count_by_number = {
+            item["reservation_number"]: item["repeat_count"]
+            for item in response.data["reservations"]
+        }
+        self.assertEqual(kind_by_number[repeat_booking.reservation_number], "repeat")
+        self.assertEqual(kind_by_number[single_booking.reservation_number], "single")
+        self.assertEqual(repeat_count_by_number[repeat_booking.reservation_number], 2)
+        self.assertIsNone(repeat_count_by_number[single_booking.reservation_number])
