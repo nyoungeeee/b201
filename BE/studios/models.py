@@ -24,6 +24,7 @@ class StudioRoom(models.Model):
         default=StudioRoomStatus.ACTIVE,
     )
     sort_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -42,10 +43,15 @@ class RoomClosure(models.Model):
         StudioRoom,
         on_delete=models.CASCADE,
         related_name="closures",
+        blank=True,
+        null=True,
     )
     closure_date = models.DateField()
-    start_time = models.TimeField()
-    end_time = models.TimeField()
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    start_time = models.TimeField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True)
+    is_all_day = models.BooleanField(default=False)
     closure_type = models.CharField(
         max_length=20,
         choices=ClosureType.choices,
@@ -58,6 +64,7 @@ class RoomClosure(models.Model):
         db_table = "room_closures"
         indexes = [
             models.Index(fields=["room", "closure_date"]),
+            models.Index(fields=["room", "start_date", "end_date"]),
             models.Index(fields=["room", "closure_date", "start_time", "end_time"]),
         ]
 

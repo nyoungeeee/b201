@@ -28,6 +28,7 @@ class Slot:
     start_time: time
     end_time: time
     name: str
+    memo: str
     color: str
     status: str | None = None
 
@@ -69,6 +70,7 @@ class ReservationItem:
     end_time: time
     type: str
     name: str
+    memo: str
     color: str
     status: str
     team_id: int | None = None
@@ -101,7 +103,7 @@ class BookingCheckService:
         for booking in booking_query:
             color = "#DADADA"
             if booking.booking_type == BookingType.PRIVATE:
-                name = booking.user.nickname
+                name = ReservationQueryService._resolve_private_name(booking)
             else:
                 name = booking.team.name
                 color = booking.team.color
@@ -111,6 +113,7 @@ class BookingCheckService:
                     start_time=booking.start_time,
                     end_time=booking.end_time,
                     name=name,
+                    memo=booking.memo,
                     color=color,
                     status=booking.status,
                 )
@@ -123,6 +126,7 @@ class BookingCheckService:
                     start_time=closure.start_time,
                     end_time=closure.end_time,
                     name=closure.reason or "휴무",
+                    memo="",
                     color="#DADADA",
                     status=None,
                 )
@@ -329,7 +333,8 @@ class ReservationQueryService:
                 start_time=booking.start_time,
                 end_time=booking.end_time,
                 type=booking.booking_type,
-                name=booking.user.nickname or "",
+                name=ReservationQueryService._resolve_private_name(booking),
+                memo=booking.memo,
                 color="#DADADA",
                 status=booking.status,
             )
@@ -343,6 +348,7 @@ class ReservationQueryService:
             end_time=booking.end_time,
             type=booking.booking_type,
             name=booking.team.name,
+            memo=booking.memo,
             color=booking.team.color,
             status=booking.status,
             team_id=booking.team_id,
@@ -382,6 +388,12 @@ class ReservationQueryService:
         start = (page - 1) * size
         end = start + size
         return list(queryset[start:end])
+
+    @staticmethod
+    def _resolve_private_name(booking: Booking) -> str:
+        if booking.user.is_staff and booking.title:
+            return booking.title
+        return booking.user.nickname or ""
 
 
 class ReservationCommandService:
