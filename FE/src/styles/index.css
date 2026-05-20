@@ -12,6 +12,7 @@
 @import "./components/sideModal.css";
 @import "./components/toast.css";
 @import "./pages/calendar.css";
+@import "./pages/admin.css";
 @import "./pages/kakaoCallback.css";
 @import "./pages/myInfo.css";
 @import "./pages/timeline.css";

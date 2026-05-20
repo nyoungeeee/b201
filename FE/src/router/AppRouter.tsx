@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
+import AdminPage from '../pages/AdminPage';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
 import MyTeamDetailPage from '../pages/MyTeamDetailPage';
@@ -27,6 +28,7 @@ const AppRouter = () => {
                 <Route path="/team/:id" element={<MyTeamDetailPage />} />
                 <Route path="/team/:id/color" element={<TeamColorChangePage />} />
                 <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
+                <Route path="/admin" element={<AdminPage />} />
             </Routes>
         </BrowserRouter>
     );

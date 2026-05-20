@@ -1,0 +1,15 @@
+export { default as AdminArrowLeftIcon } from "./AdminArrowLeftIcon";
+export { default as AdminCalendarIcon } from "./AdminCalendarIcon";
+export { default as AdminChevronDownIcon } from "./AdminChevronDownIcon";
+export { default as AdminChevronRightIcon } from "./AdminChevronRightIcon";
+export { default as AdminClockIcon } from "./AdminClockIcon";
+export { default as AdminMemoIcon } from "./AdminMemoIcon";
+export { default as AdminPersonIcon } from "./AdminPersonIcon";
+export { default as AdminPlusIcon } from "./AdminPlusIcon";
+export { default as AdminRepeatIcon } from "./AdminRepeatIcon";
+export { default as AdminReservationIcon } from "./AdminReservationIcon";
+export { default as AdminRoomIcon } from "./AdminRoomIcon";
+export { default as AdminStatusIcon } from "./AdminStatusIcon";
+export { default as AdminTeamIcon } from "./AdminTeamIcon";
+export { default as AdminUserIcon } from "./AdminUserIcon";
+export { default as AdminWarningIcon } from "./AdminWarningIcon";
