@@ -1,57 +1,170 @@
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
 from bookings.models import BookingStatus
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "일정 슬롯",
+            value={
+                "start_time": "10:00:00",
+                "end_time": "12:00:00",
+                "name": "홍길동",
+                "memo": "개인 연습",
+                "color": "#FF6B6B",
+                "status": "approved",
+            },
+            response_only=True,
+        )
+    ]
+)
 class SlotSerializer(serializers.Serializer):
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
-    name = serializers.CharField(required=True)
-    memo = serializers.CharField(required=False, allow_blank=True)
-    color = serializers.CharField(required=True)
-    status = serializers.CharField(required=False, allow_null=True)
+    start_time = serializers.TimeField(required=True, help_text="예약 시작 시간")
+    end_time = serializers.TimeField(required=True, help_text="예약 종료 시간")
+    name = serializers.CharField(required=True, help_text="예약자 또는 팀 표시 이름")
+    memo = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="예약 메모. 없으면 빈 문자열입니다.",
+    )
+    color = serializers.CharField(
+        required=True, help_text="캘린더에 표시할 예약 색상 HEX 코드"
+    )
+    status = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="예약 상태. 빈 슬롯 또는 휴무 정보에서는 null일 수 있습니다.",
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "일별 예약 조회 응답",
+            value={
+                "room_id": 1,
+                "room_name": "A룸",
+                "date": "2026-05-22",
+                "open_time": "09:00:00",
+                "close_time": "23:00:00",
+                "status": "open",
+                "slot": [
+                    {
+                        "start_time": "10:00:00",
+                        "end_time": "12:00:00",
+                        "name": "홍길동",
+                        "memo": "개인 연습",
+                        "color": "#FF6B6B",
+                        "status": "approved",
+                    }
+                ],
+            },
+            response_only=True,
+        )
+    ]
+)
 class DayBookingCheckSerializer(serializers.Serializer):
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    date = serializers.DateField(required=True)
-    open_time = serializers.TimeField(required=True)
-    close_time = serializers.TimeField(required=True)
-    status = serializers.CharField(required=True)
-    slot = SlotSerializer(many=True, required=True)
+    room_id = serializers.IntegerField(required=True, help_text="조회한 합주실 ID")
+    room_name = serializers.CharField(required=True, help_text="조회한 합주실 이름")
+    date = serializers.DateField(required=True, help_text="조회한 날짜")
+    open_time = serializers.TimeField(
+        required=True, help_text="해당 날짜의 합주실 운영 시작 시간"
+    )
+    close_time = serializers.TimeField(
+        required=True, help_text="해당 날짜의 합주실 운영 종료 시간"
+    )
+    status = serializers.CharField(
+        required=True, help_text="해당 날짜의 합주실 운영 상태"
+    )
+    slot = SlotSerializer(
+        many=True, required=True, help_text="해당 날짜의 예약 슬롯 목록"
+    )
 
 
 class DayBookingQueryParamsSerializer(serializers.Serializer):
-    date = serializers.DateField(required=False, format="%Y-%m-%d")
+    date = serializers.DateField(
+        required=False,
+        format="%Y-%m-%d",
+        help_text="조회할 날짜. 생략하면 서버 기준 기본 날짜를 사용합니다. 형식: YYYY-MM-DD",
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "월별 날짜 색상",
+            value={"date": "2026-05-22", "color": ["#FF6B6B"], "disabled": False},
+            response_only=True,
+        )
+    ]
+)
 class MonthDateColorSerializer(serializers.Serializer):
-    date = serializers.DateField(required=True)
-    color = serializers.ListField(child=serializers.CharField())
-    disabled = serializers.BooleanField(required=True)
+    date = serializers.DateField(required=True, help_text="월별 캘린더에 표시할 날짜")
+    color = serializers.ListField(
+        child=serializers.CharField(help_text="해당 날짜에 표시할 예약 색상 HEX 코드"),
+        help_text="해당 날짜에 표시할 예약 색상 목록",
+    )
+    disabled = serializers.BooleanField(
+        required=True,
+        help_text="예약 불가 또는 비활성 날짜인지 여부",
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "월별 예약 조회 응답",
+            value={
+                "room_id": 1,
+                "room_name": "A룸",
+                "year": 2026,
+                "month": 5,
+                "days": [
+                    {"date": "2026-05-22", "color": ["#FF6B6B"], "disabled": False}
+                ],
+            },
+            response_only=True,
+        )
+    ]
+)
 class MonthBookingSerializer(serializers.Serializer):
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    year = serializers.IntegerField(required=True)
-    month = serializers.IntegerField(required=True)
-    days = MonthDateColorSerializer(many=True, required=True)
+    room_id = serializers.IntegerField(required=True, help_text="조회한 합주실 ID")
+    room_name = serializers.CharField(required=True, help_text="조회한 합주실 이름")
+    year = serializers.IntegerField(required=True, help_text="조회한 연도")
+    month = serializers.IntegerField(required=True, help_text="조회한 월")
+    days = MonthDateColorSerializer(
+        many=True, required=True, help_text="월별 날짜 표시 정보"
+    )
 
 
 class MonthBookingQueryParamsSerializer(serializers.Serializer):
-    month = serializers.IntegerField(required=False, min_value=1, max_value=12)
-    year = serializers.IntegerField(required=False, min_value=1)
+    month = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=12,
+        help_text="조회할 월. 1부터 12까지 입력합니다.",
+    )
+    year = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text="조회할 연도. 생략하면 서버 기준 기본 연도를 사용합니다.",
+    )
 
 
 class ReservationStatusField(serializers.ChoiceField):
     def __init__(self, **kwargs):
+        kwargs.setdefault(
+            "help_text", "예약 상태 필터. pending 또는 approved를 사용할 수 있습니다."
+        )
         super().__init__(choices=BookingStatus.choices, **kwargs)
 
 
 class ReservationStatusListField(serializers.ListField):
-    child = ReservationStatusField()
+    child = ReservationStatusField(
+        help_text="예약 상태 필터. pending 또는 approved를 사용할 수 있습니다."
+    )
 
     def to_internal_value(self, data):
         if isinstance(data, str):
@@ -59,58 +172,215 @@ class ReservationStatusListField(serializers.ListField):
         return super().to_internal_value(data)
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "개인 예약 항목",
+            value={
+                "reservation_number": 10,
+                "room_id": 1,
+                "room_name": "A룸",
+                "date": "2026-05-22",
+                "start_time": "10:00:00",
+                "end_time": "12:00:00",
+                "type": "private",
+                "name": "홍길동",
+                "memo": "개인 연습",
+                "color": "#FF6B6B",
+                "status": "approved",
+            },
+            response_only=True,
+        )
+    ]
+)
 class ReservationItemSerializer(serializers.Serializer):
-    reservation_number = serializers.IntegerField(required=True)
-    room_id = serializers.IntegerField(required=True)
-    room_name = serializers.CharField(required=True)
-    date = serializers.DateField(required=True)
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
-    type = serializers.CharField(required=True)
-    name = serializers.CharField(required=True)
-    memo = serializers.CharField(required=False, allow_blank=True)
-    color = serializers.CharField(required=True)
-    status = serializers.CharField(required=True)
+    reservation_number = serializers.IntegerField(required=True, help_text="예약 번호")
+    room_id = serializers.IntegerField(required=True, help_text="예약된 합주실 ID")
+    room_name = serializers.CharField(required=True, help_text="예약된 합주실 이름")
+    date = serializers.DateField(required=True, help_text="예약 날짜")
+    start_time = serializers.TimeField(required=True, help_text="예약 시작 시간")
+    end_time = serializers.TimeField(required=True, help_text="예약 종료 시간")
+    type = serializers.CharField(
+        required=True, help_text="예약 유형. private 또는 team"
+    )
+    name = serializers.CharField(
+        required=True, help_text="예약 목록에 표시할 예약자 또는 팀 이름"
+    )
+    memo = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="예약 메모. 없으면 빈 문자열입니다.",
+    )
+    color = serializers.CharField(required=True, help_text="예약 표시 색상 HEX 코드")
+    status = serializers.CharField(required=True, help_text="예약 상태")
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "팀 예약 항목",
+            value={
+                "reservation_number": 11,
+                "room_id": 1,
+                "room_name": "A룸",
+                "date": "2026-05-22",
+                "start_time": "13:00:00",
+                "end_time": "15:00:00",
+                "type": "team",
+                "name": "B201 밴드",
+                "memo": "합주",
+                "color": "#4D96FF",
+                "status": "pending",
+                "team_id": 1,
+                "team_name": "B201 밴드",
+            },
+            response_only=True,
+        )
+    ]
+)
 class TeamReservationItemSerializer(ReservationItemSerializer):
-    team_id = serializers.IntegerField(required=True)
-    team_name = serializers.CharField(required=True)
+    team_id = serializers.IntegerField(required=True, help_text="팀 예약의 팀 ID")
+    team_name = serializers.CharField(required=True, help_text="팀 예약의 팀 이름")
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "내 예약 목록",
+            value={"reservations": []},
+            response_only=True,
+        )
+    ]
+)
 class MyReservationListSerializer(serializers.Serializer):
-    reservations = ReservationItemSerializer(many=True, required=True)
+    reservations = ReservationItemSerializer(
+        many=True, required=True, help_text="내 개인 예약 목록"
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "팀 예약 목록",
+            value={"reservations": []},
+            response_only=True,
+        )
+    ]
+)
 class TeamReservationListSerializer(serializers.Serializer):
-    reservations = TeamReservationItemSerializer(many=True, required=True)
+    reservations = TeamReservationItemSerializer(
+        many=True, required=True, help_text="팀 예약 목록"
+    )
 
 
 class ReservationListQueryParamsSerializer(serializers.Serializer):
-    date = serializers.DateField(required=False, format="%Y-%m-%d")
-    status = ReservationStatusListField(required=False)
-    page = serializers.IntegerField(required=False, min_value=1, default=1)
-    size = serializers.IntegerField(required=False, min_value=1, default=20)
+    date = serializers.DateField(
+        required=False,
+        format="%Y-%m-%d",
+        help_text="조회 기준 날짜. 형식: YYYY-MM-DD",
+    )
+    status = ReservationStatusListField(
+        required=False,
+        help_text="예약 상태 필터. 문자열 하나 또는 배열로 전달할 수 있습니다.",
+    )
+    page = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        default=1,
+        help_text="조회할 페이지 번호",
+    )
+    size = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        default=20,
+        help_text="페이지당 예약 개수",
+    )
 
 
 class TeamReservationListQueryParamsSerializer(ReservationListQueryParamsSerializer):
-    team_id = serializers.IntegerField(required=False, min_value=1)
+    team_id = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text="특정 팀 예약만 조회할 때 사용하는 팀 ID",
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "개인 예약 생성 요청",
+            value={
+                "start_date": "2026-05-22",
+                "count": 1,
+                "start_time": "10:00:00",
+                "end_time": "12:00:00",
+            },
+            request_only=True,
+        )
+    ]
+)
 class PrivateReservationCreateRequestSerializer(serializers.Serializer):
-    start_date = serializers.DateField(required=True, format="%Y-%m-%d")
-    count = serializers.IntegerField(required=False, min_value=1, default=1)
-    start_time = serializers.TimeField(required=True)
-    end_time = serializers.TimeField(required=True)
+    start_date = serializers.DateField(
+        required=True,
+        format="%Y-%m-%d",
+        help_text="예약 시작 날짜. 형식: YYYY-MM-DD",
+    )
+    count = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        default=1,
+        help_text="생성할 예약 개수. 단건 예약은 1입니다.",
+    )
+    start_time = serializers.TimeField(required=True, help_text="예약 시작 시간")
+    end_time = serializers.TimeField(required=True, help_text="예약 종료 시간")
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "팀 예약 생성 요청",
+            value={
+                "start_date": "2026-05-22",
+                "count": 1,
+                "start_time": "13:00:00",
+                "end_time": "15:00:00",
+                "team_id": 1,
+            },
+            request_only=True,
+        )
+    ]
+)
 class TeamReservationCreateRequestSerializer(PrivateReservationCreateRequestSerializer):
-    team_id = serializers.IntegerField(required=True, min_value=1)
+    team_id = serializers.IntegerField(
+        required=True, min_value=1, help_text="예약할 팀 ID"
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "개인 예약 생성 응답",
+            value={"reservations": []},
+            response_only=True,
+        )
+    ]
+)
 class PrivateReservationCreateResponseSerializer(serializers.Serializer):
-    reservations = ReservationItemSerializer(many=True, required=True)
+    reservations = ReservationItemSerializer(
+        many=True, required=True, help_text="생성된 개인 예약 목록"
+    )
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "팀 예약 생성 응답",
+            value={"reservations": []},
+            response_only=True,
+        )
+    ]
+)
 class TeamReservationCreateResponseSerializer(serializers.Serializer):
-    reservations = TeamReservationItemSerializer(many=True, required=True)
+    reservations = TeamReservationItemSerializer(
+        many=True, required=True, help_text="생성된 팀 예약 목록"
+    )
