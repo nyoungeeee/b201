@@ -57,4 +57,6 @@ class DockerComposeSeedConfigTests(TestCase):
         self.assertIn("python manage.py migrate", command)
         self.assertIn("python manage.py seed_test_dummy_data", command)
         self.assertIn("python manage.py runserver 0.0.0.0:8000", command)
-        self.assertIn("${BACKEND_HOST:-127.0.0.1}:${BACKEND_PORT:-8000}:8000", web_config["ports"])
+        self.assertIn(
+            "${BACKEND_HOST:-127.0.0.1}:${BACKEND_PORT:-8000}:8000", web_config["ports"]
+        )
