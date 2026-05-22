@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "bookings",
     "auth_tokens",
     "backoffice",
+    "test_server",
 ]
 
 if HAS_CORSHEADERS:
