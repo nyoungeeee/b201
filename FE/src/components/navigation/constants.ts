@@ -22,7 +22,7 @@ export const NAV_MENU = {
     },
     myReservation: {
         label: '내 예약 확인',
-        path: '/reservation',
+        path: '/my/reservations',
     },
     myInfo: {
         label: '내 정보 관리',
