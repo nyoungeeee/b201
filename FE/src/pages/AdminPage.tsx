@@ -107,6 +107,7 @@ const AdminPage = () => {
     adminApi.getTeams().then((teams) => {
       setOwnerTeamOptions(teams.map((team) => ({ id: team.id, name: team.name })));
     }).catch(console.error);
+    adminApi.getLogs().then(setLogs).catch(console.error);
   }, []);
 
   useEffect(() => {

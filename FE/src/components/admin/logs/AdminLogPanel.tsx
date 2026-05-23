@@ -80,7 +80,9 @@ const AdminLogPanel = ({ logs }: AdminLogPanelProps) => {
 
       const [datePart] = log.createdAt.split(" ");
       const logTime = new Date(`${datePart.replaceAll(".", "-")}T00:00:00`).getTime();
-      const today = new Date("2026-05-18T00:00:00").getTime();
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      const today = todayDate.getTime();
       const diffDays = Math.floor((today - logTime) / 86400000);
 
       if (periodFilter === "0") {

@@ -13,6 +13,7 @@ export type AdminReservation = {
   timeLabel: string;
   periodLabel?: string;
   room: AdminRoom;
+  roomId?: number;
   teamId?: number;
   teamName?: string;
   reserverUserId?: number;
@@ -35,6 +36,7 @@ export type NewAdminReservation = {
 export type AdminReservationConflict = {
   id: number;
   room: AdminRoom;
+  roomId?: number;
   date: string;
   timeLabel: string;
   ownerLabel: string;
