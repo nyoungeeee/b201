@@ -236,9 +236,11 @@
 
 .bottom-hero {
   position: relative;
+  width: var(--bottom-hero-width);
+  max-width: 100%;
   height: var(--bottom-hero-height);
   overflow: hidden;
-  margin-top: auto;
+  margin: auto auto 0;
 }
 
 .bottom-hero img {

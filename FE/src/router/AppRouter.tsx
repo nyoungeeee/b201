@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AdminPage from '../pages/AdminPage';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
+import MyReservationDetailPage from '../pages/MyReservationDetailPage';
+import MyReservationPage from '../pages/MyReservationPage';
 import MyTeamDetailPage from '../pages/MyTeamDetailPage';
 import KakaoCallbackPage from '../pages/KakaoCallbackPage';
 import MyTeamPage from '../pages/MyTeamPage';
@@ -22,6 +24,8 @@ const AppRouter = () => {
                 <Route path="/reservation/apply" element={<ReservationApplyPage />} />
                 <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
                 <Route path="/my" element={<MyInfoPage />} />
+                <Route path="/my/reservations" element={<MyReservationPage />} />
+                <Route path="/my/reservations/:reservationId" element={<MyReservationDetailPage />} />
                 <Route path="/my/nickname" element={<NicknameEditPage />} />
                 <Route path="/my/detail" element={<MyInfoDetailPage />} />
                 <Route path="/my/detail/:type" element={<PolicyPage />} />
