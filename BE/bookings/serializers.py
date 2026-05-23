@@ -273,6 +273,51 @@ class TeamReservationListSerializer(serializers.Serializer):
     )
 
 
+class RepeatOccurrenceSerializer(serializers.Serializer):
+    week = serializers.IntegerField(required=True, help_text="반복 예약 회차")
+    date = serializers.DateField(required=True, help_text="반복 예약 대상 날짜")
+
+
+class RepeatConflictOccurrenceSerializer(RepeatOccurrenceSerializer):
+    code = serializers.CharField(required=True, help_text="예약 불가 사유 코드")
+    message = serializers.CharField(required=True, help_text="예약 불가 사유 메시지")
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "반복 예약 가능 여부 확인 응답",
+            value={
+                "available_occurrences": [
+                    {"week": 1, "date": "2026-05-22"},
+                    {"week": 3, "date": "2026-06-05"},
+                ],
+                "conflict_occurrences": [
+                    {
+                        "week": 2,
+                        "date": "2026-05-29",
+                        "code": "DUPLICATED_RESERVATION",
+                        "message": "이미 예약된 시간입니다.",
+                    }
+                ],
+            },
+            response_only=True,
+        )
+    ]
+)
+class RepeatReservationCheckResponseSerializer(serializers.Serializer):
+    available_occurrences = RepeatOccurrenceSerializer(
+        many=True,
+        required=True,
+        help_text="예약 가능한 반복 회차 목록",
+    )
+    conflict_occurrences = RepeatConflictOccurrenceSerializer(
+        many=True,
+        required=True,
+        help_text="충돌로 예약할 수 없는 반복 회차 목록",
+    )
+
+
 class ReservationListQueryParamsSerializer(serializers.Serializer):
     date = serializers.DateField(
         required=False,
