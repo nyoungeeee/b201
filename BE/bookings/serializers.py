@@ -183,6 +183,8 @@ class ReservationStatusListField(serializers.ListField):
                 "date": "2026-05-22",
                 "start_time": "10:00:00",
                 "end_time": "12:00:00",
+                "kind": "single",
+                "repeat_count": None,
                 "type": "private",
                 "name": "홍길동",
                 "memo": "개인 연습",
@@ -200,6 +202,15 @@ class ReservationItemSerializer(serializers.Serializer):
     date = serializers.DateField(required=True, help_text="예약 날짜")
     start_time = serializers.TimeField(required=True, help_text="예약 시작 시간")
     end_time = serializers.TimeField(required=True, help_text="예약 종료 시간")
+    kind = serializers.CharField(
+        required=False,
+        help_text="예약 종류. single 또는 repeat",
+    )
+    repeat_count = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="반복 예약 전체 회차. 단건 예약이면 null입니다.",
+    )
     type = serializers.CharField(
         required=True, help_text="예약 유형. private 또는 team"
     )
@@ -226,6 +237,8 @@ class ReservationItemSerializer(serializers.Serializer):
                 "date": "2026-05-22",
                 "start_time": "13:00:00",
                 "end_time": "15:00:00",
+                "kind": "single",
+                "repeat_count": None,
                 "type": "team",
                 "name": "B201 밴드",
                 "memo": "합주",
@@ -414,6 +427,12 @@ class PrivateReservationCreateResponseSerializer(serializers.Serializer):
     reservations = ReservationItemSerializer(
         many=True, required=True, help_text="생성된 개인 예약 목록"
     )
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text="반복 예약 생성 중 충돌로 건너뛴 회차 목록",
+    )
 
 
 @extend_schema_serializer(
@@ -428,4 +447,10 @@ class PrivateReservationCreateResponseSerializer(serializers.Serializer):
 class TeamReservationCreateResponseSerializer(serializers.Serializer):
     reservations = TeamReservationItemSerializer(
         many=True, required=True, help_text="생성된 팀 예약 목록"
+    )
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text="반복 예약 생성 중 충돌로 건너뛴 회차 목록",
     )
