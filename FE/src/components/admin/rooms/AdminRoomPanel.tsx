@@ -270,7 +270,20 @@ const AdminRoomPanel = ({
         draft={view.draft}
         reservations={view.reservations}
         onBack={goBack}
-        onConfirm={() => handleConfirmDayOff(view.draft)}
+        onConfirm={() =>
+          adminApi
+            .createDayOff(
+              view.draft,
+              view.reservations.map((reservation) => reservation.id),
+            )
+            .then((created) => {
+              setDaysOff((currentDaysOff) => [created, ...currentDaysOff]);
+              setActiveTab("daysOff");
+              resetView();
+              onToast?.(`쉬는날 - ${view.draft.type}을 설정했습니다.`);
+            })
+            .catch(console.error)
+        }
         onOpenReservation={onOpenReservation}
       />
     );

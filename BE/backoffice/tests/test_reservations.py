@@ -1,10 +1,11 @@
-from datetime import date, time
+from datetime import date, timedelta, time
 from uuid import uuid4
 
 from rest_framework import status
 
 from bookings.models import Booking, BookingStatus, BookingType
 from studios.models import StudioRoom, StudioRoomStatus
+from teams.models import Team
 from .base import BaseBackofficeAPITestCase
 
 
@@ -18,6 +19,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
+        self.team = Team.objects.create(name="테스트팀", owner=self.admin_user)
         self.today = date.today()
 
     def test_staff_can_create_owner_private_reservation_with_title_and_memo(self):
@@ -134,6 +136,58 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(list_response.data["data"][0]["memo"], "문의 메모")
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["data"]["id"], booking.reservation_number)
+
+    def test_team_reservation_response_uses_user_nickname_as_reserver_name(self):
+        booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get(
+            f"/api/v1/admin/reservations/{booking.reservation_number}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["team_name"], self.team.name)
+        self.assertEqual(
+            response.data["data"]["reserver_name"], self.member_user.nickname
+        )
+
+    def test_approved_reservation_list_limits_future_date_range(self):
+        in_range_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=3),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=10),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get(
+            "/api/v1/admin/reservations?status=approved&date_range=7"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(
+            response.data["data"][0]["id"], in_range_booking.reservation_number
+        )
 
     def test_staff_can_cancel_reservation(self):
         booking = Booking.objects.create(

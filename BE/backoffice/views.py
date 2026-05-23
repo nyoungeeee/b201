@@ -691,7 +691,7 @@ class AdminReservationListView(APIView):
             ),
             403: OpenApiResponse(description="관리자 권한이 없는 사용자입니다."),
         },
-        description="관리자가 대기 예약 또는 승인 예약 목록을 조회합니다. 승인 예약은 date_range로 최근 N일 범위를 제한할 수 있습니다.",
+        description="관리자가 대기 예약 또는 승인 예약 목록을 조회합니다. 승인 예약은 date_range로 오늘부터 N일 범위를 제한할 수 있습니다.",
     )
     def get(self, request):
         serializer = AdminReservationListQuerySerializer(data=request.query_params)

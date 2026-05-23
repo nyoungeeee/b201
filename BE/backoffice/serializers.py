@@ -1,3 +1,7 @@
+import base64
+import binascii
+from datetime import datetime
+
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
@@ -820,6 +824,16 @@ class AdminLogQuerySerializer(serializers.Serializer):
         default=30,
         help_text="페이지당 로그 수",
     )
+
+    def validate_cursor(self, value):
+        try:
+            raw_cursor = base64.b64decode(value.encode()).decode()
+            created_at_value, id_value = raw_cursor.rsplit("__", 1)
+            datetime.fromisoformat(created_at_value)
+            int(id_value)
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            raise serializers.ValidationError("유효하지 않은 cursor입니다.")
+        return value
 
 
 @extend_schema_serializer(

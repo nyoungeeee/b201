@@ -176,3 +176,31 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         self.team.refresh_from_db()
         self.assertEqual(self.team.owner_id, self.member_user.id)
         self.assertEqual(response.data["data"]["leader_id"], self.member_user.id)
+
+    def test_change_team_leader_to_current_admin_adds_admin_as_leader(self):
+        response = self.client.patch(
+            f"/api/v1/admin/teams/{self.team.id}/leader",
+            {"leader_id": 0},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.team.refresh_from_db()
+        self.assertEqual(self.team.owner_id, self.admin_user.id)
+        self.assertEqual(response.data["data"]["leader_id"], self.admin_user.id)
+        self.assertTrue(
+            TeamMember.objects.filter(
+                team=self.team,
+                user=self.admin_user,
+                role=TeamMemberRole.LEADER,
+                status=TeamMemberStatus.ACTIVE,
+            ).exists()
+        )
+        self.assertFalse(
+            TeamMember.objects.filter(
+                team=self.team,
+                user=self.leader,
+                role=TeamMemberRole.LEADER,
+                status=TeamMemberStatus.ACTIVE,
+            ).exists()
+        )
