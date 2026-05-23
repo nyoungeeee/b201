@@ -41,6 +41,11 @@ class DuplicatedReservationError(BookingCheckServiceError):
     message = "이미 예약된 시간입니다."
 
 
+class NoAvailableRepeatDatesError(BookingCheckServiceError):
+    code = "NO_AVAILABLE_REPEAT_DATES"
+    message = "예약 가능한 반복 날짜가 없습니다."
+
+
 class AlreadyCanceledReservationError(BookingCheckServiceError):
     code = "ALREADY_CANCELED"
     message = "이미 취소된 예약입니다."

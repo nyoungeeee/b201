@@ -116,6 +116,132 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
             ).count(),
             3,
         )
+        repeat_group_ids = set(
+            Booking.objects.filter(
+                user=self.user,
+                room=self.room,
+                booking_type=BookingType.PRIVATE,
+                status=BookingStatus.PENDING,
+            ).values_list("repeat_group_id", flat=True)
+        )
+        self.assertEqual(len(repeat_group_ids), 1)
+        self.assertNotIn(None, repeat_group_ids)
+
+    # 반복 예약 확인 시 충돌 주차와 예약 가능 주차를 함께 반환하는지 검증한다.
+    def test_repeat_check_private_reservation_returns_conflict_weeks(self):
+        second_week_date = self.today + timedelta(days=7)
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=second_week_date,
+            start_time=time(9, 30),
+            end_time=time(10, 30),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private/repeat-check",
+            {
+                "start_date": self.today.isoformat(),
+                "count": 3,
+                "start_time": "09:00:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["available_occurrences"],
+            [
+                {"week": 1, "date": self.today.isoformat()},
+                {"week": 3, "date": (self.today + timedelta(days=14)).isoformat()},
+            ],
+        )
+        self.assertEqual(response.data["conflict_occurrences"][0]["week"], 2)
+        self.assertEqual(
+            response.data["conflict_occurrences"][0]["date"],
+            second_week_date.isoformat(),
+        )
+
+    # 반복 예약 생성 시 충돌 주차는 건너뛰고 가능한 주차만 예약하는지 검증한다.
+    def test_repeat_create_private_reservation_skips_conflict_weeks(self):
+        second_week_date = self.today + timedelta(days=7)
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=second_week_date,
+            start_time=time(9, 30),
+            end_time=time(10, 30),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private/repeat",
+            {
+                "start_date": self.today.isoformat(),
+                "count": 3,
+                "start_time": "09:00:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["reservations"]), 2)
+        self.assertEqual(response.data["skipped_occurrences"][0]["week"], 2)
+        self.assertEqual(
+            [item["date"] for item in response.data["reservations"]],
+            [
+                self.today.isoformat(),
+                (self.today + timedelta(days=14)).isoformat(),
+            ],
+        )
+        repeat_group_ids = set(
+            Booking.objects.filter(
+                user=self.user,
+                room=self.room,
+                booking_type=BookingType.PRIVATE,
+            ).values_list("repeat_group_id", flat=True)
+        )
+        self.assertEqual(len(repeat_group_ids), 1)
+
+    # 반복 예약 가능한 주차가 하나도 없으면 예약을 생성하지 않는지 검증한다.
+    def test_repeat_create_private_reservation_rejects_when_no_available_dates(self):
+        for index in range(3):
+            Booking.objects.create(
+                room=self.room,
+                user=self.other_user,
+                booking_type=BookingType.PRIVATE,
+                reservation_date=self.today + timedelta(days=7 * index),
+                start_time=time(9, 30),
+                end_time=time(10, 30),
+                status=BookingStatus.PENDING,
+            )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private/repeat",
+            {
+                "start_date": self.today.isoformat(),
+                "count": 3,
+                "start_time": "09:00:00",
+                "end_time": "10:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "NO_AVAILABLE_REPEAT_DATES")
+        self.assertEqual(
+            Booking.objects.filter(
+                user=self.user,
+                room=self.room,
+                booking_type=BookingType.PRIVATE,
+            ).count(),
+            0,
+        )
 
     # 다음날 새벽까지 운영하는 룸은 자정을 넘는 예약을 허용하는지 검증한다.
     def test_create_private_reservation_allows_cross_midnight_booking(self):

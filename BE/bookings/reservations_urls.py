@@ -6,15 +6,39 @@ from bookings.views import (
     TeamReservationView,
     TeamReservationCreateView,
     PrivateReservationCreateView,
+    PrivateRepeatReservationCheckView,
+    PrivateRepeatReservationCreateView,
+    TeamRepeatReservationCheckView,
+    TeamRepeatReservationCreateView,
 )
 
 urlpatterns = [
     path("me", MyReservationView.as_view(), name="my-reservations"),
     path("team", TeamReservationView.as_view(), name="team-reservations"),
     path(
+        "<int:room_id>/private/repeat-check",
+        PrivateRepeatReservationCheckView.as_view(),
+        name="private-repeat-reservation-check",
+    ),
+    path(
+        "<int:room_id>/private/repeat",
+        PrivateRepeatReservationCreateView.as_view(),
+        name="private-repeat-reservation-create",
+    ),
+    path(
         "<int:room_id>/private",
         PrivateReservationCreateView.as_view(),
         name="private-reservation-create",
+    ),
+    path(
+        "<int:room_id>/team/repeat-check",
+        TeamRepeatReservationCheckView.as_view(),
+        name="team-repeat-reservation-check",
+    ),
+    path(
+        "<int:room_id>/team/repeat",
+        TeamRepeatReservationCreateView.as_view(),
+        name="team-repeat-reservation-create",
     ),
     path(
         "<int:room_id>/team",
