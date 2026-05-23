@@ -407,14 +407,27 @@ class AdminTeamService:
             if leader_id == 0
             else AdminTeamService._get_active_user(leader_id)
         )
-        try:
-            target_membership = TeamMember.objects.get(
+        if leader_id == 0:
+            target_membership, _ = TeamMember.objects.get_or_create(
                 team=team,
                 user=leader,
-                status=TeamMemberStatus.ACTIVE,
+                defaults={
+                    "role": TeamMemberRole.MEMBER,
+                    "status": TeamMemberStatus.ACTIVE,
+                },
             )
-        except TeamMember.DoesNotExist:
-            raise NotTeamMemberError()
+            if target_membership.status != TeamMemberStatus.ACTIVE:
+                target_membership.status = TeamMemberStatus.ACTIVE
+                target_membership.save(update_fields=["status"])
+        else:
+            try:
+                target_membership = TeamMember.objects.get(
+                    team=team,
+                    user=leader,
+                    status=TeamMemberStatus.ACTIVE,
+                )
+            except TeamMember.DoesNotExist:
+                raise NotTeamMemberError()
 
         TeamMember.objects.filter(
             team=team,
@@ -705,8 +718,10 @@ class AdminReservationService:
             "room", "user", "team", "team__team_color"
         )
         if status == "approved":
+            today = timezone.localdate()
             queryset = queryset.filter(
-                reservation_date__gte=timezone.localdate() - timedelta(days=date_range)
+                reservation_date__gte=today,
+                reservation_date__lte=today + timedelta(days=date_range),
             )
         if team_type == "team":
             queryset = queryset.filter(booking_type=BookingType.TEAM)
@@ -869,6 +884,7 @@ class AdminReservationService:
     @staticmethod
     def _build_reservation_info(booking: Booking) -> AdminReservationInfo:
         reserver_name = AdminReservationService._resolve_reserver_name(booking)
+        display_name = booking.team.name if booking.team_id else reserver_name
         return AdminReservationInfo(
             id=booking.reservation_number,
             status=AdminReservationService._map_status(booking.status),
@@ -882,7 +898,7 @@ class AdminReservationService:
             team_id=booking.team_id,
             team_name=booking.team.name if booking.team_id else None,
             reserver_user_id=booking.user_id,
-            name=reserver_name,
+            name=display_name,
             reserver_name=reserver_name,
             memo=booking.memo,
             repeat_weekdays=booking.repeat_weekdays,
@@ -919,8 +935,6 @@ class AdminReservationService:
             and booking.title
         ):
             return booking.title
-        if booking.booking_type == BookingType.TEAM:
-            return booking.team.name
         return booking.user.nickname or ""
 
     @staticmethod

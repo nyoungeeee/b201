@@ -64,6 +64,13 @@ class BackofficeLogAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(len(response.data["data"]), 1)
         self.assertEqual(response.data["data"][0]["category"], "사용자")
 
+    def test_log_list_rejects_invalid_cursor(self):
+        response = self.client.get("/api/v1/admin/logs?cursor=not-a-cursor")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_INPUT")
+        self.assertIn("cursor", response.data["errors"])
+
     def test_admin_user_block_records_action_log(self):
         response = self.client.patch(f"/api/v1/admin/users/{self.member_user.id}/block")
 
