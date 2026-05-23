@@ -15,5 +15,7 @@
 @import "./pages/admin.css";
 @import "./pages/kakaoCallback.css";
 @import "./pages/myInfo.css";
+@import "./pages/myReservation.css";
+@import "./pages/reservationApply.css";
 @import "./pages/timeline.css";
 @import "./team/index.css";
