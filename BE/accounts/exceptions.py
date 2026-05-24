@@ -19,3 +19,8 @@ class UserNotFoundError(UserAuthServiceError):
 class NicknameAlreadyExistsError(UserAuthServiceError):
     code = "NICKNAME_ALREADY_EXISTS"
     message = "이미 존재하는 닉네임입니다."
+
+
+class RandomNicknameGenerationError(UserAuthServiceError):
+    code = "RANDOM_NICKNAME_GENERATION_FAILED"
+    message = "랜덤 닉네임 생성에 실패했습니다."

@@ -1,21 +1,27 @@
 import logging
 
 from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.exceptions import NicknameAlreadyExistsError, UserNotFoundError
+from accounts.exceptions import (
+    NicknameAlreadyExistsError,
+    RandomNicknameGenerationError,
+    UserNotFoundError,
+)
 from accounts.services import UserInfoService
 from common.api_exceptions import (
     ConflictException,
     ForbiddenException,
+    InternalServerErrorException,
 )
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
 from accounts.serializers import (
     CheckNicknameResponseSerializer,
     PatchUserInfoRequestSerializer,
+    RandomNicknameResponseSerializer,
     UserInfoSerializer,
 )
 from rest_framework import status
@@ -93,5 +99,30 @@ class UserNicknameCheckView(APIView):
         available = not UserInfoService.check_nickname_availability(nickname)
         return Response(
             CheckNicknameResponseSerializer({"available": available}).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class RandomNicknameView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=RandomNicknameResponseSerializer,
+                description="랜덤 닉네임 생성 성공",
+            ),
+            500: openapi_exception_response(RandomNicknameGenerationError),
+        },
+        description="비인증 랜덤 닉네임 생성",
+    )
+    def get(self, request):
+        try:
+            nickname = UserInfoService.generate_random_nickname()
+        except RandomNicknameGenerationError as e:
+            raise InternalServerErrorException(code=e.code, message=e.message)
+
+        return Response(
+            RandomNicknameResponseSerializer({"nickname": nickname}).data,
             status=status.HTTP_200_OK,
         )
