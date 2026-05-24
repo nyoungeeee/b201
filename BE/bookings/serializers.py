@@ -470,6 +470,12 @@ class PrivateReservationCreateResponseSerializer(serializers.Serializer):
     reservations = ReservationItemSerializer(
         many=True, required=True, help_text="생성된 개인 예약 목록"
     )
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text="반복 예약 생성 중 충돌로 건너뛴 회차 목록",
+    )
 
 
 class UnifiedReservationListQueryParamsSerializer(serializers.Serializer):
@@ -537,12 +543,6 @@ class UnifiedReservationListSerializer(serializers.Serializer):
     period = serializers.CharField(required=True)
     reservations = UnifiedReservationItemSerializer(many=True, required=True)
     pagination = serializers.DictField(required=True)
-    skipped_occurrences = RepeatConflictOccurrenceSerializer(
-        many=True,
-        required=False,
-        allow_null=True,
-        help_text="반복 예약 생성 중 충돌로 건너뛴 회차 목록",
-    )
 
 
 @extend_schema_serializer(
