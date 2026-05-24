@@ -1,6 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
+import {
+    checkRepeatReservation,
+    createReservation,
+    type RepeatConflictOccurrence,
+} from '../apis/reservationApi';
 import InfoCircleIcon from '../components/common/icons/InfoCircleIcon';
 import PageSubHeader from '../components/layout/PageSubHeader';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
@@ -18,7 +23,30 @@ import ReservationStepTabs, {
 import ReservationTeamPicker, {
     type ReservationTeamOption,
 } from '../components/reservation/ReservationTeamPicker';
-import { WEEK_DAYS } from '../constants/global';
+import { DEFAULT_ROOM_ID, WEEK_DAYS } from '../constants/global';
+import { useRoomDay } from '../hooks/queries/useRoomDay';
+import { useRoomMonth } from '../hooks/queries/useRoomMonth';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { getColorRgb, normalizeHexColor } from '../utils/colorUtils';
+import {
+    addDays,
+    createDateTimeString,
+    formatDateString,
+    getDateDistance,
+    isValidDateString,
+    parseDateString,
+} from '../utils/dateTimeUtils';
+import {
+    DAY_SLOT_COUNT,
+    getOperatingSlotRange,
+    getSlotRange,
+    hasBlockedSlotOverlap,
+    isOutsideOperatingHours,
+    isStartSlotInsideOperatingHours,
+    TIME_SLOT_INTERVAL_MINUTES,
+} from '../utils/reservationSlotUtils';
+import { getTodayInSeoul } from '../utils/timelineUtils';
+import type { MyReservation } from './MyReservationPage';
 
 interface CalendarDay {
     fullDate: string;
@@ -31,74 +59,20 @@ interface CalendarDay {
 const DISPLAY_YEAR = 2026;
 const DISPLAY_MONTH = 5;
 const KOREAN_WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
-const TIME_SLOT_INTERVAL_MINUTES = 30;
 const TIME_PICKER_VISIBLE_RANGE = 3;
 const INITIAL_START_ABSOLUTE_SLOT = 46;
 const DEFAULT_DURATION_SLOT_COUNT = 4;
-const RESERVED_START_SLOT_KEYS = new Set(['0:0', '0:30']);
-const RESERVED_END_SLOT_KEYS = new Set(['0:0', '0:30']);
 const STEP_ORDER: ReservationStepKey[] = ['date', 'startTime', 'endTime', 'repeat', 'type'];
 const REPEAT_OPTIONS: RepeatOption[] = [
     { label: '반복 없음', value: 0 },
-    ...Array.from({ length: 12 }, (_, index) => ({
-        label: `${index + 1}주`,
-        value: index + 1,
+    ...Array.from({ length: 11 }, (_, index) => ({
+        label: `${index + 2}회차`,
+        value: index + 2,
     })),
 ];
-const TEAM_OPTIONS: ReservationTeamOption[] = [
-    { label: '개인 연습', value: 'private' },
-    { label: '소속된 밴드 A', value: 'band-a' },
-    { label: '소속된 밴드 B', value: 'band-b' },
-    { label: '소속된 밴드 C', value: 'band-c' },
-    { label: '소속된 밴드 D', value: 'band-d' },
-    { label: '소속된 밴드 E', value: 'band-e' },
-];
-const REPEAT_EXCLUDED_DATES = [
-    '2026.05.29(금) - 2회차',
-    '2026.06.05(금) - 3회차',
-    '2026.06.12(금) - 4회차',
-    '2026.06.19(금) - 5회차',
-];
-
-const formatDateString = (year: number, month: number, date: number) => {
-    return `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-};
-
-const formatDateFromDate = (date: Date) => {
-    return formatDateString(date.getFullYear(), date.getMonth() + 1, date.getDate());
-};
-
-const getTodayDateString = () => {
-    return formatDateFromDate(new Date());
-};
-
-const parseDateString = (dateString: string) => {
-    const [year, month, date] = dateString.split('-').map(Number);
-
-    return { year, month, date };
-};
-
-const getDateTimeValue = (dateString: string) => {
-    const { year, month, date } = parseDateString(dateString);
-
-    return Date.UTC(year, month - 1, date);
-};
-
-const getDateDistance = (fromDate: string, toDate: string) => {
-    return Math.round(
-        (getDateTimeValue(toDate) - getDateTimeValue(fromDate)) / 86_400_000,
-    );
-};
-
-const addDays = (dateString: string, days: number) => {
-    const { year, month, date } = parseDateString(dateString);
-    const nextDate = new Date(year, month - 1, date + days);
-
-    return formatDateString(
-        nextDate.getFullYear(),
-        nextDate.getMonth() + 1,
-        nextDate.getDate(),
-    );
+const PRIVATE_TEAM_OPTION: ReservationTeamOption = {
+    label: '개인 연습',
+    value: 'private',
 };
 
 const formatStepDate = (dateString: string) => {
@@ -123,8 +97,9 @@ const formatDayLabel = (dateString: string) => {
 const formatTimeLabel = (minutes: number) => {
     const hour = Math.floor((minutes % 720) / 60);
     const minute = minutes % 60;
+    const displayHour = hour === 0 ? 12 : hour;
 
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return `${String(displayHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 };
 
 const getMeridiem = (minutes: number): Meridiem => {
@@ -189,11 +164,14 @@ const formatDurationLabel = (
 const formatRepeatLabel = (value: number) => {
     if (value === 0) return '반복 없음';
 
-    return `${value}주 반복`;
+    return `${value}회차`;
 };
 
-const formatTeamLabel = (value: string) => {
-    return TEAM_OPTIONS.find((option) => option.value === value)?.label ?? '개인 연습';
+const formatTeamLabel = (
+    options: ReservationTeamOption[],
+    value: string,
+) => {
+    return options.find((option) => option.value === value)?.label ?? '개인 연습';
 };
 
 const formatTeamStepLabel = (value: string) => {
@@ -220,9 +198,97 @@ const parseAbsoluteSlot = (key: string) => {
     return dateOffset * 48 + minutes / TIME_SLOT_INTERVAL_MINUTES;
 };
 
+const formatTimeForApi = (absoluteSlot: number) => {
+    return `${formatCompactTime(absoluteSlot)}:00`;
+};
+
+const formatTimeForDetail = (time: string) => time.slice(0, 5);
+
+const parseTeamId = (value: string) => {
+    if (value === 'private') return undefined;
+
+    const id = Number(value.replace('team:', ''));
+
+    return Number.isFinite(id) ? id : undefined;
+};
+
+const formatRepeatConflictDate = (occurrence: RepeatConflictOccurrence) => {
+    const { month, date } = parseDateString(occurrence.date);
+
+    return `[${occurrence.week}회차] ${String(month).padStart(2, '0')}.${String(date).padStart(2, '0')}`;
+};
+
+const mapReservationStatus = (status: string): MyReservation['state'] => {
+    if (status === 'APPROVED' || status === 'RESERVED') return 'approved';
+    if (status === 'REJECTED') return 'rejected';
+    if (status === 'CANCELED' || status === 'CANCELLED') return 'canceled';
+
+    return 'pending';
+};
+
+const createTemporaryReservation = (
+    response: Awaited<ReturnType<typeof createReservation>>,
+    repeat: boolean,
+    applicantName: string,
+): MyReservation | null => {
+    const firstReservation = response.reservations[0];
+
+    if (!firstReservation) return null;
+
+    const lastReservation = response.reservations[response.reservations.length - 1];
+    const isTeamReservation = firstReservation.type.toLowerCase() === 'team';
+    const title = isTeamReservation
+        ? firstReservation.team_name ?? firstReservation.name
+        : '개인 연습';
+
+    return {
+        id: firstReservation.reservation_number,
+        title,
+        applicant: applicantName,
+        appliedAt: new Date().toISOString(),
+        startAt: createDateTimeString(firstReservation.date, firstReservation.start_time),
+        endAt: createDateTimeString(firstReservation.date, firstReservation.end_time),
+        repeatEndAt: repeat
+            ? createDateTimeString(lastReservation.date, lastReservation.end_time)
+            : undefined,
+        state: mapReservationStatus(firstReservation.status),
+        kind: isTeamReservation ? 'team' : 'personal',
+        isRepeat: repeat,
+        conflictCount: response.skipped_occurrences?.length || undefined,
+        color: normalizeHexColor(firstReservation.color),
+        colorRgb: getColorRgb(firstReservation.color),
+    };
+};
+
+const createTemporaryRepeatRounds = (
+    response: Awaited<ReturnType<typeof createReservation>>,
+) => {
+    const firstReservation = response.reservations[0];
+
+    if (!firstReservation) return [];
+
+    const rounds = response.reservations.map((reservation) => ({
+        round: Math.max(1, Math.round(getDateDistance(firstReservation.date, reservation.date) / 7) + 1),
+        date: reservation.date,
+        startTime: formatTimeForDetail(reservation.start_time),
+        endTime: formatTimeForDetail(reservation.end_time),
+        status: 'approved' as const,
+    }));
+
+    const conflictRounds = (response.skipped_occurrences ?? []).map((occurrence) => ({
+        round: occurrence.week,
+        date: occurrence.date,
+        startTime: formatTimeForDetail(firstReservation.start_time),
+        endTime: formatTimeForDetail(firstReservation.end_time),
+        status: 'conflict' as const,
+    }));
+
+    return [...rounds, ...conflictRounds].sort((a, b) => a.round - b.round);
+};
+
 const getMinimumStartAbsoluteSlot = (baseDate: string) => {
     const now = new Date();
-    const todayDate = formatDateFromDate(now);
+    const todayDate = getTodayInSeoul();
     const todayOffset = getDateDistance(baseDate, todayDate);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const nextSlot = Math.ceil(currentMinutes / TIME_SLOT_INTERVAL_MINUTES);
@@ -230,15 +296,47 @@ const getMinimumStartAbsoluteSlot = (baseDate: string) => {
     return todayOffset * 48 + nextSlot;
 };
 
-const getInitialDate = () => {
-    const todayDate = getTodayDateString();
+const getInitialDate = (preferredDate?: string | null) => {
+    const todayDate = getTodayInSeoul();
     const mockedDate = formatDateString(DISPLAY_YEAR, DISPLAY_MONTH, 14);
+
+    if (isValidDateString(preferredDate) && preferredDate >= todayDate) {
+        return preferredDate;
+    }
 
     return mockedDate < todayDate ? todayDate : mockedDate;
 };
 
 const getInitialStartAbsoluteSlot = (baseDate: string) => {
     return Math.max(INITIAL_START_ABSOLUTE_SLOT, getMinimumStartAbsoluteSlot(baseDate));
+};
+
+const getFirstVisibleAbsoluteSlot = (
+    isVisible: (absoluteSlot: number) => boolean,
+    minimumAbsoluteSlot = 0,
+) => {
+    for (let absoluteSlot = minimumAbsoluteSlot; absoluteSlot < DAY_SLOT_COUNT * 14; absoluteSlot += 1) {
+        if (isVisible(absoluteSlot)) return absoluteSlot;
+    }
+
+    return minimumAbsoluteSlot;
+};
+
+const getFirstAvailableAbsoluteSlot = (
+    isVisible: (absoluteSlot: number) => boolean,
+    isReserved: (key: string, absoluteSlot: number) => boolean,
+    minimumAbsoluteSlot = 0,
+) => {
+    for (let absoluteSlot = minimumAbsoluteSlot; absoluteSlot < DAY_SLOT_COUNT * 14; absoluteSlot += 1) {
+        if (
+            isVisible(absoluteSlot) &&
+            !isReserved(getSlotKey(absoluteSlot), absoluteSlot)
+        ) {
+            return absoluteSlot;
+        }
+    }
+
+    return getFirstVisibleAbsoluteSlot(isVisible, minimumAbsoluteSlot);
 };
 
 const createStartTimeSlot = (
@@ -273,16 +371,37 @@ const getVisibleTimeOptions = (
     );
 };
 
+const getClosestVisibleAbsoluteSlot = (
+    absoluteSlot: number,
+    isVisible: (value: number) => boolean,
+) => {
+    if (isVisible(absoluteSlot)) return absoluteSlot;
+
+    for (let distance = 1; distance <= 144; distance += 1) {
+        const nextAbsoluteSlot = absoluteSlot + distance;
+        const previousAbsoluteSlot = absoluteSlot - distance;
+
+        if (isVisible(nextAbsoluteSlot)) return nextAbsoluteSlot;
+        if (isVisible(previousAbsoluteSlot)) return previousAbsoluteSlot;
+    }
+
+    return absoluteSlot;
+};
+
 const getNextAvailableAbsoluteSlot = (
     currentAbsoluteSlot: number,
     direction: -1 | 1,
     isReserved: (key: string, absoluteSlot: number) => boolean,
+    isVisible: (absoluteSlot: number) => boolean = () => true,
 ) => {
     let nextAbsoluteSlot = currentAbsoluteSlot + direction;
     let guard = 0;
 
-    while (guard < 240) {
-        if (!isReserved(getSlotKey(nextAbsoluteSlot), nextAbsoluteSlot)) {
+    while (guard < DAY_SLOT_COUNT * 14) {
+        if (
+            isVisible(nextAbsoluteSlot) &&
+            !isReserved(getSlotKey(nextAbsoluteSlot), nextAbsoluteSlot)
+        ) {
             return nextAbsoluteSlot;
         }
 
@@ -297,6 +416,7 @@ const getMeridiemAbsoluteSlot = (
     currentKey: string,
     nextMeridiem: Meridiem,
     isReserved: (key: string, absoluteSlot: number) => boolean,
+    isVisible: (absoluteSlot: number) => boolean = () => true,
 ) => {
     const { dateOffset, minutes } = parseSlotKey(currentKey);
     const twelveHourMinutes = minutes % 720;
@@ -306,8 +426,8 @@ const getMeridiemAbsoluteSlot = (
     const nextKey = `${dateOffset}:${nextMinutes}`;
     const nextAbsoluteSlot = parseAbsoluteSlot(nextKey);
 
-    if (isReserved(nextKey, nextAbsoluteSlot)) {
-        return getNextAvailableAbsoluteSlot(nextAbsoluteSlot, 1, isReserved);
+    if (!isVisible(nextAbsoluteSlot) || isReserved(nextKey, nextAbsoluteSlot)) {
+        return getNextAvailableAbsoluteSlot(nextAbsoluteSlot, 1, isReserved, isVisible);
     }
 
     return nextAbsoluteSlot;
@@ -417,7 +537,21 @@ const getCalendarMonthState = (dateString: string) => {
 
 const ReservationApplyPage = () => {
     const navigate = useNavigate();
-    const initialDate = useMemo(() => getInitialDate(), []);
+    const location = useLocation();
+    const { accessToken, user, isLoggedIn } = useAuthSession();
+    const initialDate = useMemo(() => {
+        const routeState = location.state as { selectedDate?: string } | null;
+        const queryDate = new URLSearchParams(location.search).get('date');
+
+        return getInitialDate(routeState?.selectedDate ?? queryDate);
+    }, [location.search, location.state]);
+    const statusReturnDate = useMemo(() => {
+        const routeState = location.state as { selectedDate?: string } | null;
+        const queryDate = new URLSearchParams(location.search).get('date');
+        const preferredDate = routeState?.selectedDate ?? queryDate;
+
+        return isValidDateString(preferredDate) ? preferredDate : initialDate;
+    }, [initialDate, location.search, location.state]);
     const initialStartAbsoluteSlot = useMemo(
         () => getInitialStartAbsoluteSlot(initialDate),
         [initialDate],
@@ -449,8 +583,58 @@ const ReservationApplyPage = () => {
     const [isReviewMode, setIsReviewMode] = useState(false);
     const [isRepeatNoticeOpen, setIsRepeatNoticeOpen] = useState(false);
     const [isRepeatNoticeChecked, setIsRepeatNoticeChecked] = useState(false);
-    const todayDate = getTodayDateString();
+    const [repeatConflicts, setRepeatConflicts] = useState<RepeatConflictOccurrence[]>([]);
+    const [submitError, setSubmitError] = useState('');
+    const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
+    const todayDate = getTodayInSeoul();
     const isFlowCompleted = completedStepIndex >= STEP_ORDER.length - 1;
+    const selectedStartDate = addDays(
+        selectedDate,
+        Math.floor(selectedStartAbsoluteSlot / 48),
+    );
+    const selectedStartTime = formatTimeForApi(selectedStartAbsoluteSlot);
+    const selectedEndTime = formatTimeForApi(selectedEndAbsoluteSlot);
+    const selectedReservationType = selectedTeamValue === 'private' ? 'private' : 'team';
+    const selectedTeamId = parseTeamId(selectedTeamValue);
+    const selectedRepeatCount = selectedRepeatValue > 0 ? selectedRepeatValue : 1;
+    const isRepeatReservation = selectedRepeatValue > 0;
+
+    const { data: daySchedule } = useRoomDay({
+        roomId: DEFAULT_ROOM_ID,
+        date: selectedDate,
+    });
+    const { data: monthSchedule } = useRoomMonth({
+        roomId: DEFAULT_ROOM_ID,
+        year: visibleCalendar.year,
+        month: visibleCalendar.month,
+    });
+
+    const teamOptions = useMemo<ReservationTeamOption[]>(() => [
+        PRIVATE_TEAM_OPTION,
+        ...(user?.team ?? []).map((team) => ({
+            label: team.name,
+            value: `team:${team.id}`,
+        })),
+    ], [user?.team]);
+
+    const disabledDateSet = useMemo(() => new Set(
+        monthSchedule?.days
+            .filter((day) => day.disabled)
+            .map((day) => day.date) ?? [],
+    ), [monthSchedule?.days]);
+    const isCalendarDayDisabled = useCallback((dateString: string) => (
+        dateString < todayDate ||
+        disabledDateSet.has(dateString)
+    ), [disabledDateSet, todayDate]);
+
+    const blockedSlots = useMemo(() => (
+        daySchedule?.slots.map((slot) => (
+            getSlotRange(slot.startTime, slot.endTime)
+        )) ?? []
+    ), [daySchedule?.slots]);
+    const operatingRange = useMemo(() => (
+        getOperatingSlotRange(daySchedule?.openTime, daySchedule?.closeTime)
+    ), [daySchedule?.closeTime, daySchedule?.openTime]);
 
     const calendarDays = useMemo(
         () => getCalendarDays(visibleCalendar.year, visibleCalendar.month),
@@ -458,11 +642,20 @@ const ReservationApplyPage = () => {
     );
 
     const isStartTimeReserved = useCallback(
-        (key: string, absoluteSlot: number) => (
-            RESERVED_START_SLOT_KEYS.has(key) ||
+        (_key: string, absoluteSlot: number) => (
+            daySchedule?.status === 'INACTIVE' ||
+            isOutsideOperatingHours(operatingRange, absoluteSlot, absoluteSlot + 1) ||
+            hasBlockedSlotOverlap(blockedSlots, absoluteSlot, absoluteSlot + 1) ||
             absoluteSlot < getMinimumStartAbsoluteSlot(selectedDate)
         ),
-        [selectedDate],
+        [blockedSlots, daySchedule?.status, operatingRange, selectedDate],
+    );
+
+    const isStartTimeVisible = useCallback(
+        (absoluteSlot: number) => (
+            isStartSlotInsideOperatingHours(operatingRange, absoluteSlot)
+        ),
+        [operatingRange],
     );
 
     const selectedStartSlot = useMemo(
@@ -485,12 +678,69 @@ const ReservationApplyPage = () => {
     );
 
     const isEndTimeReserved = useCallback(
-        (key: string, absoluteSlot: number) => (
+        (_key: string, absoluteSlot: number) => (
             absoluteSlot <= selectedStartAbsoluteSlot ||
-            RESERVED_END_SLOT_KEYS.has(key)
+            isOutsideOperatingHours(
+                operatingRange,
+                selectedStartAbsoluteSlot,
+                absoluteSlot,
+            ) ||
+            hasBlockedSlotOverlap(
+                blockedSlots,
+                selectedStartAbsoluteSlot,
+                absoluteSlot,
+            )
         ),
-        [selectedStartAbsoluteSlot],
+        [blockedSlots, operatingRange, selectedStartAbsoluteSlot],
     );
+    const isEndTimeVisible = useCallback(
+        (absoluteSlot: number) => (
+            absoluteSlot > selectedStartAbsoluteSlot &&
+            !isOutsideOperatingHours(
+                operatingRange,
+                selectedStartAbsoluteSlot,
+                absoluteSlot,
+            )
+        ),
+        [operatingRange, selectedStartAbsoluteSlot],
+    );
+
+    useEffect(() => {
+        if (!operatingRange) return;
+
+        setSelectedStartAbsoluteSlot((currentSlot) => (
+            getFirstAvailableAbsoluteSlot(
+                isStartTimeVisible,
+                isStartTimeReserved,
+                Math.max(0, currentSlot),
+            )
+        ));
+        setDraftStartAbsoluteSlot((currentSlot) => (
+            getFirstAvailableAbsoluteSlot(
+                isStartTimeVisible,
+                isStartTimeReserved,
+                Math.max(0, currentSlot),
+            )
+        ));
+    }, [isStartTimeReserved, isStartTimeVisible, operatingRange]);
+
+    useEffect(() => {
+        if (!operatingRange) return;
+
+        setSelectedEndAbsoluteSlot((currentSlot) => (
+            getClosestVisibleAbsoluteSlot(
+                Math.max(currentSlot, selectedStartAbsoluteSlot + 1),
+                isEndTimeVisible,
+            )
+        ));
+        setDraftEndAbsoluteSlot((currentSlot) => (
+            getClosestVisibleAbsoluteSlot(
+                Math.max(currentSlot, selectedStartAbsoluteSlot + 1),
+                isEndTimeVisible,
+            )
+        ));
+    }, [isEndTimeVisible, operatingRange, selectedStartAbsoluteSlot]);
+
     const selectedEndSlot = useMemo(
         () => createStartTimeSlot(
             selectedDate,
@@ -641,10 +891,10 @@ const ReservationApplyPage = () => {
             draftDate,
         );
         const nextCalendarDays = getCalendarDays(nextYear, nextMonth);
-        const selectableDate = nextSelectedDate >= todayDate
+        const selectableDate = !isCalendarDayDisabled(nextSelectedDate)
             ? nextSelectedDate
             : nextCalendarDays.find((day) => (
-                day.isCurrentMonth && day.fullDate >= todayDate
+                day.isCurrentMonth && !isCalendarDayDisabled(day.fullDate)
             ))?.fullDate;
 
         setVisibleCalendar({ year: nextYear, month: nextMonth });
@@ -661,41 +911,180 @@ const ReservationApplyPage = () => {
         setVisibleCalendar(getCalendarMonthState(day.fullDate));
     };
 
-    const handleSubmit = () => {
-        if (isReviewMode) {
-            if (selectedRepeatValue > 0) {
-                setIsRepeatNoticeChecked(false);
-                setIsRepeatNoticeOpen(true);
-                return;
+    const getDefaultStartAbsoluteSlot = (dateString: string) => {
+        const minimumSlot = dateString === todayDate
+            ? Math.max(0, getMinimumStartAbsoluteSlot(dateString))
+            : 0;
+
+        return getFirstAvailableAbsoluteSlot(
+            isStartTimeVisible,
+            isStartTimeReserved,
+            minimumSlot,
+        );
+    };
+
+    const getDefaultEndAbsoluteSlot = (startAbsoluteSlot: number) => {
+        const endVisible = (absoluteSlot: number) => (
+            absoluteSlot > startAbsoluteSlot &&
+            !isOutsideOperatingHours(
+                operatingRange,
+                startAbsoluteSlot,
+                absoluteSlot,
+            )
+        );
+        const endReserved = (_key: string, absoluteSlot: number) => (
+            absoluteSlot <= startAbsoluteSlot ||
+            isOutsideOperatingHours(
+                operatingRange,
+                startAbsoluteSlot,
+                absoluteSlot,
+            ) ||
+            hasBlockedSlotOverlap(
+                blockedSlots,
+                startAbsoluteSlot,
+                absoluteSlot,
+            )
+        );
+        const preferredEndSlot = startAbsoluteSlot + DEFAULT_DURATION_SLOT_COUNT;
+
+        if (
+            endVisible(preferredEndSlot) &&
+            !endReserved(getSlotKey(preferredEndSlot), preferredEndSlot)
+        ) {
+            return preferredEndSlot;
+        }
+
+        for (
+            let absoluteSlot = preferredEndSlot - 1;
+            absoluteSlot > startAbsoluteSlot;
+            absoluteSlot -= 1
+        ) {
+            if (
+                endVisible(absoluteSlot) &&
+                !endReserved(getSlotKey(absoluteSlot), absoluteSlot)
+            ) {
+                return absoluteSlot;
+            }
+        }
+
+        return getFirstAvailableAbsoluteSlot(
+            endVisible,
+            endReserved,
+            startAbsoluteSlot + 1,
+        );
+    };
+
+    const submitReservation = async (repeat: boolean) => {
+        if (!isLoggedIn || !accessToken) {
+            setSubmitError('로그인이 필요한 기능입니다.');
+            return;
+        }
+
+        if (selectedReservationType === 'team' && !selectedTeamId) {
+            setSubmitError('예약할 팀을 선택해주세요.');
+            return;
+        }
+
+        setIsSubmittingReservation(true);
+        setSubmitError('');
+
+        try {
+            const reservationResponse = await createReservation({
+                accessToken,
+                roomId: DEFAULT_ROOM_ID,
+                type: selectedReservationType,
+                repeat,
+                startDate: selectedStartDate,
+                count: selectedRepeatCount,
+                startTime: selectedStartTime,
+                endTime: selectedEndTime,
+                teamId: selectedTeamId,
+            });
+            console.log('Reservation apply response:', reservationResponse);
+            const temporaryReservation = createTemporaryReservation(
+                reservationResponse,
+                repeat,
+                user?.nickname ?? reservationResponse.reservations[0]?.name ?? '',
+            );
+
+            if (!temporaryReservation) {
+                throw new Error('예약 신청 응답에 예약 정보가 없습니다.');
             }
 
-            navigate('/', {
+            navigate(`/my/reservations/${temporaryReservation.id}`, {
                 state: {
+                    fromReservationApply: true,
+                    temporaryReservation,
+                    temporaryRepeatRounds: repeat
+                        ? createTemporaryRepeatRounds(reservationResponse)
+                        : undefined,
                     toastMessage: '예약이 신청되었어요',
                 },
             });
+        } catch (error) {
+            setSubmitError(
+                error instanceof Error
+                    ? error.message
+                    : '예약 신청에 실패했습니다.',
+            );
+        } finally {
+            setIsSubmittingReservation(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (isReviewMode) {
+            if (!isRepeatReservation) {
+                await submitReservation(false);
+                return;
+            }
+
+            if (!isLoggedIn || !accessToken) {
+                setSubmitError('로그인이 필요한 기능입니다.');
+                return;
+            }
+
+            setIsSubmittingReservation(true);
+            setSubmitError('');
+
+            try {
+                const repeatCheck = await checkRepeatReservation({
+                    accessToken,
+                    roomId: DEFAULT_ROOM_ID,
+                    type: selectedReservationType,
+                    startDate: selectedStartDate,
+                    count: selectedRepeatCount,
+                    startTime: selectedStartTime,
+                    endTime: selectedEndTime,
+                    teamId: selectedTeamId,
+                });
+
+                if (repeatCheck.conflict_occurrences.length > 0) {
+                    setRepeatConflicts(repeatCheck.conflict_occurrences);
+                    setIsRepeatNoticeChecked(false);
+                    setIsRepeatNoticeOpen(true);
+                    return;
+                }
+
+                await submitReservation(true);
+            } catch (error) {
+                setSubmitError(
+                    error instanceof Error
+                        ? error.message
+                        : '반복 예약 확인에 실패했습니다.',
+                );
+            } finally {
+                setIsSubmittingReservation(false);
+            }
             return;
         }
 
         if (activeStep === 'date') {
-            if (draftDate < todayDate) return;
+            if (isCalendarDayDisabled(draftDate)) return;
 
             const isDateChanged = draftDate !== selectedDate;
-            const nextStartAbsoluteSlot = getInitialStartAbsoluteSlot(draftDate);
-            const nextEndReserved = (key: string, absoluteSlot: number) => (
-                absoluteSlot <= nextStartAbsoluteSlot ||
-                RESERVED_END_SLOT_KEYS.has(key)
-            );
-            const defaultEndAbsoluteSlot =
-                nextStartAbsoluteSlot + DEFAULT_DURATION_SLOT_COUNT;
-            const nextEndAbsoluteSlot =
-                nextEndReserved(getSlotKey(defaultEndAbsoluteSlot), defaultEndAbsoluteSlot)
-                    ? getNextAvailableAbsoluteSlot(
-                        defaultEndAbsoluteSlot,
-                        1,
-                        nextEndReserved,
-                    )
-                    : defaultEndAbsoluteSlot;
+            const nextStartAbsoluteSlot = getDefaultStartAbsoluteSlot(draftDate);
+            const nextEndAbsoluteSlot = getDefaultEndAbsoluteSlot(nextStartAbsoluteSlot);
 
             setSelectedDate(draftDate);
             setSelectedStartAbsoluteSlot(nextStartAbsoluteSlot);
@@ -715,14 +1104,18 @@ const ReservationApplyPage = () => {
         }
 
         if (activeStep === 'startTime') {
-            const nextStartAbsoluteSlot = isStartTimeReserved(
-                getSlotKey(draftStartAbsoluteSlot),
-                draftStartAbsoluteSlot,
+            const nextStartAbsoluteSlot = (
+                !isStartTimeVisible(draftStartAbsoluteSlot) ||
+                isStartTimeReserved(
+                    getSlotKey(draftStartAbsoluteSlot),
+                    draftStartAbsoluteSlot,
+                )
             )
                 ? getNextAvailableAbsoluteSlot(
                     draftStartAbsoluteSlot,
                     1,
                     isStartTimeReserved,
+                    isStartTimeVisible,
                 )
                 : draftStartAbsoluteSlot;
             const normalizedStart = normalizeAbsoluteSlotDate(
@@ -732,20 +1125,9 @@ const ReservationApplyPage = () => {
             const isStartTimeChanged =
                 normalizedStart.absoluteSlot !== selectedStartAbsoluteSlot ||
                 normalizedStart.date !== selectedDate;
-            const nextEndReserved = (key: string, absoluteSlot: number) => (
-                absoluteSlot <= normalizedStart.absoluteSlot ||
-                RESERVED_END_SLOT_KEYS.has(key)
+            const nextEndAbsoluteSlot = getDefaultEndAbsoluteSlot(
+                normalizedStart.absoluteSlot,
             );
-            const defaultEndAbsoluteSlot =
-                normalizedStart.absoluteSlot + DEFAULT_DURATION_SLOT_COUNT;
-            const nextEndAbsoluteSlot =
-                nextEndReserved(getSlotKey(defaultEndAbsoluteSlot), defaultEndAbsoluteSlot)
-                    ? getNextAvailableAbsoluteSlot(
-                        defaultEndAbsoluteSlot,
-                        1,
-                        nextEndReserved,
-                    )
-                    : defaultEndAbsoluteSlot;
 
             setSelectedDate(normalizedStart.date);
             setDraftDate(normalizedStart.date);
@@ -767,7 +1149,10 @@ const ReservationApplyPage = () => {
         }
 
         if (activeStep === 'endTime') {
-            if (isEndTimeReserved(getSlotKey(draftEndAbsoluteSlot), draftEndAbsoluteSlot)) {
+            if (
+                !isEndTimeVisible(draftEndAbsoluteSlot) ||
+                isEndTimeReserved(getSlotKey(draftEndAbsoluteSlot), draftEndAbsoluteSlot)
+            ) {
                 return;
             }
 
@@ -796,14 +1181,11 @@ const ReservationApplyPage = () => {
         setIsRepeatNoticeChecked(false);
     };
 
-    const handleConfirmRepeatReservation = () => {
+    const handleConfirmRepeatReservation = async () => {
         if (!isRepeatNoticeChecked) return;
 
-        navigate('/', {
-            state: {
-                toastMessage: '예약이 신청되었어요',
-            },
-        });
+        setIsRepeatNoticeOpen(false);
+        await submitReservation(true);
     };
 
     const handleStepStartTime = (direction: -1 | 1) => {
@@ -812,6 +1194,7 @@ const ReservationApplyPage = () => {
                 currentAbsoluteSlot,
                 direction,
                 isStartTimeReserved,
+                isStartTimeVisible,
             )
         ));
     };
@@ -822,6 +1205,7 @@ const ReservationApplyPage = () => {
                 getSlotKey(currentAbsoluteSlot),
                 nextMeridiem,
                 isStartTimeReserved,
+                isStartTimeVisible,
             );
 
             return nextAbsoluteSlot ?? currentAbsoluteSlot;
@@ -835,7 +1219,10 @@ const ReservationApplyPage = () => {
     const handleSelectStartTime = (key: string) => {
         const nextAbsoluteSlot = parseAbsoluteSlot(key);
 
-        if (isStartTimeReserved(key, nextAbsoluteSlot)) return;
+        if (
+            !isStartTimeVisible(nextAbsoluteSlot) ||
+            isStartTimeReserved(key, nextAbsoluteSlot)
+        ) return;
 
         setDraftStartAbsoluteSlot(nextAbsoluteSlot);
     };
@@ -846,6 +1233,7 @@ const ReservationApplyPage = () => {
                 currentAbsoluteSlot,
                 direction,
                 isEndTimeReserved,
+                isEndTimeVisible,
             )
         ));
     };
@@ -856,6 +1244,7 @@ const ReservationApplyPage = () => {
                 getSlotKey(currentAbsoluteSlot),
                 nextMeridiem,
                 isEndTimeReserved,
+                isEndTimeVisible,
             );
 
             return nextAbsoluteSlot ?? currentAbsoluteSlot;
@@ -869,7 +1258,10 @@ const ReservationApplyPage = () => {
     const handleSelectEndTime = (key: string) => {
         const nextAbsoluteSlot = parseAbsoluteSlot(key);
 
-        if (isEndTimeReserved(key, nextAbsoluteSlot)) return;
+        if (
+            !isEndTimeVisible(nextAbsoluteSlot) ||
+            isEndTimeReserved(key, nextAbsoluteSlot)
+        ) return;
 
         setDraftEndAbsoluteSlot(nextAbsoluteSlot);
     };
@@ -894,15 +1286,15 @@ const ReservationApplyPage = () => {
 
     const handleStepTeam = (direction: -1 | 1) => {
         setDraftTeamValue((currentValue) => {
-            const currentIndex = TEAM_OPTIONS.findIndex((option) => (
+            const currentIndex = teamOptions.findIndex((option) => (
                 option.value === currentValue
             ));
             const nextIndex = Math.min(
                 Math.max(currentIndex + direction, 0),
-                TEAM_OPTIONS.length - 1,
+                teamOptions.length - 1,
             );
 
-            return TEAM_OPTIONS[nextIndex].value;
+            return teamOptions[nextIndex].value;
         });
     };
 
@@ -940,18 +1332,32 @@ const ReservationApplyPage = () => {
         : activeStep === 'date'
             ? draftDate
             : selectedDate;
-    const cardName = completedStepIndex >= 4 || isReviewMode
-        ? formatTeamLabel(selectedTeamValue)
-        : '닉네임은여덟글자';
+    const cardTeamValue = activeStep === 'type' && !isReviewMode
+        ? draftTeamValue
+        : selectedTeamValue;
+    const cardName = cardTeamValue === 'private'
+        ? user?.nickname ?? '개인 연습'
+        : formatTeamLabel(teamOptions, cardTeamValue);
     const repeatBadgeLabel = completedStepIndex >= 3 || isReviewMode
         ? formatRepeatLabel(selectedRepeatValue)
         : '반복 안함';
 
     return (
-        <MobilePageLayout header={<PageSubHeader title="예약 신청" />}>
+        <MobilePageLayout
+            header={(
+                <PageSubHeader
+                    title="예약 신청"
+                    onBack={() => navigate('/', {
+                        state: {
+                            selectedDate: statusReturnDate,
+                        },
+                    })}
+                />
+            )}
+        >
             <main className="reservation-apply-page">
                 <section className="reservation-apply-card" aria-label="예약 안내">
-                    <div>
+                    <div className="reservation-apply-card__content">
                         <div className="reservation-apply-card__nickname">
                             {cardName}
                         </div>
@@ -1087,7 +1493,7 @@ const ReservationApplyPage = () => {
 
                                 <div className="reservation-apply-calendar__grid">
                                     {calendarDays.map((day) => {
-                                        const isDisabled = day.fullDate < todayDate;
+                                        const isDisabled = isCalendarDayDisabled(day.fullDate);
 
                                         return (
                                             <button
@@ -1163,7 +1569,7 @@ const ReservationApplyPage = () => {
                     {!isReviewMode && activeStep === 'type' && (
                         <div key="team-picker" className="reservation-step-panel">
                             <ReservationTeamPicker
-                                options={TEAM_OPTIONS}
+                                options={teamOptions}
                                 selectedValue={draftTeamValue}
                                 onStepTeam={handleStepTeam}
                                 onSelectTeam={handleSelectTeam}
@@ -1177,9 +1583,15 @@ const ReservationApplyPage = () => {
                         type="button"
                         className="reservation-apply-submit"
                         onClick={handleSubmit}
+                        disabled={isSubmittingReservation}
                     >
-                        {submitLabel}
+                        {isSubmittingReservation ? '처리 중...' : submitLabel}
                     </button>
+                    {submitError && (
+                        <p className="reservation-apply-error" role="alert">
+                            {submitError}
+                        </p>
+                    )}
                 </div>
 
                 {isRepeatNoticeOpen && (
@@ -1212,9 +1624,17 @@ const ReservationApplyPage = () => {
 
                             <div className="reservation-repeat-notice-modal__dates">
                                 <strong>[신청이 제외되는 날짜]</strong>
-                                <ul>
-                                    {REPEAT_EXCLUDED_DATES.map((date) => (
-                                        <li key={date}>{date}</li>
+                                <ul
+                                    className={
+                                        repeatConflicts.length === 1
+                                            ? 'reservation-repeat-notice-modal__date-list--single'
+                                            : ''
+                                    }
+                                >
+                                    {repeatConflicts.map((occurrence) => (
+                                        <li key={`${occurrence.week}-${occurrence.date}`}>
+                                            {formatRepeatConflictDate(occurrence)}
+                                        </li>
                                     ))}
                                 </ul>
                             </div>

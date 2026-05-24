@@ -1,4 +1,3 @@
-import { PRIVATE_DEFAULT_COLOR } from '../constants/global';
 import type {
     RoomDayApiResponse,
     RoomDaySlotApiResponse,
@@ -10,13 +9,7 @@ import type {
     DayScheduleSlot,
     MonthSchedule,
 } from '../types/calendarTypes';
-
-const normalizeHexColor = (color?: string): string => {
-    if (!color || !color.trim()) return PRIVATE_DEFAULT_COLOR;
-
-    const trimmed = color.trim();
-    return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
-};
+import { normalizeHexColor } from './colorUtils';
 
 const mapRoomDaySlot = (
     slot: RoomDaySlotApiResponse,
@@ -37,7 +30,11 @@ export const mapRoomDayResponse = (
     response: RoomDayApiResponse,
 ): DaySchedule => {
     const visibleSlots = response.slot.filter(
-        (slot) => slot.status === 'PENDING' || slot.status === 'RESERVED',
+        (slot) => (
+            slot.status === 'PENDING' ||
+            slot.status === 'RESERVED' ||
+            slot.status === null
+        ),
     );
 
     const slots = visibleSlots.map(mapRoomDaySlot);

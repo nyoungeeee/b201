@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { WEEK_DAYS } from '../../constants/global';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
-import { queryClient } from '../../lib/queryClient';
 import type { MonthSchedule } from '../../types/calendarTypes';
 
 interface CalendarGridDay {
@@ -155,7 +154,6 @@ const CalendarSection = ({
         targetMonth: number,
         sourceDays: CalendarGridDay[],
         sourceSelectedDate: string,
-        targetMonthDays: MonthSchedule['days'],
     ) => {
         const selectedIndex = sourceDays.findIndex(
             (day) => day.fullDate === sourceSelectedDate,
@@ -169,7 +167,7 @@ const CalendarSection = ({
             targetYear,
             targetMonth,
             '',
-            targetMonthDays,
+            [],
         );
 
         for (let index = selectedIndex; index >= 0; index -= 7) {
@@ -189,19 +187,11 @@ const CalendarSection = ({
         const nextYear = movedDate.getFullYear();
         const nextMonth = movedDate.getMonth() + 1;
 
-        const nextMonthQueryData = queryClient.getQueryData<MonthSchedule>([
-            'roomMonth',
-            1,
-            nextYear,
-            nextMonth,
-        ]);
-
         const nextSelectedDate = getSelectedDateByGridPosition(
             nextYear,
             nextMonth,
             calendarDays,
             selectedDate,
-            nextMonthQueryData?.days ?? [],
         );
 
         setDisplayYear(nextYear);

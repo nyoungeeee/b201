@@ -7,6 +7,35 @@ import {
 
 export const AUTH_SESSION_EVENT = 'b201_auth_session_change';
 
+// 개발 중일 때 로그인된 상태로 시작하기 위한 시드 데이터
+const ENABLE_SEED_AUTH_SESSION = true;
+
+const SEED_AUTH_SESSION: SigninResponse = {
+    id: 1,
+    email: 'seed-001@seed.b201.local',
+    nickname: '푸른빈',
+    team: [
+        {
+            name: '유다빈밴딧',
+            id: 1,
+            color: 'FF6A2A',
+        },
+    ],
+    token: {
+        access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzgyMjM5MjYyLCJpYXQiOjE3Nzk2NDcyNjIsImp0aSI6ImIxYWJlOTcyYzAwYzQ3ZDA4NWIxODE2NGE3M2Y4MzQ4IiwidXNlcl9pZCI6IjEifQ.kzR8EVt9KyXRfkWKI96LC9a2hAdOnjlG2oq0pQTy-X4',
+        refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc4MDI1MjA2MiwiaWF0IjoxNzc5NjQ3MjYyLCJqdGkiOiJjNDcwOTg2ZTU4MDk0ZjQ1OGM1ZjgwMjQzYmY3OTk0NyIsInVzZXJfaWQiOiIxIn0.kM-Plsv9N9Do5IWTl6cn8HBJWx5kMHgJt7JFPoPqMq8',
+    },
+};
+
+const getSeedAuthUser = (): AuthUser => {
+    return {
+        id: SEED_AUTH_SESSION.id,
+        email: SEED_AUTH_SESSION.email,
+        nickname: SEED_AUTH_SESSION.nickname,
+        team: SEED_AUTH_SESSION.team,
+    };
+};
+
 const notifyAuthSessionChange = () => {
     window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
 };
@@ -20,9 +49,17 @@ export const saveAuthSession = (signinResponse: SigninResponse) => {
     notifyAuthSessionChange();
 };
 
-export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const getAccessToken = () => (
+    ENABLE_SEED_AUTH_SESSION
+        ? SEED_AUTH_SESSION.token.access
+        : localStorage.getItem(ACCESS_TOKEN_KEY)
+);
 
 export const getAuthUser = (): AuthUser | null => {
+    if (ENABLE_SEED_AUTH_SESSION) {
+        return getSeedAuthUser();
+    }
+
     const rawUser = localStorage.getItem(AUTH_USER_KEY);
 
     if (!rawUser) return null;

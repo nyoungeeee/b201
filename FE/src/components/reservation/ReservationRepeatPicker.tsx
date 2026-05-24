@@ -1,4 +1,9 @@
-import { useRef, type MutableRefObject, type PointerEvent, type WheelEvent } from 'react';
+import {
+    useEffect,
+    useRef,
+    type MutableRefObject,
+    type PointerEvent,
+} from 'react';
 
 export interface RepeatOption {
     label: string;
@@ -52,13 +57,24 @@ const ReservationRepeatPicker = ({
     onSelectRepeat,
 }: ReservationRepeatPickerProps) => {
     const dragStartY = useRef<number | null>(null);
+    const wheelRef = useRef<HTMLDivElement | null>(null);
     const selectedIndex = options.findIndex((option) => option.value === selectedValue);
     const visibleOptions = getVisibleRepeatOptions(options, selectedIndex);
 
-    const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        onStepRepeat(getWheelDirection(event.deltaY));
-    };
+    useEffect(() => {
+        const wheelElement = wheelRef.current;
+
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            onStepRepeat(getWheelDirection(event.deltaY));
+        };
+
+        wheelElement?.addEventListener('wheel', handleWheel, { passive: false });
+
+        return () => {
+            wheelElement?.removeEventListener('wheel', handleWheel);
+        };
+    }, [onStepRepeat]);
 
     const handlePointerDown = (
         event: PointerEvent<HTMLDivElement>,
@@ -101,8 +117,8 @@ const ReservationRepeatPicker = ({
             <h2 className="reservation-repeat-section__title">반복 여부</h2>
 
             <div
+                ref={wheelRef}
                 className="reservation-repeat-picker"
-                onWheel={handleWheel}
                 onPointerDown={(event) => handlePointerDown(event, dragStartY)}
                 onPointerMove={(event) => handlePointerMove(event, dragStartY)}
                 onPointerUp={handlePointerEnd}
