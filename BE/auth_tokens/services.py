@@ -12,6 +12,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
 from accounts.models import UserStatus
+from accounts.services import UserInfoService
 from auth_tokens.exceptions import (
     InvalidOrExpiredTokenError,
     KakaoAPIError,
@@ -118,6 +119,7 @@ class KakaoAuthService:
                     user = User.objects.create_user(
                         kakao_id=kakao_user_info.kakao_id,
                         email=kakao_user_info.email,
+                        nickname=UserInfoService.generate_random_nickname(),
                     )
                     new_user_created = True
             except IntegrityError:

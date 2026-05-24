@@ -100,3 +100,19 @@ class CheckNicknameResponseSerializer(serializers.Serializer):
         required=True,
         help_text="닉네임 사용 가능 여부. true이면 사용할 수 있습니다.",
     )
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "랜덤 닉네임 응답",
+            value={"nickname": "고장난기타7"},
+            response_only=True,
+        )
+    ]
+)
+class RandomNicknameResponseSerializer(serializers.Serializer):
+    nickname = serializers.CharField(
+        required=True,
+        help_text="접두어 + 명사 + 숫자 형식의 랜덤 닉네임",
+    )
