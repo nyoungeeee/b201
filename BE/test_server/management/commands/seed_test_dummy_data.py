@@ -615,8 +615,6 @@ def build_occupied_slot_map(
         room_id__in=room_map.keys(),
         closure_date__gte=start_date,
         closure_date__lte=end_date,
-        start_time__isnull=False,
-        end_time__isnull=False,
     )
     for closure in closures:
         room = room_map[closure.room_id]
@@ -624,8 +622,8 @@ def build_occupied_slot_map(
             time_range_to_slot_range(
                 room,
                 closure.closure_date,
-                closure.start_time,
-                closure.end_time,
+                closure.start_time or room.open_time,
+                closure.end_time or room.close_time,
             )
         )
 
@@ -714,17 +712,23 @@ def ensure_room_closures(
             if occupied_slots[key]:
                 continue
 
+            closure_type = (
+                ClosureType.HOLIDAY
+                if closure_index % 2 == 0
+                else ClosureType.MAINTENANCE
+            )
+            is_holiday = closure_type == ClosureType.HOLIDAY
             closure, created = RoomClosure.objects.get_or_create(
                 room=room,
                 closure_date=target_date,
-                start_time=room.open_time,
-                end_time=room.close_time,
+                start_time=None if is_holiday else room.open_time,
+                end_time=None if is_holiday else room.close_time,
                 defaults={
                     "start_date": target_date,
                     "end_date": target_date,
                     "is_all_day": True,
-                    "closure_type": ClosureType.MAINTENANCE,
-                    "reason": f"{SEED_CLOSURE_PREFIX} full-day maintenance #{closure_index}",
+                    "closure_type": closure_type,
+                    "reason": f"{SEED_CLOSURE_PREFIX} full-day {closure_type.lower()} #{closure_index}",
                 },
             )
             if created:
@@ -733,8 +737,8 @@ def ensure_room_closures(
                     time_range_to_slot_range(
                         room,
                         target_date,
-                        closure.start_time,
-                        closure.end_time,
+                        room.open_time,
+                        room.close_time,
                     )
                 )
             break
@@ -773,7 +777,6 @@ def ensure_room_closures(
                     "closure_type": rng.choice(
                         [
                             ClosureType.BLOCKED,
-                            ClosureType.HOLIDAY,
                             ClosureType.MAINTENANCE,
                         ]
                     ),

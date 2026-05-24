@@ -3,6 +3,7 @@ from datetime import time, timedelta
 from rest_framework import status
 
 from bookings.models import Booking, BookingStatus, BookingType
+from studios.models import ClosureType, RoomClosure
 from .base import BaseBookingAPITestCase
 
 
@@ -62,6 +63,58 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
                 "start_date": self.today.isoformat(),
                 "start_time": "09:30:00",
                 "end_time": "10:30:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
+
+    def test_create_private_reservation_rejects_overlapping_closure_time(self):
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(12, 0),
+            is_all_day=False,
+            closure_type=ClosureType.MAINTENANCE,
+            reason="점검",
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "11:00:00",
+                "end_time": "12:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
+
+    def test_create_private_reservation_rejects_all_day_holiday_closure(self):
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="휴무",
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}/private",
+            {
+                "start_date": self.today.isoformat(),
+                "start_time": "10:00:00",
+                "end_time": "11:00:00",
             },
             format="json",
         )

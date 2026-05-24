@@ -1025,12 +1025,19 @@ class AdminDayOffService:
     @staticmethod
     def check_conflicts(
         room_id: int | None,
+        day_off_type: str,
         start_date,
         end_date,
         start_time,
         end_time,
         is_all_day: bool,
     ) -> list[AdminReservationConflictInfo]:
+        is_all_day, start_time, end_time = AdminDayOffService._normalize_day_off_time(
+            day_off_type=day_off_type,
+            is_all_day=is_all_day,
+            start_time=start_time,
+            end_time=end_time,
+        )
         room_ids = AdminDayOffService._get_target_room_ids(room_id)
         conflicts = []
         current_date = start_date
@@ -1069,9 +1076,16 @@ class AdminDayOffService:
         room = None
         if room_id is not None:
             room = StudioRoom.objects.get(id=room_id)
+        is_all_day, start_time, end_time = AdminDayOffService._normalize_day_off_time(
+            day_off_type=day_off_type,
+            is_all_day=is_all_day,
+            start_time=start_time,
+            end_time=end_time,
+        )
 
         conflicts = AdminDayOffService.check_conflicts(
             room_id=room_id,
+            day_off_type=day_off_type,
             start_date=start_date,
             end_date=end_date,
             start_time=start_time,
@@ -1100,6 +1114,17 @@ class AdminDayOffService:
             reason=reason or "",
         )
         return AdminDayOffService._build_day_off_info(closure)
+
+    @staticmethod
+    def _normalize_day_off_time(
+        day_off_type: str,
+        is_all_day: bool,
+        start_time,
+        end_time,
+    ):
+        if day_off_type == "휴무":
+            return True, None, None
+        return is_all_day, start_time, end_time
 
     @staticmethod
     @transaction.atomic
