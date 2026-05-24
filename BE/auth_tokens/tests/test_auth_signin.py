@@ -32,11 +32,14 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["email"], "new@example.com")
-        self.assertEqual(response.data["nickname"], None)
+        self.assertIsNotNone(response.data["nickname"])
+        self.assertLessEqual(len(response.data["nickname"]), 8)
+        self.assertRegex(response.data["nickname"], r"^[가-힣]+[0-9]$")
         self.assertEqual(response.data["team"], [])
         self.assertIn("access", response.data["token"])
         self.assertIn("refresh", response.data["token"])
-        self.assertTrue(User.objects.filter(kakao_id=9999).exists())
+        created_user = User.objects.get(kakao_id=9999)
+        self.assertEqual(created_user.nickname, response.data["nickname"])
         self.assertEqual(RefreshToken.objects.count(), 1)
 
     @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
