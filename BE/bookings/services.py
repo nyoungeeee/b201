@@ -88,6 +88,35 @@ class ReservationList:
 
 
 @dataclass
+class UnifiedReservationItem:
+    reservation_number: int
+    room_id: int
+    room_name: str
+    start_date: date
+    start_time: time
+    end_date: date
+    end_time: time
+    kind: str
+    repeat_count: int | None
+    conflict_count: int
+    type: str
+    team_id: int | None
+    team_name: str | None
+    color: str
+    applicant_id: int
+    applicant_name: str
+    status: str
+    created_at: object
+
+
+@dataclass
+class UnifiedReservationList:
+    period: str
+    reservations: list[UnifiedReservationItem]
+    pagination: dict[str, int | bool]
+
+
+@dataclass
 class RepeatOccurrence:
     week: int
     date: date
@@ -299,6 +328,102 @@ class BookingCheckService:
 
 
 class ReservationQueryService:
+    EXTERNAL_TO_INTERNAL_STATUS = {
+        "APPROVED": BookingStatus.RESERVED,
+        "PENDING": BookingStatus.PENDING,
+        "REJECTED": BookingStatus.REJECTED,
+        "CANCELED": BookingStatus.CANCELED,
+    }
+    INTERNAL_TO_EXTERNAL_STATUS = {
+        BookingStatus.RESERVED: "APPROVED",
+        BookingStatus.PENDING: "PENDING",
+        BookingStatus.REJECTED: "REJECTED",
+        BookingStatus.CANCELED: "CANCELED",
+    }
+
+    @staticmethod
+    def get_reservations(
+        user,
+        period: str,
+        kind: str | None,
+        reservation_type: str | None,
+        status: list[str] | None,
+        team_id: int | None,
+        page: int,
+        size: int,
+    ) -> UnifiedReservationList:
+        allowed_team_ids = ReservationQueryService._get_allowed_team_ids(user)
+        if team_id is not None:
+            if not Team.objects.filter(id=team_id, status=TeamStatus.ACTIVE).exists():
+                raise NotFoundTeamError()
+            if team_id not in allowed_team_ids:
+                raise ForbiddenTeamBookingError()
+            allowed_team_ids = [team_id]
+
+        scope_filter = Q(user=user, booking_type=BookingType.PRIVATE) | Q(
+            booking_type=BookingType.TEAM,
+            team_id__in=allowed_team_ids,
+        )
+        queryset = Booking.objects.filter(scope_filter).select_related(
+            "room", "user", "team", "team__team_color"
+        )
+
+        now = timezone.localtime()
+        today = now.date()
+        current_time = now.time()
+        if period == "past":
+            queryset = queryset.filter(
+                Q(reservation_date__lt=today)
+                | Q(reservation_date=today, end_time__lt=current_time)
+            )
+        else:
+            queryset = queryset.filter(
+                Q(reservation_date__gt=today)
+                | Q(reservation_date=today, end_time__gte=current_time)
+            )
+
+        if reservation_type == "private":
+            queryset = queryset.filter(booking_type=BookingType.PRIVATE)
+        elif reservation_type == "team":
+            queryset = queryset.filter(booking_type=BookingType.TEAM)
+
+        if kind == "single":
+            queryset = queryset.filter(repeat_group_id__isnull=True)
+        elif kind == "repeat":
+            queryset = queryset.filter(repeat_group_id__isnull=False)
+
+        if status is not None:
+            queryset = queryset.filter(
+                status__in=[
+                    ReservationQueryService.EXTERNAL_TO_INTERNAL_STATUS[value]
+                    for value in status
+                ]
+            )
+
+        queryset = queryset.order_by(
+            "-reservation_date",
+            "-start_time",
+            "-reservation_number",
+        )
+        total_count = queryset.count()
+        start = (page - 1) * size
+        end = start + size
+        bookings = list(queryset[start:end])
+
+        return UnifiedReservationList(
+            period=period,
+            reservations=[
+                ReservationQueryService._build_unified_reservation_item(booking)
+                for booking in bookings
+            ],
+            pagination={
+                "page": page,
+                "size": size,
+                "total_count": total_count,
+                "has_next": end < total_count,
+            },
+        )
+
     @staticmethod
     def get_my_reservations(
         user,
@@ -389,6 +514,30 @@ class ReservationQueryService:
             status=booking.status,
             team_id=booking.team_id,
             team_name=booking.team.name,
+        )
+
+    @staticmethod
+    def _build_unified_reservation_item(booking: Booking) -> UnifiedReservationItem:
+        is_team = booking.booking_type == BookingType.TEAM
+        return UnifiedReservationItem(
+            reservation_number=booking.reservation_number,
+            room_id=booking.room_id,
+            room_name=booking.room.name,
+            start_date=booking.reservation_date,
+            start_time=booking.start_time,
+            end_date=booking.reservation_date,
+            end_time=booking.end_time,
+            kind=ReservationQueryService._resolve_reservation_kind(booking),
+            repeat_count=ReservationQueryService._resolve_repeat_count(booking),
+            conflict_count=0,
+            type="team" if is_team else "private",
+            team_id=booking.team_id if is_team else None,
+            team_name=booking.team.name if is_team else None,
+            color=f"#{booking.team.color}" if is_team else "#DADADA",
+            applicant_id=booking.user_id,
+            applicant_name=booking.user.nickname or "",
+            status=ReservationQueryService.INTERNAL_TO_EXTERNAL_STATUS[booking.status],
+            created_at=booking.created_at,
         )
 
     @staticmethod

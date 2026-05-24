@@ -15,6 +15,7 @@ class BookingStatus(models.TextChoices):
     RESERVED = "RESERVED", "RESERVED"
     CANCELED = "CANCELED", "CANCELED"
     PENDING = "PENDING", "PENDING"  # 예약 확정 대기 상태 (관리자 승인 필요)
+    REJECTED = "REJECTED", "REJECTED"
 
 
 class Booking(models.Model):

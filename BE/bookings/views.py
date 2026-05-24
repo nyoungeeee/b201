@@ -33,6 +33,8 @@ from bookings.serializers import (
     TeamReservationCreateResponseSerializer,
     TeamReservationListQueryParamsSerializer,
     TeamReservationListSerializer,
+    UnifiedReservationListQueryParamsSerializer,
+    UnifiedReservationListSerializer,
     ReservationListQueryParamsSerializer,
 )
 from bookings.services import (
@@ -292,6 +294,52 @@ class TeamReservationView(APIView):
 
         return Response(
             TeamReservationListSerializer(reservation_list).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class ReservationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[UnifiedReservationListQueryParamsSerializer],
+        responses={
+            200: OpenApiResponse(
+                response=UnifiedReservationListSerializer,
+                description="통합 예약 목록 조회 성공",
+            ),
+            403: openapi_exception_response(ForbiddenTeamBookingError),
+            404: openapi_exception_response(NotFoundTeamError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="로그인한 사용자의 개인 예약과 소속 팀 예약을 옵션 기반으로 통합 조회",
+    )
+    def get(self, request):
+        serializer = UnifiedReservationListQueryParamsSerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reservation_list = ReservationQueryService.get_reservations(
+                user=request.user,
+                period=serializer.validated_data["period"],
+                kind=serializer.validated_data.get("kind"),
+                reservation_type=serializer.validated_data.get("type"),
+                status=serializer.validated_data.get("status"),
+                team_id=serializer.validated_data.get("team_id"),
+                page=serializer.validated_data["page"],
+                size=serializer.validated_data["size"],
+            )
+        except NotFoundTeamError as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except ForbiddenTeamBookingError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        return Response(
+            UnifiedReservationListSerializer(reservation_list).data,
             status=status.HTTP_200_OK,
         )
 

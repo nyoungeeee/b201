@@ -161,6 +161,27 @@ class ReservationStatusField(serializers.ChoiceField):
         super().__init__(choices=BookingStatus.choices, **kwargs)
 
 
+class UnifiedReservationStatusField(serializers.ChoiceField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault(
+            "help_text",
+            "예약 상태 필터. PENDING, APPROVED, REJECTED, CANCELED를 사용할 수 있습니다.",
+        )
+        super().__init__(
+            choices=["PENDING", "APPROVED", "REJECTED", "CANCELED"],
+            **kwargs,
+        )
+
+
+class UnifiedReservationStatusListField(serializers.ListField):
+    child = UnifiedReservationStatusField()
+
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            data = [data]
+        return super().to_internal_value(data)
+
+
 class ReservationStatusListField(serializers.ListField):
     child = ReservationStatusField(
         help_text="예약 상태 필터. pending 또는 approved를 사용할 수 있습니다."
@@ -427,6 +448,73 @@ class PrivateReservationCreateResponseSerializer(serializers.Serializer):
     reservations = ReservationItemSerializer(
         many=True, required=True, help_text="생성된 개인 예약 목록"
     )
+
+
+class UnifiedReservationListQueryParamsSerializer(serializers.Serializer):
+    period = serializers.ChoiceField(
+        choices=["upcoming", "past"],
+        default="upcoming",
+        required=False,
+        help_text="조회 기간. upcoming 또는 past",
+    )
+    kind = serializers.ChoiceField(
+        choices=["single", "repeat"],
+        required=False,
+        help_text="예약 종류. single 또는 repeat",
+    )
+    type = serializers.ChoiceField(
+        choices=["private", "team"],
+        required=False,
+        help_text="예약 유형. private 또는 team",
+    )
+    status = UnifiedReservationStatusListField(
+        required=False,
+        help_text="예약 상태 필터. 문자열 하나 또는 배열로 전달할 수 있습니다.",
+    )
+    team_id = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text="특정 팀 예약만 조회할 때 사용하는 팀 ID",
+    )
+    page = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        default=1,
+        help_text="조회할 페이지 번호",
+    )
+    size = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        default=20,
+        help_text="페이지당 예약 개수",
+    )
+
+
+class UnifiedReservationItemSerializer(serializers.Serializer):
+    reservation_number = serializers.IntegerField(required=True)
+    room_id = serializers.IntegerField(required=True)
+    room_name = serializers.CharField(required=True)
+    start_date = serializers.DateField(required=True)
+    start_time = serializers.TimeField(required=True)
+    end_date = serializers.DateField(required=True)
+    end_time = serializers.TimeField(required=True)
+    kind = serializers.CharField(required=True)
+    repeat_count = serializers.IntegerField(required=False, allow_null=True)
+    conflict_count = serializers.IntegerField(required=True)
+    type = serializers.CharField(required=True)
+    team_id = serializers.IntegerField(required=False, allow_null=True)
+    team_name = serializers.CharField(required=False, allow_null=True)
+    color = serializers.CharField(required=True)
+    applicant_id = serializers.IntegerField(required=True)
+    applicant_name = serializers.CharField(required=True)
+    status = serializers.CharField(required=True)
+    created_at = serializers.DateTimeField(required=True)
+
+
+class UnifiedReservationListSerializer(serializers.Serializer):
+    period = serializers.CharField(required=True)
+    reservations = UnifiedReservationItemSerializer(many=True, required=True)
+    pagination = serializers.DictField(required=True)
     skipped_occurrences = RepeatConflictOccurrenceSerializer(
         many=True,
         required=False,
