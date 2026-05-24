@@ -135,6 +135,61 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         booking.refresh_from_db()
         self.assertEqual(booking.status, BookingStatus.CANCELED)
 
+    def test_create_holiday_forces_all_day(self):
+        response = self.client.post(
+            "/api/v1/admin/rooms/day-offs",
+            {
+                "room_id": self.room.id,
+                "type": "휴무",
+                "start_date": self.today.isoformat(),
+                "end_date": self.today.isoformat(),
+                "start_time": "09:00:00",
+                "end_time": "12:00:00",
+                "is_all_day": False,
+                "reason": "정기 휴무",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["data"]["is_all_day"])
+        self.assertIsNone(response.data["data"]["start_time"])
+        self.assertIsNone(response.data["data"]["end_time"])
+
+        closure = RoomClosure.objects.get(id=response.data["data"]["id"])
+        self.assertEqual(closure.closure_type, ClosureType.HOLIDAY)
+        self.assertTrue(closure.is_all_day)
+        self.assertIsNone(closure.start_time)
+        self.assertIsNone(closure.end_time)
+
+    def test_holiday_conflict_check_uses_all_day_even_when_request_is_partial(self):
+        booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(20, 0),
+            end_time=time(21, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.post(
+            "/api/v1/admin/rooms/day-offs/conflict-check",
+            {
+                "room_id": self.room.id,
+                "type": "휴무",
+                "start_date": self.today.isoformat(),
+                "end_date": self.today.isoformat(),
+                "start_time": "09:00:00",
+                "end_time": "12:00:00",
+                "is_all_day": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"][0]["id"], booking.reservation_number)
+
     def test_staff_can_delete_day_off(self):
         closure = RoomClosure.objects.create(
             room=self.room,

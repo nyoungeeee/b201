@@ -21,7 +21,7 @@ from bookings.exceptions import (
     OutsideOperatingHoursError,
 )
 from bookings.models import Booking, BookingStatus, BookingType
-from studios.models import StudioRoom, StudioRoomStatus
+from studios.models import ClosureType, StudioRoom, StudioRoomStatus
 from teams.models import Team, TeamMemberStatus, TeamStatus
 
 
@@ -145,17 +145,24 @@ class BookingCheckService:
             )
 
         closures = room.closures.filter(closure_date=target_date)
+        room_status = room.status
         for closure in closures:
             slots.append(
                 Slot(
-                    start_time=closure.start_time,
-                    end_time=closure.end_time,
+                    start_time=closure.start_time or room.open_time,
+                    end_time=closure.end_time or room.close_time,
                     name=closure.reason or "휴무",
                     memo="",
                     color="#DADADA",
                     status=None,
                 )
             )
+            if closure.is_all_day:
+                room_status = (
+                    ClosureType.MAINTENANCE
+                    if closure.closure_type == ClosureType.MAINTENANCE
+                    else StudioRoomStatus.INACTIVE
+                )
 
         slots.sort(
             key=lambda x: BookingCheckService._build_slot_sort_key(
@@ -171,7 +178,7 @@ class BookingCheckService:
             date=target_date,
             open_time=room.open_time,
             close_time=room.close_time,
-            status=room.status,
+            status=room_status,
             slot=slots,
         )
 
@@ -900,16 +907,18 @@ class ReservationCommandService:
         end_at,
     ) -> None:
         for closure in room.closures.filter(closure_date=target_date):
+            closure_start_time = closure.start_time or room.open_time
+            closure_end_time = closure.end_time or room.close_time
             closure_start_at = ReservationCommandService._normalize_time(
                 room=room,
                 target_date=target_date,
-                target_time=closure.start_time,
+                target_time=closure_start_time,
             )
             closure_end_at = ReservationCommandService._normalize_end_time(
                 room=room,
                 target_date=target_date,
-                start_time=closure.start_time,
-                end_time=closure.end_time,
+                start_time=closure_start_time,
+                end_time=closure_end_time,
             )
             if start_at < closure_end_at and end_at > closure_start_at:
                 raise DuplicatedReservationError()

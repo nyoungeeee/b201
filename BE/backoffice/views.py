@@ -1051,6 +1051,7 @@ class AdminDayOffConflictView(APIView):
         try:
             conflicts = AdminDayOffService.check_conflicts(
                 room_id=serializer.validated_data.get("room_id"),
+                day_off_type=serializer.validated_data["type"],
                 start_date=serializer.validated_data["start_date"],
                 end_date=serializer.validated_data["end_date"],
                 start_time=serializer.validated_data.get("start_time"),

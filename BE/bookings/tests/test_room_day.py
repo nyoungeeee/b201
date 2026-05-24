@@ -3,7 +3,7 @@ from datetime import time
 from rest_framework import status
 
 from bookings.models import Booking, BookingStatus, BookingType
-from studios.models import ClosureType, RoomClosure
+from studios.models import ClosureType, RoomClosure, StudioRoomStatus
 from .base import BaseBookingAPITestCase
 
 
@@ -64,6 +64,50 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["slot"]), 1)
         self.assertEqual(response.data["slot"][0]["status"], BookingStatus.PENDING)
+
+    def test_day_booking_view_marks_all_day_holiday_as_inactive(self):
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="휴무",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], StudioRoomStatus.INACTIVE)
+        self.assertEqual(response.data["slot"][0]["start_time"], "09:00:00")
+        self.assertEqual(response.data["slot"][0]["end_time"], "22:00:00")
+
+    def test_day_booking_view_marks_all_day_maintenance(self):
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.MAINTENANCE,
+            reason="점검",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], ClosureType.MAINTENANCE)
+        self.assertEqual(response.data["slot"][0]["start_time"], "09:00:00")
+        self.assertEqual(response.data["slot"][0]["end_time"], "22:00:00")
 
     # 다음날 새벽 슬롯은 일별 조회에서 자정 이후 순서로 정렬되는지 검증한다.
     def test_day_booking_view_sorts_overnight_slots_after_late_night_slots(self):
