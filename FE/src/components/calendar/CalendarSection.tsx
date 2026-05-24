@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { WEEK_DAYS } from '../../constants/global';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
 import type { MonthSchedule } from '../../types/calendarTypes';
@@ -134,11 +134,6 @@ const CalendarSection = ({
 
     const [displayYear, setDisplayYear] = useState(parsedSelectedDate.year);
     const [displayMonth, setDisplayMonth] = useState(parsedSelectedDate.month);
-
-    useEffect(() => {
-        setDisplayYear(parsedSelectedDate.year);
-        setDisplayMonth(parsedSelectedDate.month);
-    }, [parsedSelectedDate.month, parsedSelectedDate.year]);
 
     const { data } = useRoomMonth({
         roomId: 1,

@@ -6,6 +6,17 @@ type MobilePageLayoutProps = {
     children: ReactNode;
 };
 
+const removeToastMessageFromState = (
+    state: Record<string, unknown> | null,
+) => {
+    if (!state) return null;
+
+    const remainingState = { ...state };
+    delete remainingState.toastMessage;
+
+    return Object.keys(remainingState).length > 0 ? remainingState : null;
+};
+
 const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -13,9 +24,10 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        const message = location.state?.toastMessage;
+        const currentState = location.state as Record<string, unknown> | null;
+        const message = currentState?.toastMessage;
 
-        if (!message) return;
+        if (typeof message !== 'string') return;
 
         const showTimer = window.setTimeout(() => {
             setToastMessage(message);
@@ -23,12 +35,10 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
 
         const hideTimer = window.setTimeout(() => {
             setToastMessage(null);
-            const { toastMessage: _toastMessage, ...remainingState } = location.state ?? {};
-            const hasRemainingState = Object.keys(remainingState).length > 0;
 
             navigate('.', {
                 replace: true,
-                state: hasRemainingState ? remainingState : null,
+                state: removeToastMessageFromState(currentState),
             });
         }, 2000);
 
@@ -36,7 +46,7 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
             window.clearTimeout(showTimer);
             window.clearTimeout(hideTimer);
         };
-    }, [location.state?.toastMessage, navigate]);
+    }, [location.state, navigate]);
 
     return (
         <div className="app-shell">

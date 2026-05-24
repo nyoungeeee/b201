@@ -75,8 +75,7 @@ export interface CreateReservationParams {
     teamId?: number;
 }
 
-export interface CheckRepeatReservationParams
-    extends Omit<CreateReservationParams, 'repeat'> {}
+export type CheckRepeatReservationParams = Omit<CreateReservationParams, 'repeat'>;
 
 const buildReservationUrl = (path: string) =>
     `${API_BASE_URL}/reservations/${path}`;

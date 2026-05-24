@@ -28,9 +28,12 @@ const SEED_AUTH_SESSION: SigninResponse = {
 };
 
 const getSeedAuthUser = (): AuthUser => {
-    const { token: _token, ...user } = SEED_AUTH_SESSION;
-
-    return user;
+    return {
+        id: SEED_AUTH_SESSION.id,
+        email: SEED_AUTH_SESSION.email,
+        nickname: SEED_AUTH_SESSION.nickname,
+        team: SEED_AUTH_SESSION.team,
+    };
 };
 
 const notifyAuthSessionChange = () => {

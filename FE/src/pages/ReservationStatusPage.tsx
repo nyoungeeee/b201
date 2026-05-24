@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import BottomHero from '../components/branding/BottomHero';
@@ -26,12 +26,6 @@ const ReservationStatusPage = () => {
             : today,
     );
 
-    useEffect(() => {
-        if (!isValidDateString(locationState?.selectedDate)) return;
-
-        setSelectedDate(locationState.selectedDate);
-    }, [locationState?.selectedDate]);
-
     const handleSelectDate = (date: string) => {
         queryClient.invalidateQueries({
             queryKey: roomDayQueryKeys.detail({
@@ -48,6 +42,7 @@ const ReservationStatusPage = () => {
         <MobilePageLayout header={<PageHeader />}>
             <div className="reservation-status-page">
                 <CalendarSection
+                    key={selectedDate}
                     selectedDate={selectedDate}
                     onSelectDate={handleSelectDate}
                 />
