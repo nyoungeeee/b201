@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import BottomHero from '../components/branding/BottomHero';
 import { ChevronRightIcon } from '../components/common/icons';
@@ -10,6 +10,9 @@ import XCircleIcon from '../components/common/icons/XCircleIcon';
 import ActionModal from '../components/layout/ActionModal';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
+import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
+import { roomMonthQueryKeys } from '../hooks/queries/useRoomMonth';
+import { queryClient } from '../lib/queryClient';
 import {
     formatAppliedAt,
     getCardStyle,
@@ -889,11 +892,21 @@ const RepeatRejectedReservationDetail = ({
     );
 };
 
-const RepeatReservationDetail = ({ reservation }: { reservation: MyReservation }) => {
+const RepeatReservationDetail = ({
+    reservation,
+    initialRepeatRounds,
+    onBack,
+}: {
+    reservation: MyReservation;
+    initialRepeatRounds?: RepeatRound[];
+    onBack?: () => void;
+}) => {
     const [repeatFilter, setRepeatFilter] = useState<RepeatRoundFilter>('all');
     const [selectedRound, setSelectedRound] = useState<RepeatRound | null>(null);
     const now = useMemo(() => new Date(), []);
-    const [repeatRounds, setRepeatRounds] = useState(() => getRepeatRounds(reservation));
+    const [repeatRounds, setRepeatRounds] = useState(
+        () => initialRepeatRounds ?? getRepeatRounds(reservation),
+    );
     const statusCounts = repeatRounds.reduce(
         (counts, round) => ({
             ...counts,
@@ -999,7 +1012,7 @@ const RepeatReservationDetail = ({ reservation }: { reservation: MyReservation }
     }
 
     return (
-        <DetailShell title="반복 예약 상세보기">
+        <DetailShell title="반복 예약 상세보기" onBack={onBack}>
             <ReservationSummaryCard
                 reservation={reservation}
                 stateView={stateView}
@@ -1100,12 +1113,38 @@ const RepeatReservationDetail = ({ reservation }: { reservation: MyReservation }
 
 const MyReservationDetailPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { reservationId } = useParams();
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const reservation = MY_RESERVATIONS.find((item) => (
+    const locationState = location.state as {
+        fromReservationApply?: boolean;
+        temporaryReservation?: MyReservation;
+        temporaryRepeatRounds?: RepeatRound[];
+    } | null;
+    const temporaryReservation = locationState?.temporaryReservation;
+    const reservation = temporaryReservation &&
+        String(temporaryReservation.id) === reservationId
+        ? temporaryReservation
+        : MY_RESERVATIONS.find((item) => (
         String(item.id) === reservationId
     ));
     const now = useMemo(() => new Date(), []);
+    const handleBackToRefreshedStatus = locationState?.fromReservationApply
+        ? () => {
+            queryClient.removeQueries({
+                queryKey: roomDayQueryKeys.all,
+            });
+            queryClient.removeQueries({
+                queryKey: roomMonthQueryKeys.all,
+            });
+            navigate('/', {
+                replace: true,
+                state: {
+                    selectedDate: reservation?.startAt.slice(0, 10),
+                },
+            });
+        }
+        : undefined;
 
     if (!reservation) {
         return (
@@ -1118,7 +1157,13 @@ const MyReservationDetailPage = () => {
     }
 
     if (reservation.isRepeat) {
-        return <RepeatReservationDetail reservation={reservation} />;
+        return (
+            <RepeatReservationDetail
+                reservation={reservation}
+                initialRepeatRounds={locationState?.temporaryRepeatRounds}
+                onBack={handleBackToRefreshedStatus}
+            />
+        );
     }
 
     const progressSteps = getProgressSteps(reservation, now);
@@ -1135,7 +1180,7 @@ const MyReservationDetailPage = () => {
     };
 
     return (
-        <DetailShell title="예약 상세보기">
+        <DetailShell title="예약 상세보기" onBack={handleBackToRefreshedStatus}>
             <ReservationSummaryCard
                 reservation={reservation}
                 stateView={stateView}

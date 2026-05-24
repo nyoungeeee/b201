@@ -20,6 +20,7 @@ export const roomDayStatusSchema = z.enum(['ACTIVE', 'INACTIVE']);
 export const reservationStatusSchema = z.enum([
     'PENDING',
     'RESERVED',
+    'CANCELED',
     'CANCELLED',
 ]);
 
@@ -29,7 +30,7 @@ export const roomDaySlotSchema = z.object({
     end_time: timeStringSchema,
     name: z.string(),
     color: hexColorSchema.optional(),
-    status: reservationStatusSchema,
+    status: reservationStatusSchema.nullable(),
 });
 
 export const roomDayResponseSchema = z.object({

@@ -1,4 +1,9 @@
-import { useRef, type MutableRefObject, type PointerEvent, type WheelEvent } from 'react';
+import {
+    useEffect,
+    useRef,
+    type MutableRefObject,
+    type PointerEvent,
+} from 'react';
 
 export type Meridiem = '오전' | '오후';
 
@@ -23,6 +28,7 @@ interface ReservationStartTimePickerProps {
 }
 
 const DRAG_STEP_PX = 28;
+const TIME_ROW_HEIGHT = 34;
 const meridiems: Meridiem[] = ['오전', '오후'];
 
 const getWheelDirection = (deltaY: number): -1 | 1 => {
@@ -54,18 +60,39 @@ const ReservationStartTimePicker = ({
 }: ReservationStartTimePickerProps) => {
     const meridiemDragStartY = useRef<number | null>(null);
     const timeDragStartY = useRef<number | null>(null);
+    const meridiemWheelRef = useRef<HTMLDivElement | null>(null);
+    const timeWheelRef = useRef<HTMLDivElement | null>(null);
 
     const selectedIndex = times.findIndex((option) => option.key === selectedTimeKey);
+    const safeSelectedIndex = selectedIndex >= 0
+        ? selectedIndex
+        : Math.floor(times.length / 2);
+    const selectedOffset =
+        ((times.length - 1) / 2 - safeSelectedIndex) * TIME_ROW_HEIGHT;
 
-    const handleMeridiemWheel = (event: WheelEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        onStepMeridiem(getWheelDirection(event.deltaY));
-    };
+    useEffect(() => {
+        const timeWheel = timeWheelRef.current;
+        const meridiemWheel = meridiemWheelRef.current;
 
-    const handleTimeWheel = (event: WheelEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        onStepTime(getWheelDirection(event.deltaY));
-    };
+        const handleTimeWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            onStepTime(getWheelDirection(event.deltaY));
+        };
+
+        const handleMeridiemWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            onStepMeridiem(getWheelDirection(event.deltaY));
+        };
+
+        timeWheel?.addEventListener('wheel', handleTimeWheel, { passive: false });
+        meridiemWheel?.addEventListener('wheel', handleMeridiemWheel, { passive: false });
+
+        return () => {
+            timeWheel?.removeEventListener('wheel', handleTimeWheel);
+            meridiemWheel?.removeEventListener('wheel', handleMeridiemWheel);
+        };
+    }, [onStepMeridiem, onStepTime]);
+
 
     const handlePointerDown = (
         event: PointerEvent<HTMLDivElement>,
@@ -120,8 +147,11 @@ const ReservationStartTimePicker = ({
                 <div className="reservation-time-picker__selection" aria-hidden="true" />
 
                 <div
+                    ref={timeWheelRef}
                     className="reservation-time-picker__date-time"
-                    onWheel={handleTimeWheel}
+                    style={{
+                        transform: `translateY(${selectedOffset}px)`,
+                    }}
                     onPointerDown={(event) => handlePointerDown(event, timeDragStartY)}
                     onPointerMove={(event) => (
                         handlePointerMove(event, timeDragStartY, onStepTime)
@@ -130,9 +160,9 @@ const ReservationStartTimePicker = ({
                     onPointerCancel={(event) => handlePointerEnd(event, timeDragStartY)}
                 >
                     {times.map((option, index) => {
-                        const distance = index - selectedIndex;
+                        const distance = index - safeSelectedIndex;
                         const isSelected = option.key === selectedTimeKey;
-                        const selectedOption = times[selectedIndex];
+                        const selectedOption = times[safeSelectedIndex];
                         const showDate = isSelected ||
                             (
                                 Math.abs(distance) === 1 &&
@@ -175,8 +205,8 @@ const ReservationStartTimePicker = ({
                 </div>
 
                 <div
+                    ref={meridiemWheelRef}
                     className="reservation-time-picker__meridiem-wheel"
-                    onWheel={handleMeridiemWheel}
                     onPointerDown={(event) => handlePointerDown(event, meridiemDragStartY)}
                     onPointerMove={(event) => (
                         handlePointerMove(event, meridiemDragStartY, onStepMeridiem)

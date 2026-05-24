@@ -23,10 +23,12 @@ const MobilePageLayout = ({ header, children }: MobilePageLayoutProps) => {
 
         const hideTimer = window.setTimeout(() => {
             setToastMessage(null);
+            const { toastMessage: _toastMessage, ...remainingState } = location.state ?? {};
+            const hasRemainingState = Object.keys(remainingState).length > 0;
 
             navigate('.', {
                 replace: true,
-                state: null,
+                state: hasRemainingState ? remainingState : null,
             });
         }, 2000);
 

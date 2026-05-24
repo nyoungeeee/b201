@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import BottomHero from '../components/branding/BottomHero';
 import CalendarSection from '../components/calendar/CalendarSection';
@@ -11,9 +12,25 @@ import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
 import { queryClient } from '../lib/queryClient';
 import { getTodayInSeoul } from '../utils/timelineUtils';
 
+const isValidDateString = (dateString?: string | null): dateString is string => (
+    !!dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+);
+
 const ReservationStatusPage = () => {
+    const location = useLocation();
+    const locationState = location.state as { selectedDate?: string } | null;
     const today = getTodayInSeoul();
-    const [selectedDate, setSelectedDate] = useState(today);
+    const [selectedDate, setSelectedDate] = useState(
+        isValidDateString(locationState?.selectedDate)
+            ? locationState.selectedDate
+            : today,
+    );
+
+    useEffect(() => {
+        if (!isValidDateString(locationState?.selectedDate)) return;
+
+        setSelectedDate(locationState.selectedDate);
+    }, [locationState?.selectedDate]);
 
     const handleSelectDate = (date: string) => {
         queryClient.invalidateQueries({
@@ -41,7 +58,7 @@ const ReservationStatusPage = () => {
             </div>
 
             <div className="floating-cta">
-                <ReservationApplyButton />
+                <ReservationApplyButton selectedDate={selectedDate} />
             </div>
         </MobilePageLayout>
     );

@@ -1,4 +1,9 @@
-import { useRef, type MutableRefObject, type PointerEvent, type WheelEvent } from 'react';
+import {
+    useEffect,
+    useRef,
+    type MutableRefObject,
+    type PointerEvent,
+} from 'react';
 
 export interface ReservationTeamOption {
     label: string;
@@ -52,13 +57,24 @@ const ReservationTeamPicker = ({
     onSelectTeam,
 }: ReservationTeamPickerProps) => {
     const dragStartY = useRef<number | null>(null);
+    const wheelRef = useRef<HTMLDivElement | null>(null);
     const selectedIndex = options.findIndex((option) => option.value === selectedValue);
     const visibleOptions = getVisibleTeamOptions(options, selectedIndex);
 
-    const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        onStepTeam(getWheelDirection(event.deltaY));
-    };
+    useEffect(() => {
+        const wheelElement = wheelRef.current;
+
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            onStepTeam(getWheelDirection(event.deltaY));
+        };
+
+        wheelElement?.addEventListener('wheel', handleWheel, { passive: false });
+
+        return () => {
+            wheelElement?.removeEventListener('wheel', handleWheel);
+        };
+    }, [onStepTeam]);
 
     const handlePointerDown = (
         event: PointerEvent<HTMLDivElement>,
@@ -101,8 +117,8 @@ const ReservationTeamPicker = ({
             <h2 className="reservation-team-section__title">팀 설정</h2>
 
             <div
+                ref={wheelRef}
                 className="reservation-team-picker"
-                onWheel={handleWheel}
                 onPointerDown={(event) => handlePointerDown(event, dragStartY)}
                 onPointerMove={(event) => handlePointerMove(event, dragStartY)}
                 onPointerUp={handlePointerEnd}

@@ -3,6 +3,7 @@ export type ScheduleState = 'ACTIVE' | 'INACTIVE';
 export type SlotReservationStatus =
     | 'PENDING'
     | 'RESERVED'
+    | 'CANCELED'
     | 'CANCELLED';
 
 export interface DayScheduleSlot {
@@ -10,7 +11,7 @@ export interface DayScheduleSlot {
     endTime: string;
     label: string;
     color: string;
-    status: SlotReservationStatus;
+    status: SlotReservationStatus | null;
     isPending: boolean;
 }
 
