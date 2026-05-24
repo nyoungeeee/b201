@@ -954,6 +954,19 @@ const ReservationApplyPage = () => {
             return preferredEndSlot;
         }
 
+        for (
+            let absoluteSlot = preferredEndSlot - 1;
+            absoluteSlot > startAbsoluteSlot;
+            absoluteSlot -= 1
+        ) {
+            if (
+                endVisible(absoluteSlot) &&
+                !endReserved(getSlotKey(absoluteSlot), absoluteSlot)
+            ) {
+                return absoluteSlot;
+            }
+        }
+
         return getFirstAvailableAbsoluteSlot(
             endVisible,
             endReserved,
