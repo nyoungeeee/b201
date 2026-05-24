@@ -435,6 +435,28 @@ class TeamReservationCreateRequestSerializer(PrivateReservationCreateRequestSeri
     )
 
 
+class UnifiedReservationCreateRequestSerializer(
+    PrivateReservationCreateRequestSerializer
+):
+    type = serializers.ChoiceField(
+        choices=["private", "team"],
+        required=True,
+        help_text="예약 유형. private 또는 team",
+    )
+    team_id = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text="팀 예약일 때 예약할 팀 ID",
+    )
+
+    def validate(self, attrs):
+        if attrs["type"] == "team" and attrs.get("team_id") is None:
+            raise serializers.ValidationError(
+                {"team_id": "팀 예약에는 team_id가 필요합니다."}
+            )
+        return attrs
+
+
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
@@ -535,6 +557,18 @@ class UnifiedReservationListSerializer(serializers.Serializer):
 class TeamReservationCreateResponseSerializer(serializers.Serializer):
     reservations = TeamReservationItemSerializer(
         many=True, required=True, help_text="생성된 팀 예약 목록"
+    )
+    skipped_occurrences = RepeatConflictOccurrenceSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text="반복 예약 생성 중 충돌로 건너뛴 회차 목록",
+    )
+
+
+class UnifiedReservationCreateResponseSerializer(serializers.Serializer):
+    reservations = UnifiedReservationItemSerializer(
+        many=True, required=True, help_text="생성된 예약 목록"
     )
     skipped_occurrences = RepeatConflictOccurrenceSerializer(
         many=True,

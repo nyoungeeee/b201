@@ -3,6 +3,8 @@ from django.urls import path
 from bookings.views import (
     CancelReservationView,
     MyReservationView,
+    RepeatReservationCheckView,
+    ReservationCreateView,
     ReservationListView,
     TeamReservationView,
     TeamReservationCreateView,
@@ -17,6 +19,16 @@ urlpatterns = [
     path("", ReservationListView.as_view(), name="reservations"),
     path("me", MyReservationView.as_view(), name="my-reservations"),
     path("team", TeamReservationView.as_view(), name="team-reservations"),
+    path(
+        "<int:room_id>/repeat-check",
+        RepeatReservationCheckView.as_view(),
+        name="repeat-reservation-check",
+    ),
+    path(
+        "<int:room_id>",
+        ReservationCreateView.as_view(),
+        name="reservation-create",
+    ),
     path(
         "<int:room_id>/private/repeat-check",
         PrivateRepeatReservationCheckView.as_view(),

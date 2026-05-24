@@ -595,6 +595,20 @@ class ReservationQueryService:
 
 class ReservationCommandService:
     @staticmethod
+    def to_unified_reservation_list(reservation_list: ReservationList):
+        return ReservationList(
+            reservations=[
+                ReservationQueryService._build_unified_reservation_item(
+                    Booking.objects.select_related(
+                        "room", "user", "team", "team__team_color"
+                    ).get(reservation_number=item.reservation_number)
+                )
+                for item in reservation_list.reservations
+            ],
+            skipped_occurrences=reservation_list.skipped_occurrences,
+        )
+
+    @staticmethod
     @transaction.atomic
     def create_private_reservation(
         user,
