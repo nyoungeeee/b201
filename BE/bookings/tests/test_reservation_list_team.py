@@ -15,7 +15,7 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             user=self.user,
             team=self.team,
             booking_type=BookingType.TEAM,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(19, 0),
             end_time=time(20, 0),
         )
@@ -24,12 +24,12 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             user=self.other_user,
             team=self.other_team,
             booking_type=BookingType.TEAM,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(20, 0),
             end_time=time(21, 0),
         )
 
-        response = self.client.get("/api/v1/reservations/team")
+        response = self.client.get("/api/v1/reservations/?type=team&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["reservations"]), 1)
@@ -46,7 +46,7 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             user=self.user,
             team=self.team,
             booking_type=BookingType.TEAM,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(19, 0),
             end_time=time(20, 0),
             status=BookingStatus.CANCELED,
@@ -56,7 +56,7 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             user=self.user,
             team=self.team,
             booking_type=BookingType.TEAM,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(20, 0),
             end_time=time(21, 0),
             status=BookingStatus.PENDING,
@@ -73,23 +73,23 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/team?status=CANCELED&status=PENDING"
+            "/api/v1/reservations/?type=team&period=upcoming&status=CANCELED&status=PENDING"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [pending.reservation_number, canceled.reservation_number],
+            [canceled.reservation_number, pending.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.PENDING, BookingStatus.CANCELED],
+            [BookingStatus.CANCELED, BookingStatus.PENDING],
         )
 
     # 소속되지 않은 팀으로 팀 예약 조회를 시도하면 금지되는지 검증한다.
     def test_get_team_reservations_rejects_non_member_team_filter(self):
         response = self.client.get(
-            f"/api/v1/reservations/team?team_id={self.other_team.id}"
+            f"/api/v1/reservations/?period=upcoming&team_id={self.other_team.id}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -116,12 +116,12 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             user=self.user,
             team=self.team,
             booking_type=BookingType.TEAM,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(20, 0),
             end_time=time(21, 0),
         )
 
-        response = self.client.get("/api/v1/reservations/team")
+        response = self.client.get("/api/v1/reservations/?type=team&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         kind_by_number = {

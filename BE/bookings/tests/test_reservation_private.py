@@ -11,8 +11,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 개인 예약 생성 시 예약 번호와 표시값이 정상 반환되는지 검증한다.
     def test_create_private_reservation_succeeds(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "09:00:00",
                 "end_time": "10:00:00",
@@ -22,8 +23,10 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["reservations"]), 1)
-        self.assertEqual(response.data["reservations"][0]["type"], BookingType.PRIVATE)
-        self.assertEqual(response.data["reservations"][0]["name"], self.user.nickname)
+        self.assertEqual(response.data["reservations"][0]["type"], "private")
+        self.assertEqual(
+            response.data["reservations"][0]["applicant_name"], self.user.nickname
+        )
         self.assertEqual(response.data["reservations"][0]["color"], "#DADADA")
         booking = Booking.objects.get(
             reservation_number=response.data["reservations"][0]["reservation_number"],
@@ -34,8 +37,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 비활성 룸에는 개인 예약을 생성할 수 없는지 검증한다.
     def test_create_private_reservation_rejects_inactive_room(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.inactive_room.id}/private",
+            f"/api/v1/reservations/{self.inactive_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "09:00:00",
                 "end_time": "10:00:00",
@@ -58,8 +62,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "09:30:00",
                 "end_time": "10:30:00",
@@ -84,8 +89,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "11:00:00",
                 "end_time": "12:00:00",
@@ -110,8 +116,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "10:00:00",
                 "end_time": "11:00:00",
@@ -125,8 +132,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 개인 예약 생성 시 예약 시간은 30분 단위만 허용되는지 검증한다.
     def test_create_private_reservation_rejects_non_half_hour_time(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "09:15:00",
                 "end_time": "10:00:00",
@@ -140,8 +148,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 개인 예약 생성 시 count만큼 1주 간격 반복 예약이 생성되는지 검증한다.
     def test_create_private_reservation_creates_weekly_recurring_bookings(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "count": 3,
                 "start_time": "09:00:00",
@@ -153,7 +162,7 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["reservations"]), 3)
         self.assertEqual(
-            [item["date"] for item in response.data["reservations"]],
+            [item["start_date"] for item in response.data["reservations"]],
             [
                 self.today.isoformat(),
                 (self.today + timedelta(days=7)).isoformat(),
@@ -194,8 +203,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private/repeat-check",
+            f"/api/v1/reservations/{self.room.id}/repeat-check",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "count": 3,
                 "start_time": "09:00:00",
@@ -232,8 +242,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private/repeat",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "count": 3,
                 "start_time": "09:00:00",
@@ -246,7 +257,7 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(len(response.data["reservations"]), 2)
         self.assertEqual(response.data["skipped_occurrences"][0]["week"], 2)
         self.assertEqual(
-            [item["date"] for item in response.data["reservations"]],
+            [item["start_date"] for item in response.data["reservations"]],
             [
                 self.today.isoformat(),
                 (self.today + timedelta(days=14)).isoformat(),
@@ -275,8 +286,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
             )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/private/repeat",
+            f"/api/v1/reservations/{self.room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "count": 3,
                 "start_time": "09:00:00",
@@ -299,8 +311,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 다음날 새벽까지 운영하는 룸은 자정을 넘는 예약을 허용하는지 검증한다.
     def test_create_private_reservation_allows_cross_midnight_booking(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            f"/api/v1/reservations/{self.overnight_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "23:00:00",
                 "end_time": "01:00:00",
@@ -320,8 +333,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 다음날 새벽 운영 시간도 같은 운영일 예약으로 허용되는지 검증한다.
     def test_create_private_reservation_allows_next_day_early_morning_booking(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            f"/api/v1/reservations/{self.overnight_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "01:00:00",
                 "end_time": "02:00:00",
@@ -335,8 +349,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 다음날 새벽 운영 룸은 운영 시간 밖 예약을 거부하는지 검증한다.
     def test_create_private_reservation_rejects_time_outside_overnight_hours(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            f"/api/v1/reservations/{self.overnight_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "04:00:00",
                 "end_time": "05:00:00",
@@ -362,8 +377,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.overnight_room.id}/private",
+            f"/api/v1/reservations/{self.overnight_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "00:30:00",
                 "end_time": "01:30:00",
@@ -377,8 +393,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 24시간 운영 룸은 운영 종료 직전 시간 예약을 허용하는지 검증한다.
     def test_create_private_reservation_allows_last_hour_in_full_day_room(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.full_day_room.id}/private",
+            f"/api/v1/reservations/{self.full_day_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "08:00:00",
                 "end_time": "09:00:00",
@@ -392,8 +409,9 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 24시간 운영 룸은 운영일 경계를 넘어가는 예약도 허용되는지 검증한다.
     def test_create_private_reservation_allows_cross_boundary_in_full_day_room(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.full_day_room.id}/private",
+            f"/api/v1/reservations/{self.full_day_room.id}",
             {
+                "type": "private",
                 "start_date": self.today.isoformat(),
                 "start_time": "08:00:00",
                 "end_time": "10:00:00",
