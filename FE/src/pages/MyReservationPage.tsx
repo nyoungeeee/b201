@@ -508,11 +508,11 @@ const MyReservationPage = () => {
                                     } as CSSProperties}
                                     role="button"
                                     tabIndex={0}
-                                    onClick={() => navigate(`/my/reservations/${reservation.id}`)}
+                                    onClick={() => navigate(`/reservations/${reservation.id}`)}
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter' || event.key === ' ') {
                                             event.preventDefault();
-                                            navigate(`/my/reservations/${reservation.id}`);
+                                            navigate(`/reservations/${reservation.id}`);
                                         }
                                     }}
                                 >

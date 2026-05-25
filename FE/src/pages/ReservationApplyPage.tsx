@@ -7,8 +7,8 @@ import {
     type RepeatConflictOccurrence,
 } from '../apis/reservationApi';
 import InfoCircleIcon from '../components/common/icons/InfoCircleIcon';
-import PageSubHeader from '../components/layout/PageSubHeader';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
+import PageSubHeader from '../components/layout/PageSubHeader';
 import ReservationRepeatPicker, {
     type RepeatOption,
 } from '../components/reservation/ReservationRepeatPicker';
@@ -66,7 +66,7 @@ const STEP_ORDER: ReservationStepKey[] = ['date', 'startTime', 'endTime', 'repea
 const REPEAT_OPTIONS: RepeatOption[] = [
     { label: '반복 없음', value: 0 },
     ...Array.from({ length: 11 }, (_, index) => ({
-        label: `${index + 2}회차`,
+        label: `${index + 2}주`,
         value: index + 2,
     })),
 ];
@@ -164,7 +164,7 @@ const formatDurationLabel = (
 const formatRepeatLabel = (value: number) => {
     if (value === 0) return '반복 없음';
 
-    return `${value}회차`;
+    return `${value}주 반복`;
 };
 
 const formatTeamLabel = (
@@ -798,8 +798,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'startTime' && !isReviewMode
                 ? '시작 시간'
                 : shouldShowConfirmedStepValue('startTime') && completedStepIndex >= 1
-                ? formatCompactTime(selectedStartAbsoluteSlot)
-                : '시작 시간',
+                    ? formatCompactTime(selectedStartAbsoluteSlot)
+                    : '시작 시간',
             icon: 'clock',
             completed: isStepVisuallyCompleted('startTime'),
             disabled: !canOpenStep('startTime'),
@@ -811,8 +811,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'endTime' && !isReviewMode
                 ? '종료 시간'
                 : shouldShowConfirmedStepValue('endTime') && completedStepIndex >= 2
-                ? formatCompactTime(selectedEndAbsoluteSlot)
-                : '종료 시간',
+                    ? formatCompactTime(selectedEndAbsoluteSlot)
+                    : '종료 시간',
             icon: 'clock',
             completed: isStepVisuallyCompleted('endTime'),
             disabled: !canOpenStep('endTime'),
@@ -824,8 +824,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'repeat' && !isReviewMode
                 ? '반복 여부'
                 : shouldShowConfirmedStepValue('repeat') && completedStepIndex >= 3
-                ? formatRepeatLabel(selectedRepeatValue)
-                : '반복 여부',
+                    ? formatRepeatLabel(selectedRepeatValue)
+                    : '반복 여부',
             icon: 'repeat',
             completed: isStepVisuallyCompleted('repeat'),
             disabled: !canOpenStep('repeat'),
@@ -837,8 +837,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'type' && !isReviewMode
                 ? '팀 설정'
                 : shouldShowConfirmedStepValue('type') && completedStepIndex >= 4
-                ? formatTeamStepLabel(selectedTeamValue)
-                : '팀 설정',
+                    ? formatTeamStepLabel(selectedTeamValue)
+                    : '팀 설정',
             icon: 'people',
             completed: isStepVisuallyCompleted('type'),
             disabled: !canOpenStep('type'),
@@ -1011,7 +1011,7 @@ const ReservationApplyPage = () => {
                 throw new Error('예약 신청 응답에 예약 정보가 없습니다.');
             }
 
-            navigate(`/my/reservations/${temporaryReservation.id}`, {
+            navigate(`/reservations/${temporaryReservation.id}`, {
                 state: {
                     fromReservationApply: true,
                     temporaryReservation,
@@ -1323,7 +1323,7 @@ const ReservationApplyPage = () => {
         )}`
         : cardHasStartTime
             ? `${formatCompactTime(selectedStartAbsoluteSlot)} - `
-        : '시간을 선택해 주세요.';
+            : '시간을 선택해 주세요.';
     const cardDurationLabel = cardHasEndTime
         ? formatDurationLabel(selectedStartAbsoluteSlot, selectedEndAbsoluteSlot)
         : '';

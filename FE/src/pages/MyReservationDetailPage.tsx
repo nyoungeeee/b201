@@ -1171,7 +1171,7 @@ const MyReservationDetailPage = () => {
     const stateView = getReservationStateView(reservation);
 
     const handleConfirmCancel = () => {
-        navigate('/my/reservations', {
+        navigate('/reservations', {
             state: {
                 canceledReservationId: reservation.id,
                 toastMessage: '예약이 취소되었어요.',

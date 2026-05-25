@@ -13,10 +13,6 @@ const MY_INFO_TEXT = {
 
 const MY_INFO_MENU = [
     {
-        label: '내 예약 현황',
-        path: '/my/reservations',
-    },
-    {
         label: '닉네임 변경',
         path: '/my/nickname',
     },
