@@ -20,7 +20,14 @@ from bookings.exceptions import (
     NotFoundTeamError,
     OutsideOperatingHoursError,
 )
-from bookings.models import Booking, BookingStatus, BookingType
+from bookings.models import (
+    Booking,
+    BookingStatus,
+    BookingType,
+    ReservationRepeatGroup,
+    ReservationRepeatOccurrence,
+    ReservationRepeatOccurrenceStatus,
+)
 from studios.models import ClosureType, StudioRoom, StudioRoomStatus
 from teams.models import Team, TeamMemberStatus, TeamStatus
 
@@ -90,6 +97,7 @@ class ReservationList:
 @dataclass
 class UnifiedReservationItem:
     reservation_number: int
+    repeat_group_id: object | None
     room_id: int
     room_name: str
     start_date: date
@@ -107,6 +115,58 @@ class UnifiedReservationItem:
     applicant_name: str
     status: str
     created_at: object
+
+
+@dataclass
+class ReservationRepeatDetail:
+    start_date: date
+    end_date: date
+    count: int
+    weekdays: list[int] | None
+
+
+@dataclass
+class ReservationOccurrenceDetail:
+    week: int | None
+    reservation_number: int | None
+    date: date
+    start_time: time
+    end_date: date
+    end_time: time
+    status: str
+    canceled_at: object | None
+    canceled_by: object | None
+    reason_code: str | None
+    can_reapply: bool
+
+
+@dataclass
+class ReservationDetail:
+    reservation_number: int
+    repeat_group_id: object | None
+    room_id: int
+    room_name: str
+    start_date: date
+    start_time: time
+    end_date: date
+    end_time: time
+    kind: str
+    repeat_count: int | None
+    conflict_count: int
+    type: str
+    team_id: int | None
+    team_name: str | None
+    applicant_id: int
+    applicant_name: str
+    memo: str
+    color: str
+    status: str
+    created_at: object
+    approved_at: object | None
+    canceled_at: object | None
+    canceled_by: object | None
+    repeat: ReservationRepeatDetail | None
+    occurrences: list[ReservationOccurrenceDetail]
 
 
 @dataclass
@@ -518,6 +578,7 @@ class ReservationQueryService:
         is_team = booking.booking_type == BookingType.TEAM
         return UnifiedReservationItem(
             reservation_number=booking.reservation_number,
+            repeat_group_id=booking.repeat_group_id,
             room_id=booking.room_id,
             room_name=booking.room.name,
             start_date=booking.reservation_date,
@@ -526,7 +587,7 @@ class ReservationQueryService:
             end_time=booking.end_time,
             kind=ReservationQueryService._resolve_reservation_kind(booking),
             repeat_count=ReservationQueryService._resolve_repeat_count(booking),
-            conflict_count=0,
+            conflict_count=ReservationQueryService._resolve_conflict_count(booking),
             type="team" if is_team else "private",
             team_id=booking.team_id if is_team else None,
             team_name=booking.team.name if is_team else None,
@@ -535,6 +596,203 @@ class ReservationQueryService:
             applicant_name=booking.user.nickname or "",
             status=ReservationQueryService.INTERNAL_TO_EXTERNAL_STATUS[booking.status],
             created_at=booking.created_at,
+        )
+
+    @staticmethod
+    def get_reservation_detail(user, reservation_number: int) -> ReservationDetail:
+        try:
+            booking = Booking.objects.select_related(
+                "room", "user", "team", "team__team_color"
+            ).get(reservation_number=reservation_number)
+        except Booking.DoesNotExist:
+            raise NotFoundBookingError()
+
+        if not ReservationQueryService._can_access_booking(user=user, booking=booking):
+            raise ForbiddenTeamBookingError()
+
+        return ReservationQueryService._build_reservation_detail(booking)
+
+    @staticmethod
+    def _build_reservation_detail(booking: Booking) -> ReservationDetail:
+        is_team = booking.booking_type == BookingType.TEAM
+        kind = ReservationQueryService._resolve_reservation_kind(booking)
+        if kind == "repeat":
+            repeat_info, occurrences = ReservationQueryService._build_repeat_detail(
+                booking
+            )
+            start_date = repeat_info.start_date
+            end_date = repeat_info.end_date
+            repeat_count = repeat_info.count
+            conflict_count = len(
+                [
+                    occurrence
+                    for occurrence in occurrences
+                    if occurrence.status == ReservationRepeatOccurrenceStatus.CONFLICT
+                ]
+            )
+        else:
+            repeat_info = None
+            start_date = booking.reservation_date
+            end_date = booking.reservation_date
+            repeat_count = None
+            conflict_count = 0
+            occurrences = [
+                ReservationQueryService._build_booking_occurrence_detail(
+                    booking=booking,
+                    week=None,
+                )
+            ]
+
+        return ReservationDetail(
+            reservation_number=booking.reservation_number,
+            repeat_group_id=booking.repeat_group_id,
+            room_id=booking.room_id,
+            room_name=booking.room.name,
+            start_date=start_date,
+            start_time=booking.start_time,
+            end_date=end_date,
+            end_time=booking.end_time,
+            kind=kind,
+            repeat_count=repeat_count,
+            conflict_count=conflict_count,
+            type="team" if is_team else "private",
+            team_id=booking.team_id if is_team else None,
+            team_name=booking.team.name if is_team else None,
+            applicant_id=booking.user_id,
+            applicant_name=booking.user.nickname or "",
+            memo=booking.memo,
+            color=f"#{booking.team.color}" if is_team else "#DADADA",
+            status=ReservationQueryService.INTERNAL_TO_EXTERNAL_STATUS[booking.status],
+            created_at=booking.created_at,
+            approved_at=None,
+            canceled_at=booking.canceled_at,
+            canceled_by=None,
+            repeat=repeat_info,
+            occurrences=occurrences,
+        )
+
+    @staticmethod
+    def _build_repeat_detail(
+        booking: Booking,
+    ) -> tuple[ReservationRepeatDetail, list[ReservationOccurrenceDetail]]:
+        try:
+            repeat_group = ReservationRepeatGroup.objects.get(
+                id=booking.repeat_group_id
+            )
+        except ReservationRepeatGroup.DoesNotExist:
+            return ReservationQueryService._build_legacy_repeat_detail(booking)
+
+        occurrences = [
+            ReservationQueryService._build_repeat_occurrence_detail(occurrence)
+            for occurrence in repeat_group.occurrences.select_related(
+                "booking", "booking__user"
+            ).order_by("week")
+        ]
+        return (
+            ReservationRepeatDetail(
+                start_date=repeat_group.repeat_start_date,
+                end_date=repeat_group.repeat_end_date,
+                count=len(occurrences),
+                weekdays=repeat_group.repeat_weekdays,
+            ),
+            occurrences,
+        )
+
+    @staticmethod
+    def _build_legacy_repeat_detail(
+        booking: Booking,
+    ) -> tuple[ReservationRepeatDetail, list[ReservationOccurrenceDetail]]:
+        bookings = list(
+            Booking.objects.filter(repeat_group_id=booking.repeat_group_id)
+            .select_related("room", "user", "team", "team__team_color")
+            .order_by("reservation_date", "start_time", "reservation_number")
+        )
+        occurrences = []
+        for index, group_booking in enumerate(bookings, start=1):
+            if booking.repeat_start_date:
+                week = (
+                    (group_booking.reservation_date - booking.repeat_start_date).days
+                    // 7
+                ) + 1
+            else:
+                week = index
+            occurrences.append(
+                ReservationQueryService._build_booking_occurrence_detail(
+                    booking=group_booking,
+                    week=week,
+                )
+            )
+        return (
+            ReservationRepeatDetail(
+                start_date=booking.repeat_start_date or booking.reservation_date,
+                end_date=booking.repeat_end_date or booking.reservation_date,
+                count=ReservationQueryService._resolve_repeat_count(booking)
+                or len(bookings),
+                weekdays=booking.repeat_weekdays,
+            ),
+            occurrences,
+        )
+
+    @staticmethod
+    def _build_repeat_occurrence_detail(
+        occurrence: ReservationRepeatOccurrence,
+    ) -> ReservationOccurrenceDetail:
+        if occurrence.booking_id:
+            return ReservationQueryService._build_booking_occurrence_detail(
+                booking=occurrence.booking,
+                week=occurrence.week,
+                occurrence=occurrence,
+            )
+
+        return ReservationOccurrenceDetail(
+            week=occurrence.week,
+            reservation_number=None,
+            date=occurrence.date,
+            start_time=occurrence.start_time,
+            end_date=occurrence.date,
+            end_time=occurrence.end_time,
+            status=occurrence.status,
+            canceled_at=occurrence.canceled_at,
+            canceled_by=occurrence.canceled_by_id,
+            reason_code=occurrence.reason_code,
+            can_reapply=occurrence.status == ReservationRepeatOccurrenceStatus.CONFLICT,
+        )
+
+    @staticmethod
+    def _build_booking_occurrence_detail(
+        booking: Booking,
+        week: int | None,
+        occurrence: ReservationRepeatOccurrence | None = None,
+    ) -> ReservationOccurrenceDetail:
+        return ReservationOccurrenceDetail(
+            week=week,
+            reservation_number=booking.reservation_number,
+            date=booking.reservation_date,
+            start_time=booking.start_time,
+            end_date=booking.reservation_date,
+            end_time=booking.end_time,
+            status=ReservationQueryService.INTERNAL_TO_EXTERNAL_STATUS[booking.status],
+            canceled_at=(
+                occurrence.canceled_at
+                if occurrence is not None and occurrence.canceled_at
+                else booking.canceled_at
+            ),
+            canceled_by=occurrence.canceled_by_id if occurrence is not None else None,
+            reason_code=occurrence.reason_code if occurrence is not None else None,
+            can_reapply=False,
+        )
+
+    @staticmethod
+    def _can_access_booking(user, booking: Booking) -> bool:
+        if booking.booking_type == BookingType.PRIVATE:
+            return booking.user_id == user.id
+        return (
+            booking.user_id == user.id
+            or user.team_memberships.filter(
+                team_id=booking.team_id,
+                status=TeamMemberStatus.ACTIVE,
+                team__status=TeamStatus.ACTIVE,
+            ).exists()
         )
 
     @staticmethod
@@ -595,9 +853,23 @@ class ReservationQueryService:
     def _resolve_repeat_count(booking: Booking) -> int | None:
         if not booking.repeat_group_id:
             return None
+        occurrence_count = ReservationRepeatOccurrence.objects.filter(
+            repeat_group_id=booking.repeat_group_id
+        ).count()
+        if occurrence_count:
+            return occurrence_count
         if not booking.repeat_start_date or not booking.repeat_end_date:
             return None
         return ((booking.repeat_end_date - booking.repeat_start_date).days // 7) + 1
+
+    @staticmethod
+    def _resolve_conflict_count(booking: Booking) -> int:
+        if not booking.repeat_group_id:
+            return 0
+        return ReservationRepeatOccurrence.objects.filter(
+            repeat_group_id=booking.repeat_group_id,
+            status=ReservationRepeatOccurrenceStatus.CONFLICT,
+        ).count()
 
 
 class ReservationCommandService:
@@ -811,6 +1083,7 @@ class ReservationCommandService:
             start_time=start_time,
             end_time=end_time,
             available_occurrences=check_result.available_occurrences,
+            conflict_occurrences=check_result.conflict_occurrences,
         )
         return ReservationList(
             reservations=[
@@ -853,6 +1126,7 @@ class ReservationCommandService:
             start_time=start_time,
             end_time=end_time,
             available_occurrences=check_result.available_occurrences,
+            conflict_occurrences=check_result.conflict_occurrences,
         )
         return ReservationList(
             reservations=[
@@ -1128,12 +1402,27 @@ class ReservationCommandService:
         start_time: time,
         end_time: time,
         available_occurrences: list[RepeatOccurrence],
+        conflict_occurrences: list[RepeatConflictOccurrence],
     ) -> list[Booking]:
         repeat_group_id = uuid4()
         repeat_weekdays = [ReservationCommandService._to_spec_weekday(start_date)]
         repeat_end_date = start_date + timedelta(days=7 * (count - 1))
-        return [
-            Booking.objects.create(
+        repeat_group = ReservationRepeatGroup.objects.create(
+            id=repeat_group_id,
+            room=room,
+            user=user,
+            team=team,
+            booking_type=booking_type,
+            start_time=start_time,
+            end_time=end_time,
+            repeat_start_date=start_date,
+            repeat_end_date=repeat_end_date,
+            repeat_weekdays=repeat_weekdays,
+        )
+
+        bookings = []
+        for occurrence in available_occurrences:
+            booking = Booking.objects.create(
                 room=room,
                 user=user,
                 team=team,
@@ -1147,8 +1436,38 @@ class ReservationCommandService:
                 repeat_start_date=start_date,
                 repeat_end_date=repeat_end_date,
             )
-            for occurrence in available_occurrences
-        ]
+            bookings.append(booking)
+            ReservationRepeatOccurrence.objects.create(
+                repeat_group=repeat_group,
+                week=occurrence.week,
+                date=occurrence.date,
+                start_time=start_time,
+                end_time=end_time,
+                status=ReservationCommandService._to_occurrence_status(booking.status),
+                booking=booking,
+            )
+
+        for occurrence in conflict_occurrences:
+            ReservationRepeatOccurrence.objects.create(
+                repeat_group=repeat_group,
+                week=occurrence.week,
+                date=occurrence.date,
+                start_time=start_time,
+                end_time=end_time,
+                status=ReservationRepeatOccurrenceStatus.CONFLICT,
+                reason_code=occurrence.code,
+            )
+
+        return bookings
+
+    @staticmethod
+    def _to_occurrence_status(booking_status: str) -> str:
+        return {
+            BookingStatus.PENDING: ReservationRepeatOccurrenceStatus.PENDING,
+            BookingStatus.RESERVED: ReservationRepeatOccurrenceStatus.RESERVED,
+            BookingStatus.CANCELED: ReservationRepeatOccurrenceStatus.CANCELED,
+            BookingStatus.REJECTED: ReservationRepeatOccurrenceStatus.REJECTED,
+        }[booking_status]
 
     @staticmethod
     def _to_spec_weekday(target_date: date) -> int:

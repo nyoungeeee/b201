@@ -41,30 +41,6 @@ ROOM_BLUEPRINTS = [
         "is_24_hours": False,
         "sort_order": 1,
     },
-    {
-        "name": "b202",
-        "description": "test seed overnight room",
-        "open_time": time(10, 0),
-        "close_time": time(3, 0),
-        "is_24_hours": False,
-        "sort_order": 2,
-    },
-    {
-        "name": "b203",
-        "description": "test seed 24-hour room",
-        "open_time": time(9, 0),
-        "close_time": time(9, 0),
-        "is_24_hours": True,
-        "sort_order": 3,
-    },
-    {
-        "name": "b204",
-        "description": "test seed compact room",
-        "open_time": time(12, 0),
-        "close_time": time(20, 0),
-        "is_24_hours": False,
-        "sort_order": 4,
-    },
 ]
 
 TEAM_COLORS = [
@@ -529,6 +505,7 @@ def ensure_seed_teams(
 
 
 def ensure_rooms() -> list[StudioRoom]:
+    seed_room_names = [blueprint["name"] for blueprint in ROOM_BLUEPRINTS]
     for blueprint in ROOM_BLUEPRINTS:
         room, created = StudioRoom.objects.get_or_create(
             name=blueprint["name"],
@@ -561,9 +538,10 @@ def ensure_rooms() -> list[StudioRoom]:
             )
 
     return list(
-        StudioRoom.objects.filter(status=StudioRoomStatus.ACTIVE).order_by(
-            "sort_order", "id"
-        )
+        StudioRoom.objects.filter(
+            name__in=seed_room_names,
+            status=StudioRoomStatus.ACTIVE,
+        ).order_by("sort_order", "id")
     )
 
 
@@ -824,6 +802,15 @@ def create_private_reservation(
     count: int = 1,
 ):
     user = User.objects.get(id=creator.id)
+    if count > 1:
+        return ReservationCommandService.create_private_repeat_reservation(
+            user=user,
+            room_id=room_id,
+            start_date=target_date,
+            count=count,
+            start_time=start_time,
+            end_time=end_time,
+        )
     return ReservationCommandService.create_private_reservation(
         user=user,
         room_id=room_id,
@@ -844,6 +831,16 @@ def create_team_reservation(
     count: int = 1,
 ):
     user = User.objects.get(id=creator.id)
+    if count > 1:
+        return ReservationCommandService.create_team_repeat_reservation(
+            user=user,
+            room_id=room_id,
+            team_id=team_id,
+            start_date=target_date,
+            count=count,
+            start_time=start_time,
+            end_time=end_time,
+        )
     return ReservationCommandService.create_team_reservation(
         user=user,
         room_id=room_id,

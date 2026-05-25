@@ -526,6 +526,7 @@ class UnifiedReservationListQueryParamsSerializer(serializers.Serializer):
 
 class UnifiedReservationItemSerializer(serializers.Serializer):
     reservation_number = serializers.IntegerField(required=True)
+    repeat_group_id = serializers.UUIDField(required=False, allow_null=True)
     room_id = serializers.IntegerField(required=True)
     room_name = serializers.CharField(required=True)
     start_date = serializers.DateField(required=True)
@@ -549,6 +550,59 @@ class UnifiedReservationListSerializer(serializers.Serializer):
     period = serializers.CharField(required=True)
     reservations = UnifiedReservationItemSerializer(many=True, required=True)
     pagination = serializers.DictField(required=True)
+
+
+class ReservationRepeatDetailSerializer(serializers.Serializer):
+    start_date = serializers.DateField(required=True)
+    end_date = serializers.DateField(required=True)
+    count = serializers.IntegerField(required=True)
+    weekdays = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_null=True,
+    )
+
+
+class ReservationOccurrenceDetailSerializer(serializers.Serializer):
+    week = serializers.IntegerField(required=False, allow_null=True)
+    reservation_number = serializers.IntegerField(required=False, allow_null=True)
+    date = serializers.DateField(required=True)
+    start_time = serializers.TimeField(required=True)
+    end_date = serializers.DateField(required=True)
+    end_time = serializers.TimeField(required=True)
+    status = serializers.CharField(required=True)
+    canceled_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    reason_code = serializers.CharField(required=False, allow_null=True)
+    can_reapply = serializers.BooleanField(required=True)
+
+
+class ReservationDetailSerializer(serializers.Serializer):
+    reservation_number = serializers.IntegerField(required=True)
+    repeat_group_id = serializers.UUIDField(required=False, allow_null=True)
+    room_id = serializers.IntegerField(required=True)
+    room_name = serializers.CharField(required=True)
+    start_date = serializers.DateField(required=True)
+    start_time = serializers.TimeField(required=True)
+    end_date = serializers.DateField(required=True)
+    end_time = serializers.TimeField(required=True)
+    kind = serializers.CharField(required=True)
+    repeat_count = serializers.IntegerField(required=False, allow_null=True)
+    conflict_count = serializers.IntegerField(required=True)
+    type = serializers.CharField(required=True)
+    team_id = serializers.IntegerField(required=False, allow_null=True)
+    team_name = serializers.CharField(required=False, allow_null=True)
+    applicant_id = serializers.IntegerField(required=True)
+    applicant_name = serializers.CharField(required=True)
+    memo = serializers.CharField(required=False, allow_blank=True)
+    color = serializers.CharField(required=True)
+    status = serializers.CharField(required=True)
+    created_at = serializers.DateTimeField(required=True)
+    approved_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    repeat = ReservationRepeatDetailSerializer(required=False, allow_null=True)
+    occurrences = ReservationOccurrenceDetailSerializer(many=True, required=True)
 
 
 @extend_schema_serializer(

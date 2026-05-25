@@ -9,6 +9,11 @@
 .DS_Store
 Thumbs.db
 
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+docs/
+
 ##################################################
 # Django / Python (BE)
 
