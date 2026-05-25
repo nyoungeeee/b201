@@ -14,7 +14,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(9, 0),
             end_time=time(10, 0),
             status=BookingStatus.CANCELED,
@@ -29,7 +29,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.RESERVED,
         )
 
-        response = self.client.get("/api/v1/reservations/me")
+        response = self.client.get("/api/v1/reservations/?type=private&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -38,7 +38,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.RESERVED, BookingStatus.CANCELED],
+            ["APPROVED", BookingStatus.CANCELED],
         )
 
     # 내 예약 조회 시 status 하나를 지정하면 해당 상태 예약만 반환되는지 검증한다.
@@ -47,7 +47,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(9, 0),
             end_time=time(10, 0),
             status=BookingStatus.CANCELED,
@@ -62,7 +62,9 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.RESERVED,
         )
 
-        response = self.client.get("/api/v1/reservations/me?status=RESERVED")
+        response = self.client.get(
+            "/api/v1/reservations/?type=private&period=upcoming&status=APPROVED"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["reservations"]), 1)
@@ -72,7 +74,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
         self.assertEqual(
             response.data["reservations"][0]["status"],
-            BookingStatus.RESERVED,
+            "APPROVED",
         )
 
     # 내 예약 조회 시 status를 두 개 넘기면 둘 다 포함해서 반환되는지 검증한다.
@@ -81,7 +83,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(9, 0),
             end_time=time(10, 0),
             status=BookingStatus.CANCELED,
@@ -90,7 +92,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(11, 0),
             end_time=time(12, 0),
             status=BookingStatus.PENDING,
@@ -106,7 +108,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/me?status=CANCELED&status=PENDING"
+            "/api/v1/reservations/?type=private&period=upcoming&status=CANCELED&status=PENDING"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -125,7 +127,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(9, 0),
             end_time=time(10, 0),
         )
@@ -133,12 +135,14 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(11, 0),
             end_time=time(12, 0),
         )
 
-        response = self.client.get("/api/v1/reservations/me?page=1&size=1")
+        response = self.client.get(
+            "/api/v1/reservations/?type=private&period=upcoming&page=1&size=1"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["reservations"]), 1)
@@ -170,12 +174,12 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
-            reservation_date=self.today,
+            reservation_date=self.tomorrow,
             start_time=time(11, 0),
             end_time=time(12, 0),
         )
 
-        response = self.client.get("/api/v1/reservations/me")
+        response = self.client.get("/api/v1/reservations/?type=private&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         kind_by_number = {

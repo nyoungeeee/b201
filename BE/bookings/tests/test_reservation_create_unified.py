@@ -7,6 +7,22 @@ from .base import BaseBookingAPITestCase
 
 
 class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
+    def test_legacy_split_reservation_create_urls_are_removed(self):
+        legacy_paths = [
+            f"/api/v1/reservations/{self.room.id}/private",
+            f"/api/v1/reservations/{self.room.id}/private/repeat",
+            f"/api/v1/reservations/{self.room.id}/private/repeat-check",
+            f"/api/v1/reservations/{self.room.id}/team",
+            f"/api/v1/reservations/{self.room.id}/team/repeat",
+            f"/api/v1/reservations/{self.room.id}/team/repeat-check",
+        ]
+
+        for path in legacy_paths:
+            with self.subTest(path=path):
+                response = self.client.post(path, {}, format="json")
+
+                self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_create_reservation_creates_private_booking(self):
         response = self.client.post(
             f"/api/v1/reservations/{self.room.id}",

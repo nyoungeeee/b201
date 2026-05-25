@@ -8,6 +8,13 @@ from .base import BaseBookingAPITestCase
 
 
 class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
+    def test_legacy_split_reservation_list_urls_are_removed(self):
+        for path in ["/api/v1/reservations/me", "/api/v1/reservations/team"]:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+
+                self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_get_reservations_returns_private_and_member_team_bookings(self):
         private_booking = Booking.objects.create(
             room=self.room,
