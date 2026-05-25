@@ -7,5 +7,6 @@ export { default as InfoCircleIcon } from './InfoCircleIcon';
 export { default as LockIcon } from './LockIcon';
 export { default as MinusCircleIcon } from './MinusCircleIcon';
 export { default as PlusCircleIcon } from './PlusCircleIcon';
+export { default as RefreshIcon } from './RefreshIcon';
 export { default as XCircleIcon } from './XCircleIcon';
 

@@ -24,13 +24,13 @@ import ReservationTeamPicker, {
     type ReservationTeamOption,
 } from '../components/reservation/ReservationTeamPicker';
 import { DEFAULT_ROOM_ID, WEEK_DAYS } from '../constants/global';
+import { getReservationEndAt, mapReservationListItem } from '../domains/reservation/mapper';
+import type { MyReservation } from '../domains/reservation/types';
 import { useRoomDay } from '../hooks/queries/useRoomDay';
 import { useRoomMonth } from '../hooks/queries/useRoomMonth';
 import { useAuthSession } from '../hooks/useAuthSession';
-import { getColorRgb, normalizeHexColor } from '../utils/colorUtils';
 import {
     addDays,
-    createDateTimeString,
     formatDateString,
     getDateDistance,
     isValidDateString,
@@ -46,7 +46,6 @@ import {
     TIME_SLOT_INTERVAL_MINUTES,
 } from '../utils/reservationSlotUtils';
 import { getTodayInSeoul } from '../utils/timelineUtils';
-import type { MyReservation } from './MyReservationPage';
 
 interface CalendarDay {
     fullDate: string;
@@ -218,46 +217,23 @@ const formatRepeatConflictDate = (occurrence: RepeatConflictOccurrence) => {
     return `[${occurrence.week}회차] ${String(month).padStart(2, '0')}.${String(date).padStart(2, '0')}`;
 };
 
-const mapReservationStatus = (status: string): MyReservation['state'] => {
-    if (status === 'APPROVED' || status === 'RESERVED') return 'approved';
-    if (status === 'REJECTED') return 'rejected';
-    if (status === 'CANCELED' || status === 'CANCELLED') return 'canceled';
-
-    return 'pending';
-};
-
 const createTemporaryReservation = (
     response: Awaited<ReturnType<typeof createReservation>>,
     repeat: boolean,
-    applicantName: string,
 ): MyReservation | null => {
     const firstReservation = response.reservations[0];
 
     if (!firstReservation) return null;
 
     const lastReservation = response.reservations[response.reservations.length - 1];
-    const isTeamReservation = firstReservation.type.toLowerCase() === 'team';
-    const title = isTeamReservation
-        ? firstReservation.team_name ?? firstReservation.name
-        : '개인 연습';
 
-    return {
-        id: firstReservation.reservation_number,
-        title,
-        applicant: applicantName,
-        appliedAt: new Date().toISOString(),
-        startAt: createDateTimeString(firstReservation.date, firstReservation.start_time),
-        endAt: createDateTimeString(firstReservation.date, firstReservation.end_time),
-        repeatEndAt: repeat
-            ? createDateTimeString(lastReservation.date, lastReservation.end_time)
-            : undefined,
-        state: mapReservationStatus(firstReservation.status),
-        kind: isTeamReservation ? 'team' : 'personal',
+    return mapReservationListItem(firstReservation, {
         isRepeat: repeat,
-        conflictCount: response.skipped_occurrences?.length || undefined,
-        color: normalizeHexColor(firstReservation.color),
-        colorRgb: getColorRgb(firstReservation.color),
-    };
+        repeatEndAt: repeat
+            ? getReservationEndAt(lastReservation)
+            : undefined,
+        conflictCount: response.skipped_occurrences?.length,
+    });
 };
 
 const createTemporaryRepeatRounds = (
@@ -268,8 +244,9 @@ const createTemporaryRepeatRounds = (
     if (!firstReservation) return [];
 
     const rounds = response.reservations.map((reservation) => ({
-        round: Math.max(1, Math.round(getDateDistance(firstReservation.date, reservation.date) / 7) + 1),
-        date: reservation.date,
+        round: Math.max(1, Math.round(getDateDistance(firstReservation.start_date, reservation.start_date) / 7) + 1),
+        date: reservation.start_date,
+        endDate: getReservationEndAt(reservation).slice(0, 10),
         startTime: formatTimeForDetail(reservation.start_time),
         endTime: formatTimeForDetail(reservation.end_time),
         status: 'approved' as const,
@@ -993,7 +970,6 @@ const ReservationApplyPage = () => {
                 accessToken,
                 roomId: DEFAULT_ROOM_ID,
                 type: selectedReservationType,
-                repeat,
                 startDate: selectedStartDate,
                 count: selectedRepeatCount,
                 startTime: selectedStartTime,
@@ -1004,7 +980,6 @@ const ReservationApplyPage = () => {
             const temporaryReservation = createTemporaryReservation(
                 reservationResponse,
                 repeat,
-                user?.nickname ?? reservationResponse.reservations[0]?.name ?? '',
             );
 
             if (!temporaryReservation) {
