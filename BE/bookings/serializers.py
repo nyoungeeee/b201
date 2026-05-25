@@ -479,6 +479,12 @@ class PrivateReservationCreateResponseSerializer(serializers.Serializer):
 
 
 class UnifiedReservationListQueryParamsSerializer(serializers.Serializer):
+    sort = serializers.ChoiceField(
+        choices=["upcoming", "latest"],
+        default="upcoming",
+        required=False,
+        help_text="정렬 옵션. upcoming은 다가오는 가장 가까운 예약순, latest는 최신 예약 생성순입니다.",
+    )
     period = serializers.ChoiceField(
         choices=["upcoming", "past"],
         default="upcoming",

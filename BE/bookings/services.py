@@ -349,6 +349,7 @@ class ReservationQueryService:
         reservation_type: str | None,
         status: list[str] | None,
         team_id: int | None,
+        sort: str,
         page: int,
         size: int,
     ) -> UnifiedReservationList:
@@ -400,11 +401,7 @@ class ReservationQueryService:
                 ]
             )
 
-        queryset = queryset.order_by(
-            "-reservation_date",
-            "-start_time",
-            "-reservation_number",
-        )
+        queryset = ReservationQueryService._apply_unified_sort(queryset, sort=sort)
         total_count = queryset.count()
         start = (page - 1) * size
         end = start + size
@@ -547,6 +544,16 @@ class ReservationQueryService:
                 status=TeamMemberStatus.ACTIVE,
                 team__status=TeamStatus.ACTIVE,
             ).values_list("team_id", flat=True)
+        )
+
+    @staticmethod
+    def _apply_unified_sort(queryset, sort: str):
+        if sort == "latest":
+            return queryset.order_by("-created_at", "-reservation_number")
+        return queryset.order_by(
+            "reservation_date",
+            "start_time",
+            "reservation_number",
         )
 
     @staticmethod

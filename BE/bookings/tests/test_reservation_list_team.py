@@ -79,11 +79,11 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [pending.reservation_number, canceled.reservation_number],
+            [canceled.reservation_number, pending.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.PENDING, BookingStatus.CANCELED],
+            [BookingStatus.CANCELED, BookingStatus.PENDING],
         )
 
     # 소속되지 않은 팀으로 팀 예약 조회를 시도하면 금지되는지 검증한다.

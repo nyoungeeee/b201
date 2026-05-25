@@ -8,7 +8,7 @@ from .base import BaseBookingAPITestCase
 
 
 class MyReservationListAPITestCase(BaseBookingAPITestCase):
-    # 내 예약 조회 시 status 미입력이어도 모든 상태가 최신순으로 반환되는지 검증한다.
+    # 내 예약 조회 시 status 미입력이어도 모든 상태가 가까운 예약순으로 반환되는지 검증한다.
     def test_get_my_reservations_returns_all_statuses_without_filter(self):
         canceled = Booking.objects.create(
             room=self.room,
@@ -34,11 +34,11 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [reserved.reservation_number, canceled.reservation_number],
+            [canceled.reservation_number, reserved.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            ["APPROVED", BookingStatus.CANCELED],
+            [BookingStatus.CANCELED, "APPROVED"],
         )
 
     # 내 예약 조회 시 status 하나를 지정하면 해당 상태 예약만 반환되는지 검증한다.
@@ -114,11 +114,11 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [pending.reservation_number, canceled.reservation_number],
+            [canceled.reservation_number, pending.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.PENDING, BookingStatus.CANCELED],
+            [BookingStatus.CANCELED, BookingStatus.PENDING],
         )
 
     # 내 예약 조회 시 page/size가 적용되는지 검증한다.
@@ -148,11 +148,11 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(len(response.data["reservations"]), 1)
         self.assertEqual(
             response.data["reservations"][0]["reservation_number"],
-            second.reservation_number,
+            first.reservation_number,
         )
         self.assertNotEqual(
             response.data["reservations"][0]["reservation_number"],
-            first.reservation_number,
+            second.reservation_number,
         )
 
     # 내 예약 조회 시 반복 예약과 단건 예약을 구분해서 반환하는지 검증한다.

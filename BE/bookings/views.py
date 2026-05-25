@@ -330,6 +330,7 @@ class ReservationListView(APIView):
                 reservation_type=serializer.validated_data.get("type"),
                 status=serializer.validated_data.get("status"),
                 team_id=serializer.validated_data.get("team_id"),
+                sort=serializer.validated_data["sort"],
                 page=serializer.validated_data["page"],
                 size=serializer.validated_data["size"],
             )

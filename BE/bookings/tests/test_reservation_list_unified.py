@@ -1,6 +1,7 @@
 from datetime import time, timedelta
 from uuid import uuid4
 
+from django.utils import timezone
 from rest_framework import status
 
 from bookings.models import Booking, BookingStatus, BookingType
@@ -57,7 +58,91 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         numbers = [item["reservation_number"] for item in response.data["reservations"]]
         self.assertEqual(
             numbers,
-            [team_booking.reservation_number, private_booking.reservation_number],
+            [private_booking.reservation_number, team_booking.reservation_number],
+        )
+
+    def test_get_reservations_defaults_to_nearest_upcoming_reservation_order(self):
+        later_repeat_group_id = uuid4()
+        later_repeat = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow + timedelta(days=7),
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            repeat_group_id=later_repeat_group_id,
+            repeat_weekdays=[1],
+            repeat_start_date=self.tomorrow,
+            repeat_end_date=self.tomorrow + timedelta(days=14),
+            status=BookingStatus.PENDING,
+        )
+        nearest_repeat = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(20, 0),
+            end_time=time(21, 0),
+            repeat_group_id=later_repeat_group_id,
+            repeat_weekdays=[1],
+            repeat_start_date=self.tomorrow + timedelta(days=7),
+            repeat_end_date=self.tomorrow + timedelta(days=14),
+            status=BookingStatus.PENDING,
+        )
+        nearest_single = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get("/api/v1/reservations/?period=upcoming")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["reservation_number"] for item in response.data["reservations"]],
+            [
+                nearest_single.reservation_number,
+                nearest_repeat.reservation_number,
+                later_repeat.reservation_number,
+            ],
+        )
+
+    def test_get_reservations_sorts_by_latest_created_reservation(self):
+        older_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.PENDING,
+        )
+        newer_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow + timedelta(days=1),
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.filter(
+            reservation_number=older_booking.reservation_number
+        ).update(created_at=timezone.now() - timedelta(days=1))
+        Booking.objects.filter(
+            reservation_number=newer_booking.reservation_number
+        ).update(created_at=timezone.now())
+
+        response = self.client.get("/api/v1/reservations/?period=upcoming&sort=latest")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["reservation_number"] for item in response.data["reservations"]],
+            [newer_booking.reservation_number, older_booking.reservation_number],
         )
 
     def test_get_reservations_returns_requested_item_shape(self):
@@ -163,7 +248,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(len(response.data["reservations"]), 1)
         self.assertEqual(
             response.data["reservations"][0]["reservation_number"],
-            later_approved_team_repeat.reservation_number,
+            approved_team_repeat.reservation_number,
         )
         self.assertEqual(response.data["reservations"][0]["status"], "APPROVED")
         self.assertEqual(response.data["reservations"][0]["type"], "team")
