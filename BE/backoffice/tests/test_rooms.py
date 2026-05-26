@@ -10,8 +10,11 @@ from .base import BaseBackofficeAPITestCase
 class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
     def setUp(self):
         super().setUp()
+        suffix = self._suffix()
+        self.room_name = f"B201-{suffix}"
+        self.inactive_room_name = f"B202-{suffix}"
         self.room = StudioRoom.objects.create(
-            name="B201",
+            name=self.room_name,
             description="기본 합주실",
             open_time=time(9, 0),
             close_time=time(23, 0),
@@ -20,7 +23,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
             sort_order=1,
         )
         self.inactive_room = StudioRoom.objects.create(
-            name="B202",
+            name=self.inactive_room_name,
             description="비활성 합주실",
             open_time=time(10, 0),
             close_time=time(22, 0),
@@ -36,7 +39,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertTrue(response.data["ok"])
         self.assertEqual(len(response.data["data"]), 1)
         self.assertEqual(response.data["data"][0]["id"], self.room.id)
-        self.assertEqual(response.data["data"][0]["name"], "B201")
+        self.assertEqual(response.data["data"][0]["name"], self.room_name)
         self.assertFalse(response.data["data"][0]["is_open_all_day"])
         self.assertTrue(response.data["data"][0]["is_active"])
 
@@ -56,10 +59,11 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data["data"]["close_time"], "23:00:00")
 
     def test_staff_can_create_room_with_next_sort_order(self):
+        room_name = f"B203-{self._suffix()}"
         response = self.client.post(
             "/api/v1/admin/rooms",
             {
-                "name": "B203",
+                "name": room_name,
                 "description": "신규 합주실",
                 "open_time": "10:00:00",
                 "close_time": "22:00:00",
@@ -70,7 +74,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(response.data["ok"])
-        room = StudioRoom.objects.get(name="B203")
+        room = StudioRoom.objects.get(name=room_name)
         self.assertEqual(room.sort_order, 3)
         self.assertEqual(response.data["data"]["sort_order"], 3)
 
@@ -78,7 +82,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         response = self.client.post(
             "/api/v1/admin/rooms",
             {
-                "name": "B201",
+                "name": self.room_name,
                 "description": "중복",
                 "open_time": "10:00:00",
                 "close_time": "22:00:00",
@@ -91,10 +95,11 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data["error_code"], "DUPLICATE_ROOM_NAME")
 
     def test_staff_can_update_room(self):
+        updated_name = f"B201-new-{self._suffix()}"
         response = self.client.put(
             f"/api/v1/admin/rooms/{self.room.id}",
             {
-                "name": "B201-new",
+                "name": updated_name,
                 "description": "수정된 설명",
                 "open_time": "08:00:00",
                 "close_time": "23:30:00",
@@ -105,7 +110,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.room.refresh_from_db()
-        self.assertEqual(self.room.name, "B201-new")
+        self.assertEqual(self.room.name, updated_name)
         self.assertTrue(self.room.is_24_hours)
         self.assertEqual(response.data["data"]["description"], "수정된 설명")
 

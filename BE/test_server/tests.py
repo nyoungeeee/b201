@@ -132,17 +132,16 @@ class SeedTestDummyDataCommandTests(TestCase):
 
 
 class DockerComposeSeedConfigTests(TestCase):
-    def test_web_service_resets_and_seeds_database_before_runserver(self):
+    def test_seed_service_resets_and_seeds_database_without_backend_server(self):
         compose_path = Path(__file__).resolve().parents[1] / "docker-compose.yml"
         compose_config = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
-        web_config = compose_config["services"]["web"]
-        command = web_config["command"]
+        services = compose_config["services"]
+        seed_config = services["seed_dummy_data"]
+        command = seed_config["command"]
 
+        self.assertNotIn("web", services)
         self.assertIn("DROP SCHEMA public CASCADE", command)
         self.assertIn("CREATE SCHEMA public", command)
         self.assertIn("python manage.py migrate", command)
         self.assertIn("python manage.py seed_test_dummy_data", command)
-        self.assertIn("python manage.py runserver 0.0.0.0:8000", command)
-        self.assertIn(
-            "${BACKEND_HOST:-127.0.0.1}:${BACKEND_PORT:-8000}:8000", web_config["ports"]
-        )
+        self.assertNotIn("runserver", command)

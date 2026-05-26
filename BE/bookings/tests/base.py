@@ -13,34 +13,48 @@ User = get_user_model()
 
 @override_settings(ROOT_URLCONF="config.urls")
 class BaseBookingAPITestCase(APITestCase):
+    def _suffix(self):
+        return str(abs(hash(self.id())) % 1_000_000)
+
     def setUp(self):
-        self.user = User.objects.create_user(kakao_id=3001, nickname="tester")
-        self.member_user = User.objects.create_user(kakao_id=3002, nickname="member")
-        self.other_user = User.objects.create_user(kakao_id=3003, nickname="other")
+        suffix = self._suffix()
+        color_base = int(suffix) % 0xFFFF00
+        self.user = User.objects.create_user(
+            kakao_id=int(f"3001{suffix}"),
+            nickname=f"tester-{suffix}",
+        )
+        self.member_user = User.objects.create_user(
+            kakao_id=int(f"3002{suffix}"),
+            nickname=f"member-{suffix}",
+        )
+        self.other_user = User.objects.create_user(
+            kakao_id=int(f"3003{suffix}"),
+            nickname=f"other-{suffix}",
+        )
 
         self.room = StudioRoom.objects.create(
-            name="b201",
+            name=f"b201-{suffix}",
             open_time=time(9, 0),
             close_time=time(22, 0),
             is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
         self.inactive_room = StudioRoom.objects.create(
-            name="b202",
+            name=f"b202-{suffix}",
             open_time=time(9, 0),
             close_time=time(22, 0),
             is_24_hours=False,
             status=StudioRoomStatus.INACTIVE,
         )
         self.overnight_room = StudioRoom.objects.create(
-            name="b203",
+            name=f"b203-{suffix}",
             open_time=time(9, 0),
             close_time=time(3, 0),
             is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
         self.full_day_room = StudioRoom.objects.create(
-            name="b204",
+            name=f"b204-{suffix}",
             open_time=time(9, 0),
             close_time=time(9, 0),
             is_24_hours=True,
@@ -48,11 +62,11 @@ class BaseBookingAPITestCase(APITestCase):
         )
 
         self.team = Team.objects.create(
-            name="team-a",
+            name=f"team-a-{suffix}",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
-        TeamColor.objects.create(color="000000", team=self.team)
+        TeamColor.objects.create(color=f"{color_base:06X}", team=self.team)
         TeamMember.objects.create(
             team=self.team,
             user=self.user,
@@ -65,11 +79,11 @@ class BaseBookingAPITestCase(APITestCase):
         )
 
         self.other_team = Team.objects.create(
-            name="team-b",
+            name=f"team-b-{suffix}",
             owner=self.other_user,
             status=TeamStatus.ACTIVE,
         )
-        TeamColor.objects.create(color="111111", team=self.other_team)
+        TeamColor.objects.create(color=f"{color_base + 1:06X}", team=self.other_team)
         TeamMember.objects.create(
             team=self.other_team,
             user=self.other_user,

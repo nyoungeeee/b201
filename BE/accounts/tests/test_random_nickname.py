@@ -23,9 +23,10 @@ class RandomNicknameAPITestCase(BaseAccountAPITestCase):
         self.assertRegex(nickname, r"^[가-힣]+[0-9]$")
 
     def test_random_nickname_retries_when_candidate_already_exists(self):
+        suffix = self._suffix()
         User.objects.create_user(
-            kakao_id=3001,
-            email="duplicate@example.com",
+            kakao_id=int(f"3001{suffix}"),
+            email=f"duplicate-{suffix}@example.com",
             nickname="고장난기타7",
         )
 

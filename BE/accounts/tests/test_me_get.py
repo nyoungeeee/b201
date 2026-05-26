@@ -35,12 +35,16 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
 
     # 여러 활성 팀에 소속된 경우 모든 팀 정보가 반환되는지 검증한다.
     def test_get_user_info_returns_all_active_teams_when_user_has_many_teams(self):
+        suffix = self._suffix()
         another_team = Team.objects.create(
-            name="team-b",
+            name=f"team-b-{suffix}",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
-        TeamColor.objects.create(color="445566", team=another_team)
+        TeamColor.objects.create(
+            color=f"{(int(suffix) + 1) % 0xFFFFFF:06X}",
+            team=another_team,
+        )
         TeamMember.objects.create(
             team=another_team,
             user=self.user,

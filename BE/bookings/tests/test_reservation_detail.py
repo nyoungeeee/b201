@@ -1,5 +1,6 @@
 from datetime import time, timedelta
 
+from django.utils import timezone
 from rest_framework import status
 
 from bookings.exceptions import DuplicatedReservationError
