@@ -47,6 +47,7 @@ export const roomMonthDaySchema = z.object({
     date: dateStringSchema,
     color: z.array(hexColorSchema),
     disabled: z.boolean(),
+    is_holiday: z.boolean(),
 });
 
 export const roomMonthResponseSchema = z.object({
