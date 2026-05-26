@@ -608,6 +608,62 @@ class ReservationDetailSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
+            "반복 예약 회차 취소 요청",
+            value={"dates": ["2026-06-12"]},
+            request_only=True,
+        )
+    ]
+)
+class RepeatOccurrenceCancelRequestSerializer(serializers.Serializer):
+    dates = serializers.ListField(
+        child=serializers.DateField(
+            format="%Y-%m-%d",
+            help_text="취소할 반복 예약 회차 날짜",
+        ),
+        allow_empty=False,
+        required=True,
+        help_text="취소할 반복 예약 회차 날짜 목록",
+    )
+
+
+class CanceledRepeatOccurrenceSerializer(serializers.Serializer):
+    week = serializers.IntegerField(required=True, help_text="취소된 반복 예약 회차")
+    date = serializers.DateField(required=True, help_text="취소된 반복 예약 날짜")
+    status = serializers.CharField(required=True, help_text="회차 상태")
+    canceled_at = serializers.DateTimeField(required=True, help_text="회차 취소 시각")
+    canceled_by = serializers.CharField(required=True, help_text="회차 취소자 이름")
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "반복 예약 회차 취소 응답",
+            value={
+                "canceled_occurrences": [
+                    {
+                        "week": 3,
+                        "date": "2026-06-12",
+                        "status": "CANCELED",
+                        "canceled_at": "2026-05-24T13:10:00+09:00",
+                        "canceled_by": "홍길동",
+                    }
+                ]
+            },
+            response_only=True,
+        )
+    ]
+)
+class RepeatOccurrenceCancelResponseSerializer(serializers.Serializer):
+    canceled_occurrences = CanceledRepeatOccurrenceSerializer(
+        many=True,
+        required=True,
+        help_text="취소 처리된 반복 예약 회차 목록",
+    )
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
             "팀 예약 생성 응답",
             value={"reservations": []},
             response_only=True,

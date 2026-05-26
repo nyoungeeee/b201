@@ -16,8 +16,10 @@ from bookings.exceptions import (
     InvalidBookingTimeError,
     NoAvailableRepeatDatesError,
     NotFoundBookingError,
+    NotFoundRepeatOccurrenceError,
     NotFoundStudioRoomError,
     NotFoundTeamError,
+    NotRepeatReservationError,
     OutsideOperatingHoursError,
 )
 from bookings.models import (
@@ -194,6 +196,20 @@ class RepeatConflictOccurrence:
 class RepeatReservationCheck:
     available_occurrences: list[RepeatOccurrence]
     conflict_occurrences: list[RepeatConflictOccurrence]
+
+
+@dataclass
+class CanceledRepeatOccurrence:
+    week: int
+    date: date
+    status: str
+    canceled_at: object
+    canceled_by: str
+
+
+@dataclass
+class CanceledRepeatOccurrenceList:
+    canceled_occurrences: list[CanceledRepeatOccurrence]
 
 
 class BookingCheckService:
@@ -1164,6 +1180,154 @@ class ReservationCommandService:
         booking.status = BookingStatus.CANCELED
         booking.canceled_at = timezone.now()
         booking.save(update_fields=["status", "canceled_at", "updated_at"])
+
+    @staticmethod
+    @transaction.atomic
+    def cancel_repeat_occurrences(
+        user,
+        reservation_number: int,
+        dates: list[date],
+    ) -> CanceledRepeatOccurrenceList:
+        try:
+            booking = (
+                Booking.objects.select_related("team")
+                .select_for_update()
+                .get(reservation_number=reservation_number)
+            )
+        except Booking.DoesNotExist:
+            raise NotFoundBookingError()
+
+        if not booking.repeat_group_id:
+            raise NotRepeatReservationError()
+
+        if not ReservationQueryService._can_access_booking(user=user, booking=booking):
+            raise ForbiddenTeamBookingError()
+
+        try:
+            repeat_group = ReservationRepeatGroup.objects.get(
+                id=booking.repeat_group_id
+            )
+        except ReservationRepeatGroup.DoesNotExist:
+            return ReservationCommandService._cancel_legacy_repeat_occurrences(
+                user=user,
+                booking=booking,
+                dates=dates,
+            )
+
+        target_dates = set(dates)
+        occurrences = list(
+            ReservationRepeatOccurrence.objects.select_for_update()
+            .select_related("booking")
+            .filter(repeat_group=repeat_group, date__in=target_dates)
+            .order_by("week")
+        )
+        if len(occurrences) != len(target_dates):
+            raise NotFoundRepeatOccurrenceError()
+
+        already_canceled = [
+            occurrence
+            for occurrence in occurrences
+            if occurrence.status == ReservationRepeatOccurrenceStatus.CANCELED
+        ]
+        if already_canceled:
+            raise AlreadyCanceledReservationError()
+
+        canceled_at = timezone.now()
+        booking_ids = [
+            occurrence.booking_id
+            for occurrence in occurrences
+            if occurrence.booking_id is not None
+        ]
+        if booking_ids:
+            Booking.objects.filter(reservation_number__in=booking_ids).update(
+                status=BookingStatus.CANCELED,
+                canceled_at=canceled_at,
+            )
+
+        for occurrence in occurrences:
+            occurrence.status = ReservationRepeatOccurrenceStatus.CANCELED
+            occurrence.canceled_at = canceled_at
+            occurrence.canceled_by = user
+            occurrence.reason_code = None
+            occurrence.save(
+                update_fields=[
+                    "status",
+                    "canceled_at",
+                    "canceled_by",
+                    "reason_code",
+                    "updated_at",
+                ]
+            )
+
+        canceled_by = user.nickname or ""
+        return CanceledRepeatOccurrenceList(
+            canceled_occurrences=[
+                CanceledRepeatOccurrence(
+                    week=occurrence.week,
+                    date=occurrence.date,
+                    status=occurrence.status,
+                    canceled_at=occurrence.canceled_at,
+                    canceled_by=canceled_by,
+                )
+                for occurrence in occurrences
+            ]
+        )
+
+    @staticmethod
+    def _cancel_legacy_repeat_occurrences(
+        user,
+        booking: Booking,
+        dates: list[date],
+    ) -> CanceledRepeatOccurrenceList:
+        target_dates = set(dates)
+        bookings = list(
+            Booking.objects.select_for_update()
+            .filter(
+                repeat_group_id=booking.repeat_group_id,
+                reservation_date__in=target_dates,
+            )
+            .order_by("reservation_date", "start_time", "reservation_number")
+        )
+        if len(bookings) != len(target_dates):
+            raise NotFoundRepeatOccurrenceError()
+
+        if any(
+            group_booking.status == BookingStatus.CANCELED for group_booking in bookings
+        ):
+            raise AlreadyCanceledReservationError()
+
+        canceled_at = timezone.now()
+        for group_booking in bookings:
+            group_booking.status = BookingStatus.CANCELED
+            group_booking.canceled_at = canceled_at
+            group_booking.save(update_fields=["status", "canceled_at", "updated_at"])
+
+        canceled_by = user.nickname or ""
+        return CanceledRepeatOccurrenceList(
+            canceled_occurrences=[
+                CanceledRepeatOccurrence(
+                    week=ReservationCommandService._resolve_legacy_occurrence_week(
+                        booking=booking,
+                        target_date=group_booking.reservation_date,
+                    ),
+                    date=group_booking.reservation_date,
+                    status=BookingStatus.CANCELED,
+                    canceled_at=group_booking.canceled_at,
+                    canceled_by=canceled_by,
+                )
+                for group_booking in bookings
+            ]
+        )
+
+    @staticmethod
+    def _resolve_legacy_occurrence_week(booking: Booking, target_date: date) -> int:
+        if booking.repeat_start_date:
+            return ((target_date - booking.repeat_start_date).days // 7) + 1
+        earlier_count = Booking.objects.filter(
+            repeat_group_id=booking.repeat_group_id,
+            reservation_date__lte=target_date,
+        ).count()
+        return earlier_count
 
     @staticmethod
     def _get_active_room(room_id: int) -> StudioRoom:
