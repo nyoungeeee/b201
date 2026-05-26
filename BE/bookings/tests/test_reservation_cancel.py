@@ -28,6 +28,29 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         booking.refresh_from_db()
         self.assertEqual(booking.status, BookingStatus.CANCELED)
         self.assertIsNotNone(booking.canceled_at)
+        self.assertEqual(booking.canceled_by_id, self.member_user.id)
+
+    # 취소자가 예약 목록 조회 응답에 포함되는지 검증한다.
+    def test_cancel_reservation_returns_canceler_in_list(self):
+        booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(19, 0),
+            end_time=time(20, 0),
+        )
+        self._authenticate(self.user)
+        self.client.delete(f"/api/v1/reservations/number/{booking.reservation_number}")
+
+        response = self.client.get("/api/v1/reservations/?period=upcoming")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        item = response.data["reservations"][0]
+        self.assertEqual(item["reservation_number"], booking.reservation_number)
+        self.assertIsNotNone(item["canceled_at"])
+        self.assertEqual(item["canceled_by"], self.user.id)
+        self.assertEqual(item["canceled_by_name"], self.user.nickname)
 
     # 예약 취소 시 권한 없는 사용자는 거부되는지 검증한다.
     def test_cancel_reservation_rejects_unauthorized_user(self):

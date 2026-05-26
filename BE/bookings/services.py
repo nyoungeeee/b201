@@ -84,6 +84,9 @@ class ReservationItem:
     memo: str
     color: str
     status: str
+    canceled_at: object | None = None
+    canceled_by: int | None = None
+    canceled_by_name: str | None = None
     team_id: int | None = None
     team_name: str | None = None
 
@@ -115,6 +118,9 @@ class UnifiedReservationItem:
     applicant_name: str
     status: str
     created_at: object
+    canceled_at: object | None
+    canceled_by: int | None
+    canceled_by_name: str | None
 
 
 @dataclass
@@ -136,6 +142,7 @@ class ReservationOccurrenceDetail:
     status: str
     canceled_at: object | None
     canceled_by: object | None
+    canceled_by_name: str | None
     reason_code: str | None
     can_reapply: bool
 
@@ -165,6 +172,7 @@ class ReservationDetail:
     approved_at: object | None
     canceled_at: object | None
     canceled_by: object | None
+    canceled_by_name: str | None
     repeat: ReservationRepeatDetail | None
     occurrences: list[ReservationOccurrenceDetail]
 
@@ -426,7 +434,7 @@ class ReservationQueryService:
             team_id__in=allowed_team_ids,
         )
         queryset = Booking.objects.filter(scope_filter).select_related(
-            "room", "user", "team", "team__team_color"
+            "room", "user", "team", "team__team_color", "canceled_by"
         )
 
         now = timezone.localtime()
@@ -556,6 +564,11 @@ class ReservationQueryService:
                 memo=booking.memo,
                 color="#DADADA",
                 status=booking.status,
+                canceled_at=booking.canceled_at,
+                canceled_by=booking.canceled_by_id,
+                canceled_by_name=ReservationQueryService._resolve_canceler_name(
+                    booking
+                ),
             )
 
         return ReservationItem(
@@ -572,6 +585,9 @@ class ReservationQueryService:
             memo=booking.memo,
             color=booking.team.color,
             status=booking.status,
+            canceled_at=booking.canceled_at,
+            canceled_by=booking.canceled_by_id,
+            canceled_by_name=ReservationQueryService._resolve_canceler_name(booking),
             team_id=booking.team_id,
             team_name=booking.team.name,
         )
@@ -599,13 +615,16 @@ class ReservationQueryService:
             applicant_name=booking.user.nickname or "",
             status=ReservationQueryService.INTERNAL_TO_EXTERNAL_STATUS[booking.status],
             created_at=booking.created_at,
+            canceled_at=booking.canceled_at,
+            canceled_by=booking.canceled_by_id,
+            canceled_by_name=ReservationQueryService._resolve_canceler_name(booking),
         )
 
     @staticmethod
     def get_reservation_detail(user, reservation_number: int) -> ReservationDetail:
         try:
             booking = Booking.objects.select_related(
-                "room", "user", "team", "team__team_color"
+                "room", "user", "team", "team__team_color", "canceled_by"
             ).get(reservation_number=reservation_number)
         except Booking.DoesNotExist:
             raise NotFoundBookingError()
@@ -669,7 +688,8 @@ class ReservationQueryService:
             created_at=booking.created_at,
             approved_at=None,
             canceled_at=booking.canceled_at,
-            canceled_by=None,
+            canceled_by=booking.canceled_by_id,
+            canceled_by_name=ReservationQueryService._resolve_canceler_name(booking),
             repeat=repeat_info,
             occurrences=occurrences,
         )
@@ -688,7 +708,7 @@ class ReservationQueryService:
         occurrences = [
             ReservationQueryService._build_repeat_occurrence_detail(occurrence)
             for occurrence in repeat_group.occurrences.select_related(
-                "booking", "booking__user"
+                "booking", "booking__user", "booking__canceled_by", "canceled_by"
             ).order_by("week")
         ]
         return (
@@ -757,6 +777,9 @@ class ReservationQueryService:
             status=occurrence.status,
             canceled_at=occurrence.canceled_at,
             canceled_by=occurrence.canceled_by_id,
+            canceled_by_name=(
+                occurrence.canceled_by.nickname if occurrence.canceled_by_id else None
+            ),
             reason_code=occurrence.reason_code,
             can_reapply=occurrence.status == ReservationRepeatOccurrenceStatus.CONFLICT,
         )
@@ -780,7 +803,16 @@ class ReservationQueryService:
                 if occurrence is not None and occurrence.canceled_at
                 else booking.canceled_at
             ),
-            canceled_by=occurrence.canceled_by_id if occurrence is not None else None,
+            canceled_by=(
+                occurrence.canceled_by_id
+                if occurrence is not None and occurrence.canceled_by_id
+                else booking.canceled_by_id
+            ),
+            canceled_by_name=(
+                occurrence.canceled_by.nickname
+                if occurrence is not None and occurrence.canceled_by_id
+                else ReservationQueryService._resolve_canceler_name(booking)
+            ),
             reason_code=occurrence.reason_code if occurrence is not None else None,
             can_reapply=False,
         )
@@ -848,7 +880,7 @@ class ReservationQueryService:
         status: list[str] | None,
     ):
         queryset = queryset.select_related(
-            "room", "user", "team", "team__team_color"
+            "room", "user", "team", "team__team_color", "canceled_by"
         ).order_by(
             "-reservation_date",
             "-start_time",
@@ -871,6 +903,12 @@ class ReservationQueryService:
         if booking.user.is_staff and booking.title:
             return booking.title
         return booking.user.nickname or ""
+
+    @staticmethod
+    def _resolve_canceler_name(booking: Booking) -> str | None:
+        if not booking.canceled_by_id:
+            return None
+        return booking.canceled_by.nickname or ""
 
     @staticmethod
     def _resolve_reservation_kind(booking: Booking) -> str:
@@ -1190,7 +1228,10 @@ class ReservationCommandService:
 
         booking.status = BookingStatus.CANCELED
         booking.canceled_at = timezone.now()
-        booking.save(update_fields=["status", "canceled_at", "updated_at"])
+        booking.canceled_by = user
+        booking.save(
+            update_fields=["status", "canceled_at", "canceled_by", "updated_at"]
+        )
 
     @staticmethod
     def _get_active_room(room_id: int) -> StudioRoom:

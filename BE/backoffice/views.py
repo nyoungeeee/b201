@@ -666,7 +666,7 @@ class AdminRoomDetailView(APIView):
     def delete(self, request, room_id: int):
         try:
             room = AdminRoomService.get_room(room_id=room_id)
-            AdminRoomService.delete_room(room_id=room_id)
+            AdminRoomService.delete_room(admin_user=request.user, room_id=room_id)
         except StudioRoom.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         AdminLogService.record(
@@ -853,7 +853,10 @@ class AdminReservationCancelView(APIView):
             reservation = AdminReservationService.get_reservation(
                 reservation_id=reservation_id
             )
-            AdminReservationService.cancel_reservation(reservation_id=reservation_id)
+            AdminReservationService.cancel_reservation(
+                admin_user=request.user,
+                reservation_id=reservation_id,
+            )
         except Booking.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         AdminLogService.record(
@@ -995,6 +998,7 @@ class AdminDayOffListView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             day_off = AdminDayOffService.create_day_off(
+                admin_user=request.user,
                 room_id=serializer.validated_data.get("room_id"),
                 day_off_type=serializer.validated_data["type"],
                 start_date=serializer.validated_data["start_date"],

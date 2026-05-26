@@ -208,6 +208,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data, {"ok": True})
         booking.refresh_from_db()
         self.assertEqual(booking.status, BookingStatus.CANCELED)
+        self.assertEqual(booking.canceled_by_id, self.admin_user.id)
 
     def test_approve_returns_business_error_when_already_approved(self):
         booking = Booking.objects.create(

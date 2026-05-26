@@ -51,6 +51,33 @@ class ReservationDetailAPITestCase(BaseBookingAPITestCase):
         self.assertNotIn("reason_message", occurrence)
         self.assertNotIn("reason_message", response.data)
 
+    def test_canceled_reservation_detail_returns_canceler(self):
+        booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(20, 0),
+            status=BookingStatus.CANCELED,
+            canceled_at=timezone.now(),
+            canceled_by=self.member_user,
+        )
+
+        response = self.client.get(
+            f"/api/v1/reservations/number/{booking.reservation_number}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["canceled_by"], self.member_user.id)
+        self.assertEqual(response.data["canceled_by_name"], self.member_user.nickname)
+        occurrence = response.data["occurrences"][0]
+        self.assertEqual(occurrence["canceled_by"], self.member_user.id)
+        self.assertEqual(
+            occurrence["canceled_by_name"],
+            self.member_user.nickname,
+        )
+
     def test_repeat_reservation_detail_includes_conflict_occurrence(self):
         conflict_date = self.tomorrow + timedelta(days=7)
         Booking.objects.create(

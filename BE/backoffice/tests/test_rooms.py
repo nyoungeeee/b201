@@ -129,3 +129,4 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(self.room.status, StudioRoomStatus.INACTIVE)
         self.assertEqual(booking.status, BookingStatus.CANCELED)
         self.assertIsNotNone(booking.canceled_at)
+        self.assertEqual(booking.canceled_by_id, self.admin_user.id)
