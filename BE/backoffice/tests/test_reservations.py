@@ -20,7 +20,9 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
-        self.team = Team.objects.create(name=f"테스트팀-{suffix}", owner=self.admin_user)
+        self.team = Team.objects.create(
+            name=f"테스트팀-{suffix}", owner=self.admin_user
+        )
         self.today = date.today()
 
     def test_staff_can_create_owner_private_reservation_with_title_and_memo(self):

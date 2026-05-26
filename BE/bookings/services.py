@@ -1271,10 +1271,8 @@ class ReservationCommandService:
         dates: list[date],
     ) -> CanceledRepeatOccurrenceList:
         try:
-            booking = (
-                Booking.objects.select_for_update().get(
-                    reservation_number=reservation_number
-                )
+            booking = Booking.objects.select_for_update().get(
+                reservation_number=reservation_number
             )
         except Booking.DoesNotExist:
             raise NotFoundBookingError()
