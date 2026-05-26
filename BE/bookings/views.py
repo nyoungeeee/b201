@@ -28,6 +28,7 @@ from bookings.serializers import (
     MyReservationListSerializer,
     PrivateReservationCreateRequestSerializer,
     PrivateReservationCreateResponseSerializer,
+    ReservationDetailSerializer,
     RepeatReservationCheckResponseSerializer,
     TeamReservationCreateRequestSerializer,
     TeamReservationCreateResponseSerializer,
@@ -861,6 +862,36 @@ class TeamRepeatReservationCreateView(APIView):
 
 class CancelReservationView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=ReservationDetailSerializer,
+                description="예약 상세 조회 성공",
+            ),
+            403: openapi_exception_response(ForbiddenTeamBookingError),
+            404: openapi_exception_response(NotFoundBookingError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="예약 번호로 예약 상세 조회",
+    )
+    def get(self, request, reservation_number: int):
+        try:
+            detail = ReservationQueryService.get_reservation_detail(
+                user=request.user,
+                reservation_number=reservation_number,
+            )
+        except ForbiddenTeamBookingError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except NotFoundBookingError as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        return Response(
+            ReservationDetailSerializer(detail).data,
+            status=status.HTTP_200_OK,
+        )
 
     @extend_schema(
         responses={
