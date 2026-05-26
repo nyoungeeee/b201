@@ -487,6 +487,9 @@ class AdminReservationSerializer(serializers.Serializer):
         required=False,
         help_text="반복 예약 중 취소된 회차 날짜 목록",
     )
+    canceled_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    canceled_by_name = serializers.CharField(required=False, allow_null=True)
 
 
 @extend_schema_serializer(

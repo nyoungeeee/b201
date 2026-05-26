@@ -134,6 +134,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data["data"]["room_id"], self.room.id)
         booking.refresh_from_db()
         self.assertEqual(booking.status, BookingStatus.CANCELED)
+        self.assertEqual(booking.canceled_by_id, self.admin_user.id)
 
     def test_create_holiday_forces_all_day(self):
         response = self.client.post(

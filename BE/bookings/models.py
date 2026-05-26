@@ -72,6 +72,13 @@ class Booking(models.Model):
         default=BookingStatus.PENDING,
     )
     canceled_at = models.DateTimeField(blank=True, null=True)
+    canceled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="canceled_bookings",
+        blank=True,
+        null=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

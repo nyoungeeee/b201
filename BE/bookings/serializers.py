@@ -245,6 +245,9 @@ class ReservationItemSerializer(serializers.Serializer):
     )
     color = serializers.CharField(required=True, help_text="예약 표시 색상 HEX 코드")
     status = serializers.CharField(required=True, help_text="예약 상태")
+    canceled_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    canceled_by_name = serializers.CharField(required=False, allow_null=True)
 
 
 @extend_schema_serializer(
@@ -544,6 +547,9 @@ class UnifiedReservationItemSerializer(serializers.Serializer):
     applicant_name = serializers.CharField(required=True)
     status = serializers.CharField(required=True)
     created_at = serializers.DateTimeField(required=True)
+    canceled_at = serializers.DateTimeField(required=False, allow_null=True)
+    canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    canceled_by_name = serializers.CharField(required=False, allow_null=True)
 
 
 class UnifiedReservationListSerializer(serializers.Serializer):
@@ -573,6 +579,7 @@ class ReservationOccurrenceDetailSerializer(serializers.Serializer):
     status = serializers.CharField(required=True)
     canceled_at = serializers.DateTimeField(required=False, allow_null=True)
     canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    canceled_by_name = serializers.CharField(required=False, allow_null=True)
     reason_code = serializers.CharField(required=False, allow_null=True)
     can_reapply = serializers.BooleanField(required=True)
 
@@ -601,6 +608,7 @@ class ReservationDetailSerializer(serializers.Serializer):
     approved_at = serializers.DateTimeField(required=False, allow_null=True)
     canceled_at = serializers.DateTimeField(required=False, allow_null=True)
     canceled_by = serializers.IntegerField(required=False, allow_null=True)
+    canceled_by_name = serializers.CharField(required=False, allow_null=True)
     repeat = ReservationRepeatDetailSerializer(required=False, allow_null=True)
     occurrences = ReservationOccurrenceDetailSerializer(many=True, required=True)
 

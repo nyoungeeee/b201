@@ -631,14 +631,18 @@ class AdminRoomService:
 
     @staticmethod
     @transaction.atomic
-    def delete_room(room_id: int) -> None:
+    def delete_room(admin_user, room_id: int) -> None:
         room = AdminRoomService._get_room(room_id)
         room.status = StudioRoomStatus.INACTIVE
         room.save(update_fields=["status", "updated_at"])
         Booking.objects.filter(
             room=room,
             status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
-        ).update(status=BookingStatus.CANCELED, canceled_at=timezone.now())
+        ).update(
+            status=BookingStatus.CANCELED,
+            canceled_at=timezone.now(),
+            canceled_by=admin_user,
+        )
 
     @staticmethod
     def _get_room(room_id: int) -> StudioRoom:
@@ -680,6 +684,9 @@ class AdminReservationInfo:
     repeat_start_date: object | None
     repeat_end_date: object | None
     canceled_occurrence_dates: list[object]
+    canceled_at: object | None
+    canceled_by: int | None
+    canceled_by_name: str | None
 
 
 @dataclass
@@ -715,7 +722,7 @@ class AdminReservationService:
             BookingStatus.PENDING if status == "pending" else BookingStatus.RESERVED
         )
         queryset = Booking.objects.filter(status=booking_status).select_related(
-            "room", "user", "team", "team__team_color"
+            "room", "user", "team", "team__team_color", "canceled_by"
         )
         if status == "approved":
             today = timezone.localdate()
@@ -793,7 +800,11 @@ class AdminReservationService:
             Booking.objects.filter(
                 reservation_number__in=forced_ids,
                 status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
-            ).update(status=BookingStatus.CANCELED, canceled_at=timezone.now())
+            ).update(
+                status=BookingStatus.CANCELED,
+                canceled_at=timezone.now(),
+                canceled_by=admin_user,
+            )
 
         booking = Booking.objects.create(
             room=room,
@@ -821,11 +832,14 @@ class AdminReservationService:
 
     @staticmethod
     @transaction.atomic
-    def cancel_reservation(reservation_id: int) -> None:
+    def cancel_reservation(admin_user, reservation_id: int) -> None:
         booking = AdminReservationService._get_booking(reservation_id)
         booking.status = BookingStatus.CANCELED
         booking.canceled_at = timezone.now()
-        booking.save(update_fields=["status", "canceled_at", "updated_at"])
+        booking.canceled_by = admin_user
+        booking.save(
+            update_fields=["status", "canceled_at", "canceled_by", "updated_at"]
+        )
 
     @staticmethod
     @transaction.atomic
@@ -877,9 +891,9 @@ class AdminReservationService:
 
     @staticmethod
     def _get_booking(reservation_id: int) -> Booking:
-        return Booking.objects.select_related("room", "user", "team").get(
-            reservation_number=reservation_id
-        )
+        return Booking.objects.select_related(
+            "room", "user", "team", "canceled_by"
+        ).get(reservation_number=reservation_id)
 
     @staticmethod
     def _build_reservation_info(booking: Booking) -> AdminReservationInfo:
@@ -905,6 +919,11 @@ class AdminReservationService:
             repeat_start_date=booking.repeat_start_date,
             repeat_end_date=booking.repeat_end_date,
             canceled_occurrence_dates=booking.canceled_occurrence_dates or [],
+            canceled_at=booking.canceled_at,
+            canceled_by=booking.canceled_by_id,
+            canceled_by_name=(
+                booking.canceled_by.nickname if booking.canceled_by_id else None
+            ),
         )
 
     @staticmethod
@@ -1063,6 +1082,7 @@ class AdminDayOffService:
     @staticmethod
     @transaction.atomic
     def create_day_off(
+        admin_user,
         room_id: int | None,
         day_off_type: str,
         start_date,
@@ -1100,7 +1120,11 @@ class AdminDayOffService:
             Booking.objects.filter(
                 reservation_number__in=forced_ids,
                 status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
-            ).update(status=BookingStatus.CANCELED, canceled_at=timezone.now())
+            ).update(
+                status=BookingStatus.CANCELED,
+                canceled_at=timezone.now(),
+                canceled_by=admin_user,
+            )
 
         closure = RoomClosure.objects.create(
             room=room,
