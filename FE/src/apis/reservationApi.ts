@@ -19,24 +19,6 @@ const reservationStatusSchema = z.enum([
     'CANCELLED',
 ]);
 
-const reservationItemSchema = z.object({
-    reservation_number: z.number(),
-    room_id: z.number(),
-    room_name: z.string(),
-    date: dateStringSchema,
-    start_time: timeStringSchema,
-    end_time: timeStringSchema,
-    kind: z.string().optional(),
-    repeat_count: z.number().nullable().optional(),
-    type: z.enum(['PRIVATE', 'TEAM', 'private', 'team']),
-    name: z.string(),
-    memo: z.string().optional(),
-    color: z.string(),
-    status: reservationStatusSchema,
-    team_id: z.number().optional(),
-    team_name: z.string().optional(),
-});
-
 const repeatOccurrenceSchema = z.object({
     week: z.number(),
     date: dateStringSchema,
@@ -54,20 +36,53 @@ const repeatCheckResponseSchema = z.object({
     message: z.string().optional(),
 });
 
+const unifiedReservationItemSchema = z.object({
+    reservation_number: z.number(),
+    room_id: z.number(),
+    room_name: z.string(),
+    start_date: dateStringSchema,
+    start_time: timeStringSchema,
+    end_date: dateStringSchema,
+    end_time: timeStringSchema,
+    kind: z.enum(['single', 'repeat']),
+    repeat_count: z.number().nullable().optional(),
+    conflict_count: z.number(),
+    type: z.enum(['private', 'team']),
+    team_id: z.number().nullable().optional(),
+    team_name: z.string().nullable().optional(),
+    color: z.string(),
+    applicant_id: z.number(),
+    applicant_name: z.string(),
+    status: reservationStatusSchema,
+    created_at: z.string(),
+});
+
 const reservationCreateResponseSchema = z.object({
-    reservations: z.array(reservationItemSchema),
+    reservations: z.array(unifiedReservationItemSchema),
     skipped_occurrences: z.array(repeatConflictOccurrenceSchema).nullable().optional(),
+});
+
+const unifiedReservationListSchema = z.object({
+    period: z.enum(['upcoming', 'past']),
+    reservations: z.array(unifiedReservationItemSchema),
+    pagination: z.object({
+        page: z.number(),
+        size: z.number(),
+        total_count: z.number(),
+        has_next: z.boolean(),
+    }),
 });
 
 export type RepeatConflictOccurrence = z.infer<typeof repeatConflictOccurrenceSchema>;
 export type RepeatCheckResponse = z.infer<typeof repeatCheckResponseSchema>;
 export type ReservationCreateResponse = z.infer<typeof reservationCreateResponseSchema>;
+export type ReservationListItem = z.infer<typeof unifiedReservationItemSchema>;
+export type ReservationListResponse = z.infer<typeof unifiedReservationListSchema>;
 
 export interface CreateReservationParams {
     accessToken?: string | null;
     roomId: number;
     type: 'private' | 'team';
-    repeat: boolean;
     startDate: string;
     count: number;
     startTime: string;
@@ -75,7 +90,30 @@ export interface CreateReservationParams {
     teamId?: number;
 }
 
-export type CheckRepeatReservationParams = Omit<CreateReservationParams, 'repeat'>;
+export type CheckRepeatReservationParams = CreateReservationParams;
+
+export interface GetReservationsParams {
+    accessToken?: string | null;
+    period?: 'upcoming' | 'past';
+    sort?: 'upcoming' | 'latest';
+    kind?: 'single' | 'repeat';
+    type?: 'private' | 'team';
+    status?: Array<'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'>;
+    teamId?: number;
+    page?: number;
+    size?: number;
+}
+
+export interface GetReservationByNumberParams {
+    accessToken?: string | null;
+    reservationNumber: number;
+    preferredPeriod?: 'upcoming' | 'past';
+}
+
+export interface CancelReservationParams {
+    accessToken?: string | null;
+    reservationNumber: number;
+}
 
 const buildReservationUrl = (path: string) =>
     `${API_BASE_URL}/reservations/${path}`;
@@ -100,6 +138,7 @@ const buildReservationBody = ({
     count,
     start_time: startTime,
     end_time: endTime,
+    type,
     ...(type === 'team' ? { team_id: teamId } : {}),
 });
 
@@ -134,7 +173,7 @@ export const checkRepeatReservation = async ({
     teamId,
 }: CheckRepeatReservationParams): Promise<RepeatCheckResponse> => {
     const response = await fetch(
-        buildReservationUrl(`${roomId}/${type}/repeat-check`),
+        buildReservationUrl(`${roomId}/repeat-check`),
         {
             method: 'POST',
             headers: buildHeaders(accessToken),
@@ -175,7 +214,6 @@ export const createReservation = async ({
     accessToken,
     roomId,
     type,
-    repeat,
     startDate,
     count,
     startTime,
@@ -183,7 +221,7 @@ export const createReservation = async ({
     teamId,
 }: CreateReservationParams): Promise<ReservationCreateResponse> => {
     const response = await fetch(
-        buildReservationUrl(`${roomId}/${type}${repeat ? '/repeat' : ''}`),
+        buildReservationUrl(`${roomId}`),
         {
             method: 'POST',
             headers: buildHeaders(accessToken),
@@ -217,4 +255,112 @@ export const createReservation = async ({
     }
 
     return parsedResult.data;
+};
+
+export const getReservations = async ({
+    accessToken,
+    period = 'upcoming',
+    sort = 'upcoming',
+    kind,
+    type,
+    status,
+    teamId,
+    page = 1,
+    size = 20,
+}: GetReservationsParams): Promise<ReservationListResponse> => {
+    const searchParams = new URLSearchParams({
+        period,
+        sort,
+        page: String(page),
+        size: String(size),
+    });
+
+    if (kind) searchParams.set('kind', kind);
+    if (type) searchParams.set('type', type);
+    if (teamId) searchParams.set('team_id', String(teamId));
+    status?.forEach((value) => searchParams.append('status', value));
+
+    const response = await fetch(
+        `${buildReservationUrl('')}?${searchParams.toString()}`,
+        {
+            method: 'GET',
+            headers: buildHeaders(accessToken),
+        },
+    );
+    const rawData = await readJson(response);
+
+    if (!response.ok) {
+        throw new Error(
+            parseErrorMessage(
+                rawData,
+                `예약 목록 조회에 실패했습니다. (status: ${response.status})`,
+            ),
+        );
+    }
+
+    const parsedResult = unifiedReservationListSchema.safeParse(rawData);
+
+    if (!parsedResult.success) {
+        console.error('Reservation list API validation failed:', parsedResult.error.format());
+        throw new Error('예약 목록 응답 형식이 올바르지 않습니다.');
+    }
+
+    return parsedResult.data;
+};
+
+export const getReservationByNumber = async ({
+    accessToken,
+    reservationNumber,
+    preferredPeriod,
+}: GetReservationByNumberParams): Promise<ReservationListItem> => {
+    const periods: Array<'upcoming' | 'past'> = preferredPeriod === 'past'
+        ? ['past', 'upcoming']
+        : ['upcoming', 'past'];
+
+    for (const period of periods) {
+        let page = 1;
+        let hasNext = true;
+
+        while (hasNext) {
+            const response = await getReservations({
+                accessToken,
+                period,
+                page,
+                size: 100,
+            });
+            const reservation = response.reservations.find(
+                (item) => item.reservation_number === reservationNumber,
+            );
+
+            if (reservation) return reservation;
+
+            hasNext = response.pagination.has_next;
+            page += 1;
+        }
+    }
+
+    throw new Error('예약 정보를 찾을 수 없어요.');
+};
+
+export const cancelReservation = async ({
+    accessToken,
+    reservationNumber,
+}: CancelReservationParams): Promise<void> => {
+    const response = await fetch(
+        buildReservationUrl(`number/${reservationNumber}`),
+        {
+            method: 'DELETE',
+            headers: buildHeaders(accessToken),
+        },
+    );
+    const rawData = await readJson(response);
+
+    if (!response.ok) {
+        throw new Error(
+            parseErrorMessage(
+                rawData,
+                `예약 취소에 실패했습니다. (status: ${response.status})`,
+            ),
+        );
+    }
 };

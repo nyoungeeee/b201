@@ -7,8 +7,8 @@ import {
     type RepeatConflictOccurrence,
 } from '../apis/reservationApi';
 import InfoCircleIcon from '../components/common/icons/InfoCircleIcon';
-import PageSubHeader from '../components/layout/PageSubHeader';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
+import PageSubHeader from '../components/layout/PageSubHeader';
 import ReservationRepeatPicker, {
     type RepeatOption,
 } from '../components/reservation/ReservationRepeatPicker';
@@ -24,13 +24,13 @@ import ReservationTeamPicker, {
     type ReservationTeamOption,
 } from '../components/reservation/ReservationTeamPicker';
 import { DEFAULT_ROOM_ID, WEEK_DAYS } from '../constants/global';
+import { getReservationEndAt, mapReservationListItem } from '../domains/reservation/mapper';
+import type { MyReservation } from '../domains/reservation/types';
 import { useRoomDay } from '../hooks/queries/useRoomDay';
 import { useRoomMonth } from '../hooks/queries/useRoomMonth';
 import { useAuthSession } from '../hooks/useAuthSession';
-import { getColorRgb, normalizeHexColor } from '../utils/colorUtils';
 import {
     addDays,
-    createDateTimeString,
     formatDateString,
     getDateDistance,
     isValidDateString,
@@ -46,7 +46,6 @@ import {
     TIME_SLOT_INTERVAL_MINUTES,
 } from '../utils/reservationSlotUtils';
 import { getTodayInSeoul } from '../utils/timelineUtils';
-import type { MyReservation } from './MyReservationPage';
 
 interface CalendarDay {
     fullDate: string;
@@ -66,7 +65,7 @@ const STEP_ORDER: ReservationStepKey[] = ['date', 'startTime', 'endTime', 'repea
 const REPEAT_OPTIONS: RepeatOption[] = [
     { label: '반복 없음', value: 0 },
     ...Array.from({ length: 11 }, (_, index) => ({
-        label: `${index + 2}회차`,
+        label: `${index + 2}주`,
         value: index + 2,
     })),
 ];
@@ -164,7 +163,7 @@ const formatDurationLabel = (
 const formatRepeatLabel = (value: number) => {
     if (value === 0) return '반복 없음';
 
-    return `${value}회차`;
+    return `${value}주 반복`;
 };
 
 const formatTeamLabel = (
@@ -218,46 +217,23 @@ const formatRepeatConflictDate = (occurrence: RepeatConflictOccurrence) => {
     return `[${occurrence.week}회차] ${String(month).padStart(2, '0')}.${String(date).padStart(2, '0')}`;
 };
 
-const mapReservationStatus = (status: string): MyReservation['state'] => {
-    if (status === 'APPROVED' || status === 'RESERVED') return 'approved';
-    if (status === 'REJECTED') return 'rejected';
-    if (status === 'CANCELED' || status === 'CANCELLED') return 'canceled';
-
-    return 'pending';
-};
-
 const createTemporaryReservation = (
     response: Awaited<ReturnType<typeof createReservation>>,
     repeat: boolean,
-    applicantName: string,
 ): MyReservation | null => {
     const firstReservation = response.reservations[0];
 
     if (!firstReservation) return null;
 
     const lastReservation = response.reservations[response.reservations.length - 1];
-    const isTeamReservation = firstReservation.type.toLowerCase() === 'team';
-    const title = isTeamReservation
-        ? firstReservation.team_name ?? firstReservation.name
-        : '개인 연습';
 
-    return {
-        id: firstReservation.reservation_number,
-        title,
-        applicant: applicantName,
-        appliedAt: new Date().toISOString(),
-        startAt: createDateTimeString(firstReservation.date, firstReservation.start_time),
-        endAt: createDateTimeString(firstReservation.date, firstReservation.end_time),
-        repeatEndAt: repeat
-            ? createDateTimeString(lastReservation.date, lastReservation.end_time)
-            : undefined,
-        state: mapReservationStatus(firstReservation.status),
-        kind: isTeamReservation ? 'team' : 'personal',
+    return mapReservationListItem(firstReservation, {
         isRepeat: repeat,
-        conflictCount: response.skipped_occurrences?.length || undefined,
-        color: normalizeHexColor(firstReservation.color),
-        colorRgb: getColorRgb(firstReservation.color),
-    };
+        repeatEndAt: repeat
+            ? getReservationEndAt(lastReservation)
+            : undefined,
+        conflictCount: response.skipped_occurrences?.length,
+    });
 };
 
 const createTemporaryRepeatRounds = (
@@ -268,8 +244,9 @@ const createTemporaryRepeatRounds = (
     if (!firstReservation) return [];
 
     const rounds = response.reservations.map((reservation) => ({
-        round: Math.max(1, Math.round(getDateDistance(firstReservation.date, reservation.date) / 7) + 1),
-        date: reservation.date,
+        round: Math.max(1, Math.round(getDateDistance(firstReservation.start_date, reservation.start_date) / 7) + 1),
+        date: reservation.start_date,
+        endDate: getReservationEndAt(reservation).slice(0, 10),
         startTime: formatTimeForDetail(reservation.start_time),
         endTime: formatTimeForDetail(reservation.end_time),
         status: 'approved' as const,
@@ -798,8 +775,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'startTime' && !isReviewMode
                 ? '시작 시간'
                 : shouldShowConfirmedStepValue('startTime') && completedStepIndex >= 1
-                ? formatCompactTime(selectedStartAbsoluteSlot)
-                : '시작 시간',
+                    ? formatCompactTime(selectedStartAbsoluteSlot)
+                    : '시작 시간',
             icon: 'clock',
             completed: isStepVisuallyCompleted('startTime'),
             disabled: !canOpenStep('startTime'),
@@ -811,8 +788,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'endTime' && !isReviewMode
                 ? '종료 시간'
                 : shouldShowConfirmedStepValue('endTime') && completedStepIndex >= 2
-                ? formatCompactTime(selectedEndAbsoluteSlot)
-                : '종료 시간',
+                    ? formatCompactTime(selectedEndAbsoluteSlot)
+                    : '종료 시간',
             icon: 'clock',
             completed: isStepVisuallyCompleted('endTime'),
             disabled: !canOpenStep('endTime'),
@@ -824,8 +801,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'repeat' && !isReviewMode
                 ? '반복 여부'
                 : shouldShowConfirmedStepValue('repeat') && completedStepIndex >= 3
-                ? formatRepeatLabel(selectedRepeatValue)
-                : '반복 여부',
+                    ? formatRepeatLabel(selectedRepeatValue)
+                    : '반복 여부',
             icon: 'repeat',
             completed: isStepVisuallyCompleted('repeat'),
             disabled: !canOpenStep('repeat'),
@@ -837,8 +814,8 @@ const ReservationApplyPage = () => {
             value: activeStep === 'type' && !isReviewMode
                 ? '팀 설정'
                 : shouldShowConfirmedStepValue('type') && completedStepIndex >= 4
-                ? formatTeamStepLabel(selectedTeamValue)
-                : '팀 설정',
+                    ? formatTeamStepLabel(selectedTeamValue)
+                    : '팀 설정',
             icon: 'people',
             completed: isStepVisuallyCompleted('type'),
             disabled: !canOpenStep('type'),
@@ -993,7 +970,6 @@ const ReservationApplyPage = () => {
                 accessToken,
                 roomId: DEFAULT_ROOM_ID,
                 type: selectedReservationType,
-                repeat,
                 startDate: selectedStartDate,
                 count: selectedRepeatCount,
                 startTime: selectedStartTime,
@@ -1004,14 +980,13 @@ const ReservationApplyPage = () => {
             const temporaryReservation = createTemporaryReservation(
                 reservationResponse,
                 repeat,
-                user?.nickname ?? reservationResponse.reservations[0]?.name ?? '',
             );
 
             if (!temporaryReservation) {
                 throw new Error('예약 신청 응답에 예약 정보가 없습니다.');
             }
 
-            navigate(`/my/reservations/${temporaryReservation.id}`, {
+            navigate(`/reservations/${temporaryReservation.id}`, {
                 state: {
                     fromReservationApply: true,
                     temporaryReservation,
@@ -1323,7 +1298,7 @@ const ReservationApplyPage = () => {
         )}`
         : cardHasStartTime
             ? `${formatCompactTime(selectedStartAbsoluteSlot)} - `
-        : '시간을 선택해 주세요.';
+            : '시간을 선택해 주세요.';
     const cardDurationLabel = cardHasEndTime
         ? formatDurationLabel(selectedStartAbsoluteSlot, selectedEndAbsoluteSlot)
         : '';

@@ -10,6 +10,8 @@ interface ActionModalProps {
     confirmText?: string;
 
     confirmVariant?: 'primary' | 'danger';
+    isCancelDisabled?: boolean;
+    isConfirmDisabled?: boolean;
 
     onCancel?: () => void;
     onConfirm?: () => void;
@@ -25,6 +27,8 @@ const ActionModal = ({
     confirmText = '확인',
 
     confirmVariant = 'primary',
+    isCancelDisabled = false,
+    isConfirmDisabled = false,
 
     onCancel,
     onConfirm,
@@ -54,6 +58,7 @@ const ActionModal = ({
                     <button
                         type="button"
                         className="action-modal__button action-modal__button--cancel"
+                        disabled={isCancelDisabled}
                         onClick={onCancel}
                     >
                         {cancelText}
@@ -65,6 +70,7 @@ const ActionModal = ({
                                 ? 'action-modal__button--danger'
                                 : 'action-modal__button--primary'
                             }`}
+                        disabled={isConfirmDisabled}
                         onClick={onConfirm}
                     >
                         {confirmText}

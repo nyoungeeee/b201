@@ -24,8 +24,8 @@ const AppRouter = () => {
                 <Route path="/reservation/apply" element={<ReservationApplyPage />} />
                 <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
                 <Route path="/my" element={<MyInfoPage />} />
-                <Route path="/my/reservations" element={<MyReservationPage />} />
-                <Route path="/my/reservations/:reservationId" element={<MyReservationDetailPage />} />
+                <Route path="/reservations" element={<MyReservationPage />} />
+                <Route path="/reservations/:reservationId" element={<MyReservationDetailPage />} />
                 <Route path="/my/nickname" element={<NicknameEditPage />} />
                 <Route path="/my/detail" element={<MyInfoDetailPage />} />
                 <Route path="/my/detail/:type" element={<PolicyPage />} />

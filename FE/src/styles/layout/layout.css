@@ -190,6 +190,33 @@
   opacity: 0.6;
 }
 
+.page-sub-header__refresh-button {
+  width: var(--header-action-size);
+  height: var(--header-action-size);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.page-sub-header__refresh-button:active {
+  opacity: 0.6;
+}
+
+.page-sub-header__refresh-button:disabled {
+  cursor: default;
+}
+
+.page-sub-header__refresh-button.is-refreshing svg {
+  animation: pageSubHeaderRefreshSpin 720ms linear infinite;
+}
+
 /* 중앙 타이틀 */
 .page-sub-header__title {
   position: absolute;
@@ -203,9 +230,14 @@
   font-size: var(--text-md);
   font-weight: var(--weight-bold);
   line-height: 1;
-
   color: var(--text-primary);
   pointer-events: none;
+}
+
+@keyframes pageSubHeaderRefreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ===== 기타 ===== */

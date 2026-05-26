@@ -9,19 +9,27 @@ import MinusCircleIcon from '../components/common/icons/MinusCircleIcon';
 import XCircleIcon from '../components/common/icons/XCircleIcon';
 import ActionModal from '../components/layout/ActionModal';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
+import PageRefreshButton from '../components/layout/PageRefreshButton';
 import PageSubHeader from '../components/layout/PageSubHeader';
-import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
-import { roomMonthQueryKeys } from '../hooks/queries/useRoomMonth';
-import { queryClient } from '../lib/queryClient';
+import { getReservationByNumber } from '../apis/reservationApi';
 import {
     formatAppliedAt,
     getCardStyle,
     getPeriodLabel,
     getReservationStateView,
     getTimeLabel,
-    MY_RESERVATIONS,
-    type MyReservation,
-} from './MyReservationPage';
+} from '../domains/reservation/formatters';
+import { mapReservationListItem } from '../domains/reservation/mapper';
+import type {
+    MyReservation,
+    ReservationListViewState,
+} from '../domains/reservation/types';
+import { useCancelReservation } from '../hooks/mutations/useReservationMutations';
+import { useAuthSession } from '../hooks/useAuthSession';
+import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
+import { roomMonthQueryKeys } from '../hooks/queries/useRoomMonth';
+import { reservationQueryKeys } from '../hooks/queries/useReservations';
+import { queryClient } from '../lib/queryClient';
 
 type ProgressTone = 'success' | 'pending' | 'danger' | 'muted' | 'blue' | 'primary';
 type ProgressIcon = 'check' | 'x' | 'minus';
@@ -41,6 +49,7 @@ type RepeatRoundFilter = 'all' | 'approved' | 'conflict' | 'canceled';
 interface RepeatRound {
     round: number;
     date: string;
+    endDate?: string;
     startTime: string;
     endTime: string;
     status: RepeatRoundStatus;
@@ -170,8 +179,8 @@ const formatRepeatDate = (dateString: string) => {
     return `${pad2(date.getMonth() + 1)}.${pad2(date.getDate())}(${dayLabels[date.getDay()]})`;
 };
 
-const getRepeatRoundDateTime = (round: RepeatRound, time: string) => (
-    `${round.date}T${time}:00`
+const getRepeatRoundDateTime = (round: RepeatRound, time: string, date = round.date) => (
+    `${date}T${time}:00`
 );
 
 const createRepeatRoundReservation = (
@@ -180,7 +189,7 @@ const createRepeatRoundReservation = (
 ): MyReservation => ({
     ...reservation,
     startAt: getRepeatRoundDateTime(round, round.startTime),
-    endAt: getRepeatRoundDateTime(round, round.endTime),
+    endAt: getRepeatRoundDateTime(round, round.endTime, round.endDate),
     repeatEndAt: undefined,
     isRepeat: false,
     state: round.status === 'canceled' ? 'canceled' : reservation.state,
@@ -636,14 +645,29 @@ const renderRepeatRoundIcon = (status: RepeatRoundStatus, color: string) => {
 const DetailShell = ({
     title,
     onBack,
+    onRefresh,
+    isRefreshing,
     children,
 }: {
     title: string;
     onBack?: () => void;
+    onRefresh?: () => void | Promise<unknown>;
+    isRefreshing?: boolean;
     children: ReactNode;
 }) => (
     <MobilePageLayout
-        header={<PageSubHeader title={title} onBack={onBack} />}
+        header={(
+            <PageSubHeader
+                title={title}
+                onBack={onBack}
+                rightContent={onRefresh && (
+                    <PageRefreshButton
+                        isRefreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                    />
+                )}
+            />
+        )}
     >
         <div className="my-reservation-detail-shell">
             <main className="my-reservation-detail-page">
@@ -722,7 +746,9 @@ const ReservationSummaryCard = ({
                 </svg>
                 신청자 {reservation.applicant}
             </span>
-            <span>신청일 {formatAppliedAt(reservation.appliedAt)}</span>
+            <span className="my-reservation-card__applied-at">
+                신청일 {formatAppliedAt(reservation.appliedAt)}
+            </span>
         </div>
     </article>
 );
@@ -798,10 +824,14 @@ const CancelInfoSection = ({
 
 const CancelReservationModal = ({
     reservation,
+    errorMessage,
+    isSubmitting,
     onCancel,
     onConfirm,
 }: {
     reservation: MyReservation;
+    errorMessage?: string | null;
+    isSubmitting?: boolean;
     onCancel: () => void;
     onConfirm: () => void;
 }) => (
@@ -817,11 +847,18 @@ const CancelReservationModal = ({
                     <br />
                     취소 후에는 되돌릴 수 없습니다.
                 </strong>
+                {errorMessage && (
+                    <p className="my-reservation-cancel-modal__error" role="alert">
+                        {errorMessage}
+                    </p>
+                )}
             </div>
         )}
         cancelText="돌아가기"
-        confirmText="예약 취소하기"
+        confirmText={isSubmitting ? '취소하는 중...' : '예약 취소하기'}
         confirmVariant="danger"
+        isCancelDisabled={isSubmitting}
+        isConfirmDisabled={isSubmitting}
         onCancel={onCancel}
         onConfirm={onConfirm}
     />
@@ -832,12 +869,16 @@ const RepeatRoundDetail = ({
     round,
     now,
     onBack,
+    onRefresh,
+    isRefreshing,
     onCancelRound,
 }: {
     reservation: MyReservation;
     round: RepeatRound;
     now: Date;
     onBack: () => void;
+    onRefresh?: () => void | Promise<unknown>;
+    isRefreshing?: boolean;
     onCancelRound: (round: RepeatRound) => void;
 }) => {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -847,7 +888,12 @@ const RepeatRoundDetail = ({
     const cancelInfo = getCancelInfo(roundReservation, now);
 
     return (
-        <DetailShell title="예약 상세보기" onBack={onBack}>
+        <DetailShell
+            title="예약 상세보기"
+            onBack={onBack}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+        >
             <ReservationSummaryCard
                 reservation={roundReservation}
                 stateView={stateView}
@@ -873,15 +919,26 @@ const RepeatRoundDetail = ({
 const RepeatRejectedReservationDetail = ({
     reservation,
     now,
+    onBack,
+    onRefresh,
+    isRefreshing,
 }: {
     reservation: MyReservation;
     now: Date;
+    onBack?: () => void;
+    onRefresh?: () => void | Promise<unknown>;
+    isRefreshing?: boolean;
 }) => {
     const stateView = getReservationStateView(reservation);
     const progressSteps = getProgressSteps(reservation, now);
 
     return (
-        <DetailShell title="반복 예약 상세보기">
+        <DetailShell
+            title="반복 예약 상세보기"
+            onBack={onBack}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+        >
             <ReservationSummaryCard
                 reservation={reservation}
                 stateView={stateView}
@@ -896,10 +953,14 @@ const RepeatReservationDetail = ({
     reservation,
     initialRepeatRounds,
     onBack,
+    onRefresh,
+    isRefreshing,
 }: {
     reservation: MyReservation;
     initialRepeatRounds?: RepeatRound[];
     onBack?: () => void;
+    onRefresh?: () => void | Promise<unknown>;
+    isRefreshing?: boolean;
 }) => {
     const [repeatFilter, setRepeatFilter] = useState<RepeatRoundFilter>('all');
     const [selectedRound, setSelectedRound] = useState<RepeatRound | null>(null);
@@ -982,6 +1043,8 @@ const RepeatReservationDetail = ({
                 round={selectedRound}
                 now={now}
                 onBack={() => setSelectedRound(null)}
+                onRefresh={onRefresh}
+                isRefreshing={isRefreshing}
                 onCancelRound={(round) => {
                     setRepeatRounds((currentRounds) => (
                         currentRounds.map((currentRound) => (
@@ -1007,12 +1070,20 @@ const RepeatReservationDetail = ({
             <RepeatRejectedReservationDetail
                 reservation={reservation}
                 now={now}
+                onBack={onBack}
+                onRefresh={onRefresh}
+                isRefreshing={isRefreshing}
             />
         );
     }
 
     return (
-        <DetailShell title="반복 예약 상세보기" onBack={onBack}>
+        <DetailShell
+            title="반복 예약 상세보기"
+            onBack={onBack}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+        >
             <ReservationSummaryCard
                 reservation={reservation}
                 stateView={stateView}
@@ -1114,22 +1185,25 @@ const RepeatReservationDetail = ({
 const MyReservationDetailPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { accessToken } = useAuthSession();
     const { reservationId } = useParams();
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [refreshedReservation, setRefreshedReservation] = useState<MyReservation>();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const cancelReservationMutation = useCancelReservation({ accessToken });
     const locationState = location.state as {
         fromReservationApply?: boolean;
         temporaryReservation?: MyReservation;
         temporaryRepeatRounds?: RepeatRound[];
+        listViewState?: ReservationListViewState;
     } | null;
     const temporaryReservation = locationState?.temporaryReservation;
-    const reservation = temporaryReservation &&
+    const reservation = refreshedReservation ?? (temporaryReservation &&
         String(temporaryReservation.id) === reservationId
         ? temporaryReservation
-        : MY_RESERVATIONS.find((item) => (
-        String(item.id) === reservationId
-    ));
+        : undefined);
     const now = useMemo(() => new Date(), []);
-    const handleBackToRefreshedStatus = locationState?.fromReservationApply
+    const handleBack = locationState?.fromReservationApply
         ? () => {
             queryClient.removeQueries({
                 queryKey: roomDayQueryKeys.all,
@@ -1144,11 +1218,53 @@ const MyReservationDetailPage = () => {
                 },
             });
         }
-        : undefined;
+        : locationState?.listViewState
+            ? () => navigate('/reservations', {
+                state: {
+                    listViewState: locationState.listViewState,
+                },
+            })
+            : undefined;
+    const handleRefresh = async () => {
+        const currentReservationNumber = Number(reservationId);
+
+        if (!Number.isInteger(currentReservationNumber)) return;
+
+        setIsRefreshing(true);
+
+        try {
+            const latestReservation = await getReservationByNumber({
+                accessToken,
+                reservationNumber: currentReservationNumber,
+                preferredPeriod: locationState?.listViewState?.activeTab,
+            });
+
+            setRefreshedReservation(mapReservationListItem(latestReservation));
+            await queryClient.invalidateQueries({
+                queryKey: reservationQueryKeys.all,
+            });
+        } catch {
+            // Keep the currently visible reservation if a manual refresh fails.
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     if (!reservation) {
         return (
-            <MobilePageLayout header={<PageSubHeader title="예약 상세보기" />}>
+            <MobilePageLayout
+                header={(
+                    <PageSubHeader
+                        title="예약 상세보기"
+                        rightContent={(
+                            <PageRefreshButton
+                                isRefreshing={isRefreshing}
+                                onRefresh={handleRefresh}
+                            />
+                        )}
+                    />
+                )}
+            >
                 <main className="my-reservation-detail-page">
                     <p className="page-empty">예약 정보를 찾을 수 없어요.</p>
                 </main>
@@ -1161,7 +1277,9 @@ const MyReservationDetailPage = () => {
             <RepeatReservationDetail
                 reservation={reservation}
                 initialRepeatRounds={locationState?.temporaryRepeatRounds}
-                onBack={handleBackToRefreshedStatus}
+                onBack={handleBack}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
             />
         );
     }
@@ -1170,17 +1288,35 @@ const MyReservationDetailPage = () => {
     const cancelInfo = getCancelInfo(reservation, now);
     const stateView = getReservationStateView(reservation);
 
-    const handleConfirmCancel = () => {
-        navigate('/my/reservations', {
-            state: {
-                canceledReservationId: reservation.id,
-                toastMessage: '예약이 취소되었어요.',
-            },
-        });
+    const handleConfirmCancel = async () => {
+        if (cancelReservationMutation.isPending) return;
+
+        try {
+            await cancelReservationMutation.mutateAsync(reservation.id);
+            navigate('/reservations', {
+                state: {
+                    ...locationState?.listViewState && {
+                        listViewState: locationState.listViewState,
+                    },
+                    canceledReservationId: reservation.id,
+                    toastMessage: '예약이 취소되었어요.',
+                },
+            });
+        } catch {
+            // Mutation error is displayed in the confirmation modal.
+        }
     };
+    const cancelError = cancelReservationMutation.error instanceof Error
+        ? cancelReservationMutation.error.message
+        : null;
 
     return (
-        <DetailShell title="예약 상세보기" onBack={handleBackToRefreshedStatus}>
+        <DetailShell
+            title="예약 상세보기"
+            onBack={handleBack}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+        >
             <ReservationSummaryCard
                 reservation={reservation}
                 stateView={stateView}
@@ -1191,13 +1327,21 @@ const MyReservationDetailPage = () => {
             />
             <CancelInfoSection
                 cancelInfo={cancelInfo}
-                onCancel={() => setIsCancelModalOpen(true)}
+                onCancel={() => {
+                    cancelReservationMutation.reset();
+                    setIsCancelModalOpen(true);
+                }}
             />
 
             {isCancelModalOpen && (
                 <CancelReservationModal
                     reservation={reservation}
-                    onCancel={() => setIsCancelModalOpen(false)}
+                    errorMessage={cancelError}
+                    isSubmitting={cancelReservationMutation.isPending}
+                    onCancel={() => {
+                        cancelReservationMutation.reset();
+                        setIsCancelModalOpen(false);
+                    }}
                     onConfirm={handleConfirmCancel}
                 />
             )}
