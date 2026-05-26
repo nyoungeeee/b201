@@ -1,4 +1,7 @@
-import type { ReservationListItem } from '../../apis/reservationApi';
+import type {
+    ReservationDetailResponse,
+    ReservationListItem,
+} from '../../apis/reservationApi';
 import { getColorRgb, normalizeHexColor } from '../../utils/colorUtils';
 import { addDays, createDateTimeString } from '../../utils/dateTimeUtils';
 import type { MyReservation, ReservationState } from './types';
@@ -49,4 +52,15 @@ export const mapReservationListItem = (
     colorRgb: reservation.type === 'team'
         ? getColorRgb(reservation.color)
         : undefined,
+});
+
+export const mapReservationDetail = (
+    detail: ReservationDetailResponse,
+): MyReservation => ({
+    ...mapReservationListItem(detail, {
+        repeatEndAt: detail.repeat?.end_date,
+    }),
+    approvedAt: detail.approved_at ?? undefined,
+    canceledAt: detail.canceled_at ?? undefined,
+    canceledBy: detail.canceled_by ?? undefined,
 });

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import BottomHero from '../components/branding/BottomHero';
@@ -11,7 +11,9 @@ import ActionModal from '../components/layout/ActionModal';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageRefreshButton from '../components/layout/PageRefreshButton';
 import PageSubHeader from '../components/layout/PageSubHeader';
-import { getReservationByNumber } from '../apis/reservationApi';
+import {
+    getReservationByNumber,
+} from '../apis/reservationApi';
 import {
     formatAppliedAt,
     getCardStyle,
@@ -19,7 +21,13 @@ import {
     getReservationStateView,
     getTimeLabel,
 } from '../domains/reservation/formatters';
-import { mapReservationListItem } from '../domains/reservation/mapper';
+import { mapReservationDetail } from '../domains/reservation/mapper';
+import {
+    createRepeatRoundReservation,
+    mapReservationDetailRounds,
+    type RepeatRound,
+    type RepeatRoundStatus,
+} from '../domains/reservation/repeatRounds';
 import type {
     MyReservation,
     ReservationListViewState,
@@ -43,19 +51,12 @@ interface ProgressStep {
     connectorTone?: ProgressTone;
 }
 
-type RepeatRoundStatus = 'completed' | 'approved' | 'conflict' | 'canceled';
-type RepeatRoundFilter = 'all' | 'approved' | 'conflict' | 'canceled';
-
-interface RepeatRound {
-    round: number;
-    date: string;
-    endDate?: string;
-    startTime: string;
-    endTime: string;
-    status: RepeatRoundStatus;
-    canceledAt?: string;
-    canceledBy?: string;
+interface ProgressStepLabels {
+    application?: string;
+    upcoming?: string;
 }
+
+type RepeatRoundFilter = 'all' | 'approved' | 'conflict' | 'canceled';
 
 const PROGRESS_TONE_COLOR: Record<ProgressTone, string> = {
     success: 'var(--text-success)',
@@ -66,76 +67,16 @@ const PROGRESS_TONE_COLOR: Record<ProgressTone, string> = {
     primary: 'var(--text-primary)',
 };
 
-const REPEAT_ROUNDS: RepeatRound[] = [
-    { round: 1, date: '2026-05-23', startTime: '18:00', endTime: '20:00', status: 'completed' },
-    { round: 2, date: '2026-05-30', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 3, date: '2026-06-06', startTime: '18:00', endTime: '20:00', status: 'conflict' },
-    { round: 4, date: '2026-06-13', startTime: '18:00', endTime: '20:00', status: 'conflict' },
-    {
-        round: 5,
-        date: '2026-06-20',
-        startTime: '18:00',
-        endTime: '20:00',
-        status: 'canceled',
-        canceledAt: '2026-05-24T11:20:00',
-        canceledBy: '닉네임은여덟글자',
-    },
-    { round: 6, date: '2026-06-27', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 7, date: '2026-07-04', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 8, date: '2026-07-11', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 9, date: '2026-07-18', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 10, date: '2026-07-25', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 11, date: '2026-08-01', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 12, date: '2026-08-08', startTime: '18:00', endTime: '20:00', status: 'approved' },
-];
-
-const CLEAN_REPEAT_ROUNDS: RepeatRound[] = [
-    { round: 1, date: '2026-09-05', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 2, date: '2026-09-12', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 3, date: '2026-09-19', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 4, date: '2026-09-26', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 5, date: '2026-10-03', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 6, date: '2026-10-10', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 7, date: '2026-10-17', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 8, date: '2026-10-24', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 9, date: '2026-10-31', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 10, date: '2026-11-07', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 11, date: '2026-11-14', startTime: '18:00', endTime: '20:00', status: 'approved' },
-    { round: 12, date: '2026-11-21', startTime: '18:00', endTime: '20:00', status: 'approved' },
-];
-
-const COMPLETED_REPEAT_ROUNDS: RepeatRound[] = [
-    { round: 1, date: '2025-02-07', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 2, date: '2025-02-14', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 3, date: '2025-02-21', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 4, date: '2025-02-28', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 5, date: '2025-03-07', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 6, date: '2025-03-14', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 7, date: '2025-03-21', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 8, date: '2025-03-28', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 9, date: '2025-04-04', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 10, date: '2025-04-11', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 11, date: '2025-04-18', startTime: '20:00', endTime: '22:30', status: 'completed' },
-    { round: 12, date: '2025-04-25', startTime: '20:00', endTime: '22:30', status: 'completed' },
-];
-
-const getRepeatRounds = (reservation: MyReservation) => {
-    if (reservation.id === 11) {
-        return CLEAN_REPEAT_ROUNDS;
-    }
-
-    if (reservation.id === 12) {
-        return COMPLETED_REPEAT_ROUNDS;
-    }
-
-    return REPEAT_ROUNDS;
-};
-
 const REPEAT_STATUS_VIEW: Record<RepeatRoundStatus, {
     label: string;
     tone: ProgressTone;
     color: string;
 }> = {
+    pending: {
+        label: '승인 대기',
+        tone: 'pending',
+        color: 'var(--accent-primary)',
+    },
     completed: {
         label: '이용 완료',
         tone: 'blue',
@@ -145,6 +86,11 @@ const REPEAT_STATUS_VIEW: Record<RepeatRoundStatus, {
         label: '승인됨',
         tone: 'success',
         color: 'var(--text-success)',
+    },
+    rejected: {
+        label: '거절',
+        tone: 'danger',
+        color: 'var(--text-error)',
     },
     conflict: {
         label: '충돌로 미신청',
@@ -156,12 +102,6 @@ const REPEAT_STATUS_VIEW: Record<RepeatRoundStatus, {
         tone: 'muted',
         color: 'var(--text-muted)',
     },
-};
-
-const REPEAT_PENDING_STATUS_VIEW = {
-    label: '승인 대기',
-    tone: 'pending' as ProgressTone,
-    color: 'var(--accent-primary)',
 };
 
 const formatDetailDateTime = (value: string) => {
@@ -179,32 +119,17 @@ const formatRepeatDate = (dateString: string) => {
     return `${pad2(date.getMonth() + 1)}.${pad2(date.getDate())}(${dayLabels[date.getDay()]})`;
 };
 
-const getRepeatRoundDateTime = (round: RepeatRound, time: string, date = round.date) => (
-    `${date}T${time}:00`
+const getApprovedAtLabel = (approvedAt?: string) => (
+    approvedAt ? formatDetailDateTime(approvedAt) : '-'
 );
 
-const createRepeatRoundReservation = (
-    reservation: MyReservation,
-    round: RepeatRound,
-): MyReservation => ({
-    ...reservation,
-    startAt: getRepeatRoundDateTime(round, round.startTime),
-    endAt: getRepeatRoundDateTime(round, round.endTime, round.endDate),
-    repeatEndAt: undefined,
-    isRepeat: false,
-    state: round.status === 'canceled' ? 'canceled' : reservation.state,
-    canceledAt: round.canceledAt ?? reservation.canceledAt,
-    canceledBy: round.canceledBy ?? reservation.canceledBy,
-});
+const getCanceledByLabel = (canceledBy?: string | number) => {
+    if (typeof canceledBy === 'number') return `ID ${canceledBy}`;
 
-const getRepeatRoundStateView = (
-    reservation: MyReservation,
-    round: RepeatRound,
-) => {
-    if (reservation.state !== 'approved') {
-        return getReservationStateView(reservation);
-    }
+    return canceledBy ?? '-';
+};
 
+const getRepeatRoundStateView = (round: RepeatRound) => {
     if (round.status === 'completed') {
         return {
             label: '이용완료',
@@ -218,6 +143,18 @@ const getRepeatRoundStateView = (
             className: 'canceled',
         };
     }
+    if (round.status === 'pending') {
+        return {
+            label: '승인대기',
+            className: 'pending',
+        };
+    }
+    if (round.status === 'rejected') {
+        return {
+            label: '거절',
+            className: 'rejected',
+        };
+    }
 
     return {
         label: '승인',
@@ -225,20 +162,7 @@ const getRepeatRoundStateView = (
     };
 };
 
-const getRepeatRoundDisplayView = (
-    reservation: MyReservation,
-    round: RepeatRound,
-) => {
-    if (
-        reservation.state === 'pending' &&
-        round.status !== 'conflict' &&
-        round.status !== 'canceled'
-    ) {
-        return REPEAT_PENDING_STATUS_VIEW;
-    }
-
-    return REPEAT_STATUS_VIEW[round.status];
-};
+const getRepeatRoundDisplayView = (round: RepeatRound) => REPEAT_STATUS_VIEW[round.status];
 
 const getUsageLabel = (reservation: MyReservation, now: Date) => {
     const startAt = new Date(reservation.startAt);
@@ -253,16 +177,19 @@ const getUsageLabel = (reservation: MyReservation, now: Date) => {
 const getProgressSteps = (
     reservation: MyReservation,
     now: Date,
+    labels: ProgressStepLabels = {},
 ): ProgressStep[] => {
     const startAt = new Date(reservation.startAt);
     const endAt = new Date(reservation.endAt);
     const isPastUse = now > endAt;
     const isUsing = now >= startAt && now <= endAt;
+    const applicationLabel = labels.application ?? '예약 신청';
+    const upcomingLabel = labels.upcoming ?? '이용 예정';
 
     if (reservation.state === 'approved' && isPastUse) {
         return [
             {
-                label: '예약 신청',
+                label: applicationLabel,
                 description: formatDetailDateTime(reservation.appliedAt),
                 tone: 'blue',
                 icon: 'check',
@@ -270,7 +197,7 @@ const getProgressSteps = (
             },
             {
                 label: '승인 완료',
-                description: formatDetailDateTime(reservation.appliedAt),
+                description: getApprovedAtLabel(reservation.approvedAt),
                 tone: 'blue',
                 icon: 'check',
                 connectorTone: 'blue',
@@ -294,7 +221,7 @@ const getProgressSteps = (
     if (reservation.state === 'approved') {
         return [
             {
-                label: '예약 신청',
+                label: applicationLabel,
                 description: formatDetailDateTime(reservation.appliedAt),
                 tone: 'success',
                 icon: 'check',
@@ -302,7 +229,7 @@ const getProgressSteps = (
             },
             {
                 label: '승인 완료',
-                description: formatDetailDateTime(reservation.appliedAt),
+                description: getApprovedAtLabel(reservation.approvedAt),
                 tone: 'success',
                 icon: 'check',
                 connectorTone: 'success',
@@ -326,7 +253,7 @@ const getProgressSteps = (
     if (reservation.state === 'pending') {
         return [
             {
-                label: '예약 신청',
+                label: applicationLabel,
                 description: formatDetailDateTime(reservation.appliedAt),
                 tone: 'pending',
                 icon: 'check',
@@ -340,7 +267,7 @@ const getProgressSteps = (
                 connectorTone: 'muted',
             },
             {
-                label: '이용 예정',
+                label: upcomingLabel,
                 description: '-',
                 tone: 'muted',
                 icon: 'check',
@@ -358,7 +285,7 @@ const getProgressSteps = (
     if (reservation.state === 'rejected') {
         return [
             {
-                label: '예약 신청',
+                label: applicationLabel,
                 description: formatDetailDateTime(reservation.appliedAt),
                 tone: 'danger',
                 icon: 'check',
@@ -372,7 +299,7 @@ const getProgressSteps = (
                 connectorTone: 'muted',
             },
             {
-                label: '이용 예정',
+                label: upcomingLabel,
                 description: '-',
                 tone: 'muted',
                 icon: 'minus',
@@ -389,7 +316,7 @@ const getProgressSteps = (
 
     return [
         {
-            label: '예약 신청',
+            label: applicationLabel,
             description: formatDetailDateTime(reservation.appliedAt),
             tone: 'primary',
             icon: 'check',
@@ -400,13 +327,13 @@ const getProgressSteps = (
             description: reservation.canceledAt
                 ? formatDetailDateTime(reservation.canceledAt)
                 : formatDetailDateTime(reservation.appliedAt),
-            meta: `취소자 ${reservation.canceledBy ?? reservation.applicant}`,
+            meta: `취소자 ${getCanceledByLabel(reservation.canceledBy)}`,
             tone: 'primary',
             icon: 'x',
             connectorTone: 'muted',
         },
         {
-            label: '이용 예정',
+            label: upcomingLabel,
             description: '-',
             tone: 'muted',
             icon: 'minus',
@@ -437,103 +364,15 @@ const getRepeatRoundProgressSteps = (
             ? '이용 중'
             : `이용 예정(${round.round}회차)`;
 
-    if (round.status === 'canceled' || reservation.state === 'canceled') {
-        return [
-            {
-                label: '반복 예약 신청',
-                description: formatDetailDateTime(reservation.appliedAt),
-                tone: 'primary',
-                icon: 'check',
-                connectorTone: 'primary',
-            },
-            {
-                label: '예약 취소',
-                description: round.canceledAt
-                    ? formatDetailDateTime(round.canceledAt)
-                    : formatDetailDateTime(reservation.canceledAt ?? reservation.appliedAt),
-                meta: `취소자 ${round.canceledBy ?? reservation.canceledBy ?? reservation.applicant}`,
-                tone: 'primary',
-                icon: 'x',
-                connectorTone: 'muted',
-            },
-            {
-                label: `이용 예정(${round.round}회차)`,
-                description: '-',
-                tone: 'muted',
-                icon: 'minus',
-                connectorTone: 'muted',
-            },
-            {
-                label: '이용 완료',
-                description: '-',
-                tone: 'muted',
-                icon: 'minus',
-            },
-        ];
-    }
-
-    if (reservation.state === 'rejected') {
-        return [
-            {
-                label: '반복 예약 신청',
-                description: formatDetailDateTime(reservation.appliedAt),
-                tone: 'danger',
-                icon: 'check',
-                connectorTone: 'danger',
-            },
-            {
-                label: '승인 거절',
-                description: '다른 날짜와 시간으로 신청해주세요.',
-                tone: 'danger',
-                icon: 'x',
-                connectorTone: 'muted',
-            },
-            {
-                label: `이용 예정(${round.round}회차)`,
-                description: '-',
-                tone: 'muted',
-                icon: 'minus',
-                connectorTone: 'muted',
-            },
-            {
-                label: '이용 완료',
-                description: '-',
-                tone: 'muted',
-                icon: 'minus',
-            },
-        ];
-    }
-
-    if (reservation.state === 'pending') {
-        return [
-            {
-                label: '반복 예약 신청',
-                description: formatDetailDateTime(reservation.appliedAt),
-                tone: 'pending',
-                icon: 'check',
-                connectorTone: 'pending',
-            },
-            {
-                label: '승인 대기 중',
-                description: '관리자가 승인한 후, 예약이 확정돼요.',
-                tone: 'muted',
-                icon: 'check',
-                connectorTone: 'muted',
-            },
-            {
-                label: usageLabel,
-                description: '-',
-                tone: 'muted',
-                icon: 'check',
-                connectorTone: 'muted',
-            },
-            {
-                label: '이용 완료',
-                description: '-',
-                tone: 'muted',
-                icon: 'check',
-            },
-        ];
+    if (
+        round.status === 'canceled' ||
+        round.status === 'rejected' ||
+        round.status === 'pending'
+    ) {
+        return getProgressSteps(roundReservation, now, {
+            application: '반복 예약 신청',
+            upcoming: `이용 예정(${round.round}회차)`,
+        });
     }
 
     if (isPastUse) {
@@ -547,7 +386,7 @@ const getRepeatRoundProgressSteps = (
             },
             {
                 label: '승인 완료',
-                description: formatDetailDateTime(reservation.appliedAt),
+                description: getApprovedAtLabel(round.approvedAt),
                 tone: 'blue',
                 icon: 'check',
                 connectorTone: 'blue',
@@ -578,7 +417,7 @@ const getRepeatRoundProgressSteps = (
         },
         {
             label: '승인 완료',
-            description: formatDetailDateTime(reservation.appliedAt),
+            description: getApprovedAtLabel(round.approvedAt),
             tone: 'success',
             icon: 'check',
             connectorTone: 'success',
@@ -871,6 +710,8 @@ const RepeatRoundDetail = ({
     onBack,
     onRefresh,
     isRefreshing,
+    cancelError,
+    isCancelSubmitting,
     onCancelRound,
 }: {
     reservation: MyReservation;
@@ -879,11 +720,13 @@ const RepeatRoundDetail = ({
     onBack: () => void;
     onRefresh?: () => void | Promise<unknown>;
     isRefreshing?: boolean;
-    onCancelRound: (round: RepeatRound) => void;
+    cancelError?: string | null;
+    isCancelSubmitting?: boolean;
+    onCancelRound: (round: RepeatRound) => void | Promise<unknown>;
 }) => {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const roundReservation = createRepeatRoundReservation(reservation, round);
-    const stateView = getRepeatRoundStateView(reservation, round);
+    const stateView = getRepeatRoundStateView(round);
     const progressSteps = getRepeatRoundProgressSteps(reservation, round, now);
     const cancelInfo = getCancelInfo(roundReservation, now);
 
@@ -908,43 +751,12 @@ const RepeatRoundDetail = ({
             {isCancelModalOpen && (
                 <CancelReservationModal
                     reservation={roundReservation}
+                    errorMessage={cancelError}
+                    isSubmitting={isCancelSubmitting}
                     onCancel={() => setIsCancelModalOpen(false)}
                     onConfirm={() => onCancelRound(round)}
                 />
             )}
-        </DetailShell>
-    );
-};
-
-const RepeatRejectedReservationDetail = ({
-    reservation,
-    now,
-    onBack,
-    onRefresh,
-    isRefreshing,
-}: {
-    reservation: MyReservation;
-    now: Date;
-    onBack?: () => void;
-    onRefresh?: () => void | Promise<unknown>;
-    isRefreshing?: boolean;
-}) => {
-    const stateView = getReservationStateView(reservation);
-    const progressSteps = getProgressSteps(reservation, now);
-
-    return (
-        <DetailShell
-            title="반복 예약 상세보기"
-            onBack={onBack}
-            onRefresh={onRefresh}
-            isRefreshing={isRefreshing}
-        >
-            <ReservationSummaryCard
-                reservation={reservation}
-                stateView={stateView}
-                showRepeatBadge
-            />
-            <ProgressSection steps={progressSteps} />
         </DetailShell>
     );
 };
@@ -955,35 +767,57 @@ const RepeatReservationDetail = ({
     onBack,
     onRefresh,
     isRefreshing,
+    cancelError,
+    isCancelSubmitting,
+    onCancelRound,
+    onReapplyRound,
 }: {
     reservation: MyReservation;
     initialRepeatRounds?: RepeatRound[];
     onBack?: () => void;
     onRefresh?: () => void | Promise<unknown>;
     isRefreshing?: boolean;
+    cancelError?: string | null;
+    isCancelSubmitting?: boolean;
+    onCancelRound: (round: RepeatRound) => Promise<boolean>;
+    onReapplyRound: (round: RepeatRound) => void;
 }) => {
     const [repeatFilter, setRepeatFilter] = useState<RepeatRoundFilter>('all');
     const [selectedRound, setSelectedRound] = useState<RepeatRound | null>(null);
     const now = useMemo(() => new Date(), []);
-    const [repeatRounds, setRepeatRounds] = useState(
-        () => initialRepeatRounds ?? getRepeatRounds(reservation),
-    );
+    const repeatRounds = initialRepeatRounds ?? [];
+    const currentSelectedRound = selectedRound
+        ? repeatRounds.find((round) => round.round === selectedRound.round) ?? selectedRound
+        : null;
     const statusCounts = repeatRounds.reduce(
         (counts, round) => ({
             ...counts,
             [round.status]: counts[round.status] + 1,
         }),
         {
+            pending: 0,
             completed: 0,
             approved: 0,
+            rejected: 0,
             conflict: 0,
             canceled: 0,
         } as Record<RepeatRoundStatus, number>,
     );
-    const approvedCount = reservation.state === 'approved'
-        ? statusCounts.approved + statusCounts.completed
-        : 0;
-    const stateView = getReservationStateView(reservation);
+    const approvedCount = statusCounts.approved + statusCounts.completed;
+    const summaryState = repeatRounds.length === 0
+        ? reservation.state
+        : statusCounts.pending > 0
+            ? 'pending'
+            : approvedCount > 0
+                ? 'approved'
+                : statusCounts.rejected > 0
+                    ? 'rejected'
+                    : 'canceled';
+    const summaryReservation = {
+        ...reservation,
+        state: summaryState,
+    };
+    const stateView = getReservationStateView(summaryReservation);
     const repeatFilterOptions: Array<{
         value: RepeatRoundFilter;
         label: string;
@@ -1018,8 +852,7 @@ const RepeatReservationDetail = ({
     const filteredRepeatRounds = repeatRounds.filter((round) => {
         if (repeatFilter === 'all') return true;
         if (repeatFilter === 'approved') {
-            return reservation.state === 'approved' &&
-                (round.status === 'approved' || round.status === 'completed');
+            return round.status === 'approved' || round.status === 'completed';
         }
 
         return round.status === repeatFilter;
@@ -1036,43 +869,23 @@ const RepeatReservationDetail = ({
         canceled: '취소된 회차가 없어요.',
     };
 
-    if (selectedRound) {
+    if (currentSelectedRound) {
         return (
             <RepeatRoundDetail
                 reservation={reservation}
-                round={selectedRound}
+                round={currentSelectedRound}
                 now={now}
                 onBack={() => setSelectedRound(null)}
                 onRefresh={onRefresh}
                 isRefreshing={isRefreshing}
-                onCancelRound={(round) => {
-                    setRepeatRounds((currentRounds) => (
-                        currentRounds.map((currentRound) => (
-                            currentRound.round === round.round
-                                ? {
-                                    ...currentRound,
-                                    status: 'canceled',
-                                    canceledAt: new Date().toISOString(),
-                                    canceledBy: reservation.applicant,
-                                }
-                                : currentRound
-                        ))
-                    ));
-                    setRepeatFilter('all');
-                    setSelectedRound(null);
+                cancelError={cancelError}
+                isCancelSubmitting={isCancelSubmitting}
+                onCancelRound={async (round) => {
+                    if (await onCancelRound(round)) {
+                        setRepeatFilter('all');
+                        setSelectedRound(null);
+                    }
                 }}
-            />
-        );
-    }
-
-    if (reservation.state === 'rejected') {
-        return (
-            <RepeatRejectedReservationDetail
-                reservation={reservation}
-                now={now}
-                onBack={onBack}
-                onRefresh={onRefresh}
-                isRefreshing={isRefreshing}
             />
         );
     }
@@ -1085,7 +898,7 @@ const RepeatReservationDetail = ({
             isRefreshing={isRefreshing}
         >
             <ReservationSummaryCard
-                reservation={reservation}
+                reservation={summaryReservation}
                 stateView={stateView}
                 showRepeatBadge
             />
@@ -1117,10 +930,10 @@ const RepeatReservationDetail = ({
 
                     <ol className="my-reservation-repeat-timeline">
                         {filteredRepeatRounds.map((round, index) => {
-                            const statusView = getRepeatRoundDisplayView(reservation, round);
+                            const statusView = getRepeatRoundDisplayView(round);
                             const nextRound = filteredRepeatRounds[index + 1];
                             const nextStatusView = nextRound
-                                ? getRepeatRoundDisplayView(reservation, nextRound)
+                                ? getRepeatRoundDisplayView(nextRound)
                                 : statusView;
 
                             return (
@@ -1157,7 +970,13 @@ const RepeatReservationDetail = ({
                                     </div>
 
                                     {round.status === 'conflict' ? (
-                                        <button type="button">
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                onReapplyRound(round);
+                                            }}
+                                        >
                                             다시 신청
                                         </button>
                                     ) : (
@@ -1189,6 +1008,8 @@ const MyReservationDetailPage = () => {
     const { reservationId } = useParams();
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [refreshedReservation, setRefreshedReservation] = useState<MyReservation>();
+    const [detailRepeatRounds, setDetailRepeatRounds] = useState<RepeatRound[]>();
+    const [isInitialDetailLoading, setIsInitialDetailLoading] = useState(!!accessToken);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const cancelReservationMutation = useCancelReservation({ accessToken });
     const locationState = location.state as {
@@ -1203,6 +1024,30 @@ const MyReservationDetailPage = () => {
         ? temporaryReservation
         : undefined);
     const now = useMemo(() => new Date(), []);
+    const loadReservationDetail = useCallback(async () => {
+        const currentReservationNumber = Number(reservationId);
+
+        if (!Number.isInteger(currentReservationNumber)) return;
+
+        const detail = await getReservationByNumber({
+            accessToken,
+            reservationNumber: currentReservationNumber,
+        });
+
+        setRefreshedReservation(mapReservationDetail(detail));
+        setDetailRepeatRounds(
+            detail.kind === 'repeat' ? mapReservationDetailRounds(detail) : undefined,
+        );
+    }, [accessToken, reservationId]);
+    useEffect(() => {
+        if (!accessToken) return;
+
+        void loadReservationDetail()
+            .catch(() => {
+                // Keep navigation state visible if initial detail loading fails.
+            })
+            .finally(() => setIsInitialDetailLoading(false));
+    }, [accessToken, loadReservationDetail]);
     const handleBack = locationState?.fromReservationApply
         ? () => {
             queryClient.removeQueries({
@@ -1233,13 +1078,7 @@ const MyReservationDetailPage = () => {
         setIsRefreshing(true);
 
         try {
-            const latestReservation = await getReservationByNumber({
-                accessToken,
-                reservationNumber: currentReservationNumber,
-                preferredPeriod: locationState?.listViewState?.activeTab,
-            });
-
-            setRefreshedReservation(mapReservationListItem(latestReservation));
+            await loadReservationDetail();
             await queryClient.invalidateQueries({
                 queryKey: reservationQueryKeys.all,
             });
@@ -1249,6 +1088,27 @@ const MyReservationDetailPage = () => {
             setIsRefreshing(false);
         }
     };
+    const handleCancelRepeatRound = async (round: RepeatRound) => {
+        if (!round.reservationNumber || cancelReservationMutation.isPending) return false;
+
+        try {
+            await cancelReservationMutation.mutateAsync(round.reservationNumber);
+            await loadReservationDetail();
+            return true;
+        } catch {
+            return false;
+        }
+    };
+    const handleReapplyRepeatRound = (round: RepeatRound) => {
+        navigate(`/reservation/apply?date=${encodeURIComponent(round.date)}`, {
+            state: {
+                selectedDate: round.date,
+            },
+        });
+    };
+    const cancelError = cancelReservationMutation.error instanceof Error
+        ? cancelReservationMutation.error.message
+        : null;
 
     if (!reservation) {
         return (
@@ -1266,7 +1126,11 @@ const MyReservationDetailPage = () => {
                 )}
             >
                 <main className="my-reservation-detail-page">
-                    <p className="page-empty">예약 정보를 찾을 수 없어요.</p>
+                    <p className="page-empty">
+                        {isInitialDetailLoading
+                            ? '예약 정보를 불러오는 중이에요.'
+                            : '예약 정보를 찾을 수 없어요.'}
+                    </p>
                 </main>
             </MobilePageLayout>
         );
@@ -1276,10 +1140,14 @@ const MyReservationDetailPage = () => {
         return (
             <RepeatReservationDetail
                 reservation={reservation}
-                initialRepeatRounds={locationState?.temporaryRepeatRounds}
+                initialRepeatRounds={detailRepeatRounds ?? locationState?.temporaryRepeatRounds}
                 onBack={handleBack}
                 onRefresh={handleRefresh}
                 isRefreshing={isRefreshing}
+                cancelError={cancelError}
+                isCancelSubmitting={cancelReservationMutation.isPending}
+                onCancelRound={handleCancelRepeatRound}
+                onReapplyRound={handleReapplyRepeatRound}
             />
         );
     }
@@ -1298,7 +1166,6 @@ const MyReservationDetailPage = () => {
                     ...locationState?.listViewState && {
                         listViewState: locationState.listViewState,
                     },
-                    canceledReservationId: reservation.id,
                     toastMessage: '예약이 취소되었어요.',
                 },
             });
@@ -1306,10 +1173,6 @@ const MyReservationDetailPage = () => {
             // Mutation error is displayed in the confirmation modal.
         }
     };
-    const cancelError = cancelReservationMutation.error instanceof Error
-        ? cancelReservationMutation.error.message
-        : null;
-
     return (
         <DetailShell
             title="예약 상세보기"

@@ -18,13 +18,14 @@ export interface MyReservation {
     title: string;
     applicant: string;
     appliedAt: string;
+    approvedAt?: string;
     startAt: string;
     endAt: string;
     state: ReservationState;
     kind: ReservationKind;
     isRepeat: boolean;
     canceledAt?: string;
-    canceledBy?: string;
+    canceledBy?: string | number;
     conflictCount?: number;
     repeatEndAt?: string;
     color: string;

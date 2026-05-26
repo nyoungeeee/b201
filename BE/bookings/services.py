@@ -462,10 +462,13 @@ class ReservationQueryService:
             )
 
         queryset = ReservationQueryService._apply_unified_sort(queryset, sort=sort)
-        total_count = queryset.count()
+        grouped_bookings = ReservationQueryService._collapse_repeat_groups(
+            list(queryset)
+        )
+        total_count = len(grouped_bookings)
         start = (page - 1) * size
         end = start + size
-        bookings = list(queryset[start:end])
+        bookings = grouped_bookings[start:end]
 
         return UnifiedReservationList(
             period=period,
@@ -813,6 +816,30 @@ class ReservationQueryService:
             "start_time",
             "reservation_number",
         )
+
+    @staticmethod
+    def _collapse_repeat_groups(bookings: list[Booking]) -> list[Booking]:
+        grouped_bookings = []
+        repeat_group_indexes = {}
+
+        for booking in bookings:
+            if booking.repeat_group_id is None:
+                grouped_bookings.append(booking)
+                continue
+
+            existing_index = repeat_group_indexes.get(booking.repeat_group_id)
+            if existing_index is None:
+                repeat_group_indexes[booking.repeat_group_id] = len(grouped_bookings)
+                grouped_bookings.append(booking)
+                continue
+            existing_booking = grouped_bookings[existing_index]
+            if (
+                existing_booking.status in [BookingStatus.CANCELED, BookingStatus.REJECTED]
+                and booking.status in [BookingStatus.PENDING, BookingStatus.RESERVED]
+            ):
+                grouped_bookings[existing_index] = booking
+
+        return grouped_bookings
 
     @staticmethod
     def _apply_common_filters(
