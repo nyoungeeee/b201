@@ -24,7 +24,11 @@ import ReservationTeamPicker, {
     type ReservationTeamOption,
 } from '../components/reservation/ReservationTeamPicker';
 import { DEFAULT_ROOM_ID, WEEK_DAYS } from '../constants/global';
-import { getReservationEndAt, mapReservationListItem } from '../domains/reservation/mapper';
+import {
+    getReservationEndAt,
+    mapReservationListItem,
+} from '../domains/reservation/mapper';
+import { mapCreatedRepeatRounds } from '../domains/reservation/repeatRounds';
 import type { MyReservation } from '../domains/reservation/types';
 import { useRoomDay } from '../hooks/queries/useRoomDay';
 import { useRoomMonth } from '../hooks/queries/useRoomMonth';
@@ -55,8 +59,6 @@ interface CalendarDay {
     isSaturday: boolean;
 }
 
-const DISPLAY_YEAR = 2026;
-const DISPLAY_MONTH = 5;
 const KOREAN_WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const TIME_PICKER_VISIBLE_RANGE = 3;
 const INITIAL_START_ABSOLUTE_SLOT = 46;
@@ -201,8 +203,6 @@ const formatTimeForApi = (absoluteSlot: number) => {
     return `${formatCompactTime(absoluteSlot)}:00`;
 };
 
-const formatTimeForDetail = (time: string) => time.slice(0, 5);
-
 const parseTeamId = (value: string) => {
     if (value === 'private') return undefined;
 
@@ -236,33 +236,6 @@ const createTemporaryReservation = (
     });
 };
 
-const createTemporaryRepeatRounds = (
-    response: Awaited<ReturnType<typeof createReservation>>,
-) => {
-    const firstReservation = response.reservations[0];
-
-    if (!firstReservation) return [];
-
-    const rounds = response.reservations.map((reservation) => ({
-        round: Math.max(1, Math.round(getDateDistance(firstReservation.start_date, reservation.start_date) / 7) + 1),
-        date: reservation.start_date,
-        endDate: getReservationEndAt(reservation).slice(0, 10),
-        startTime: formatTimeForDetail(reservation.start_time),
-        endTime: formatTimeForDetail(reservation.end_time),
-        status: 'approved' as const,
-    }));
-
-    const conflictRounds = (response.skipped_occurrences ?? []).map((occurrence) => ({
-        round: occurrence.week,
-        date: occurrence.date,
-        startTime: formatTimeForDetail(firstReservation.start_time),
-        endTime: formatTimeForDetail(firstReservation.end_time),
-        status: 'conflict' as const,
-    }));
-
-    return [...rounds, ...conflictRounds].sort((a, b) => a.round - b.round);
-};
-
 const getMinimumStartAbsoluteSlot = (baseDate: string) => {
     const now = new Date();
     const todayDate = getTodayInSeoul();
@@ -275,13 +248,12 @@ const getMinimumStartAbsoluteSlot = (baseDate: string) => {
 
 const getInitialDate = (preferredDate?: string | null) => {
     const todayDate = getTodayInSeoul();
-    const mockedDate = formatDateString(DISPLAY_YEAR, DISPLAY_MONTH, 14);
 
     if (isValidDateString(preferredDate) && preferredDate >= todayDate) {
         return preferredDate;
     }
 
-    return mockedDate < todayDate ? todayDate : mockedDate;
+    return todayDate;
 };
 
 const getInitialStartAbsoluteSlot = (baseDate: string) => {
@@ -976,7 +948,6 @@ const ReservationApplyPage = () => {
                 endTime: selectedEndTime,
                 teamId: selectedTeamId,
             });
-            console.log('Reservation apply response:', reservationResponse);
             const temporaryReservation = createTemporaryReservation(
                 reservationResponse,
                 repeat,
@@ -991,7 +962,7 @@ const ReservationApplyPage = () => {
                     fromReservationApply: true,
                     temporaryReservation,
                     temporaryRepeatRounds: repeat
-                        ? createTemporaryRepeatRounds(reservationResponse)
+                        ? mapCreatedRepeatRounds(reservationResponse)
                         : undefined,
                     toastMessage: '예약이 신청되었어요',
                 },

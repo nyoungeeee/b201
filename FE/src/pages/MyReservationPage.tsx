@@ -57,7 +57,6 @@ const MyReservationPage = () => {
     const location = useLocation();
     const { accessToken, user } = useAuthSession();
     const locationState = location.state as {
-        canceledReservationId?: number;
         listViewState?: ReservationListViewState;
     } | null;
     const restoredListViewState = locationState?.listViewState;
@@ -82,12 +81,7 @@ const MyReservationPage = () => {
         useState<ReservationTeamFilter>(restoredListViewState?.teamFilter ?? 'all');
     const [activeFilterSheet, setActiveFilterSheet] =
         useState<ReservationFilterSheet | null>(null);
-    const [canceledReservationIds] = useState(() => (
-        typeof locationState?.canceledReservationId === 'number'
-            ? [locationState.canceledReservationId]
-            : []
-    ));
-    const [canceledAt] = useState(() => new Date().toISOString());
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
     const pageRef = useRef<HTMLElement | null>(null);
     const didRestoreScrollRef = useRef(false);
@@ -122,23 +116,11 @@ const MyReservationPage = () => {
         period: 'past',
         size: 1,
     });
-    const fetchedReservations = useMemo(() => (
+    const reservations = useMemo(() => (
         visibleReservationsQuery.data?.pages.flatMap((page) => (
             page.reservations.map((reservation) => mapReservationListItem(reservation))
         )) ?? []
     ), [visibleReservationsQuery.data]);
-    const myReservations = useMemo(() => (
-        fetchedReservations.map((reservation) => (
-            canceledReservationIds.includes(reservation.id)
-                ? {
-                    ...reservation,
-                    state: 'canceled' as ReservationState,
-                    canceledAt,
-                    canceledBy: reservation.applicant,
-                }
-                : reservation
-        ))
-    ), [canceledAt, canceledReservationIds, fetchedReservations]);
 
     const handleSelectTab = (tab: ReservationTab) => {
         setActiveTab(tab);
@@ -180,10 +162,10 @@ const MyReservationPage = () => {
         ];
     }, [user?.team]);
 
-    const reservations = myReservations;
     const upcomingReservationCount = upcomingCountQuery.data?.pagination.total_count ?? 0;
     const pastReservationCount = pastCountQuery.data?.pagination.total_count ?? 0;
     const isReservationsLoading = !!accessToken && visibleReservationsQuery.isPending;
+    const isReservationsListLoading = isReservationsLoading || isManualRefreshing;
     const isReservationsError = !accessToken || (
         visibleReservationsQuery.isError && !visibleReservationsQuery.data
     );
@@ -221,11 +203,17 @@ const MyReservationPage = () => {
         });
     };
     const handleRefresh = async () => {
-        await Promise.all([
-            visibleReservationsQuery.refetch(),
-            upcomingCountQuery.refetch(),
-            pastCountQuery.refetch(),
-        ]);
+        setIsManualRefreshing(true);
+
+        try {
+            await Promise.all([
+                visibleReservationsQuery.refetch(),
+                upcomingCountQuery.refetch(),
+                pastCountQuery.refetch(),
+            ]);
+        } finally {
+            setIsManualRefreshing(false);
+        }
     };
 
     useEffect(() => {
@@ -251,7 +239,7 @@ const MyReservationPage = () => {
     useEffect(() => {
         const target = loadMoreRef.current;
 
-        if (!target || !hasNextPage || isReservationsLoading) return;
+        if (!target || !hasNextPage || isReservationsListLoading) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -270,7 +258,7 @@ const MyReservationPage = () => {
         hasNextPage,
         isFetchNextPageError,
         isFetchingNextPage,
-        isReservationsLoading,
+        isReservationsListLoading,
     ]);
 
     const openFilterSheet = (sheet: ReservationFilterSheet) => {
@@ -323,7 +311,7 @@ const MyReservationPage = () => {
                     title="내 예약 현황"
                     rightContent={(
                         <PageRefreshButton
-                            isRefreshing={isRefreshing}
+                            isRefreshing={isRefreshing || isManualRefreshing}
                             onRefresh={handleRefresh}
                         />
                     )}
@@ -413,7 +401,7 @@ const MyReservationPage = () => {
                             key={`${activeTab}-${sort}-${stateFilter}-${teamFilter}`}
                             className="my-reservation-list"
                         >
-                            {!isReservationsLoading && !isReservationsError && reservations.map((reservation, index) => (
+                            {!isReservationsListLoading && !isReservationsError && reservations.map((reservation, index) => (
                                 <MyReservationCard
                                     key={reservation.id}
                                     index={index}
@@ -422,10 +410,16 @@ const MyReservationPage = () => {
                                 />
                             ))}
 
-                            {isReservationsLoading && (
-                                <p className="my-reservation-empty">
-                                    예약 목록을 불러오는 중이에요.
-                                </p>
+                            {isReservationsListLoading && (
+                                <div className="my-reservation-loading">
+                                    <div
+                                        className="my-reservation-loading__spinner"
+                                        aria-hidden="true"
+                                    />
+                                    <p className="my-reservation-empty">
+                                        내 예약 현황을 가져오고 있어요
+                                    </p>
+                                </div>
                             )}
 
                             {isReservationsError && (
@@ -434,13 +428,13 @@ const MyReservationPage = () => {
                                 </p>
                             )}
 
-                            {!isReservationsLoading && !isReservationsError && reservations.length === 0 && (
+                            {!isReservationsListLoading && !isReservationsError && reservations.length === 0 && (
                                 <p className="my-reservation-empty">
                                     표시할 예약이 없어요.
                                 </p>
                             )}
 
-                            {!isReservationsLoading && !isReservationsError && hasNextPage && (
+                            {!isReservationsListLoading && !isReservationsError && hasNextPage && (
                                 <div
                                     ref={loadMoreRef}
                                     className="my-reservation-load-more"
@@ -465,7 +459,7 @@ const MyReservationPage = () => {
                                 </div>
                             )}
 
-                            {!isReservationsLoading && !isReservationsError && reservations.length > 0 && !hasNextPage && (
+                            {!isReservationsListLoading && !isReservationsError && reservations.length > 0 && !hasNextPage && (
                                 <p className="my-reservation-list__end">
                                     모든 예약 내역을 확인했어요.
                                 </p>

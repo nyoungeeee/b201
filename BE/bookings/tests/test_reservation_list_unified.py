@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from bookings.models import Booking, BookingStatus, BookingType
+from bookings.services import ReservationCommandService
 from .base import BaseBookingAPITestCase
 
 
@@ -102,12 +103,12 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         response = self.client.get("/api/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 2)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
             [
                 nearest_single.reservation_number,
                 nearest_repeat.reservation_number,
-                later_repeat.reservation_number,
             ],
         )
 
@@ -243,8 +244,8 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["pagination"]["total_count"], 2)
-        self.assertTrue(response.data["pagination"]["has_next"])
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertFalse(response.data["pagination"]["has_next"])
         self.assertEqual(len(response.data["reservations"]), 1)
         self.assertEqual(
             response.data["reservations"][0]["reservation_number"],
@@ -254,6 +255,72 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.data["reservations"][0]["type"], "team")
         self.assertEqual(response.data["reservations"][0]["kind"], "repeat")
         self.assertEqual(response.data["reservations"][0]["repeat_count"], 3)
+
+    def test_get_reservations_collapses_repeat_group_and_returns_conflict_count(self):
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow + timedelta(days=7),
+            start_time=time(18, 30),
+            end_time=time(19, 30),
+            status=BookingStatus.PENDING,
+        )
+        ReservationCommandService.create_private_repeat_reservation(
+            user=self.user,
+            room_id=self.room.id,
+            start_date=self.tomorrow,
+            count=3,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+        )
+
+        response = self.client.get(
+            "/api/v1/reservations/?period=upcoming&type=private&kind=repeat"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(len(response.data["reservations"]), 1)
+        self.assertEqual(response.data["reservations"][0]["repeat_count"], 3)
+        self.assertEqual(response.data["reservations"][0]["conflict_count"], 1)
+
+    def test_get_reservations_uses_active_occurrence_as_repeat_group_representative(self):
+        repeat_group_id = uuid4()
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            repeat_group_id=repeat_group_id,
+            repeat_start_date=self.tomorrow,
+            repeat_end_date=self.tomorrow + timedelta(days=7),
+            status=BookingStatus.CANCELED,
+        )
+        active_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow + timedelta(days=7),
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            repeat_group_id=repeat_group_id,
+            repeat_start_date=self.tomorrow,
+            repeat_end_date=self.tomorrow + timedelta(days=7),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get("/api/v1/reservations/?period=upcoming")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(
+            response.data["reservations"][0]["reservation_number"],
+            active_booking.reservation_number,
+        )
+        self.assertEqual(response.data["reservations"][0]["status"], "PENDING")
 
     def test_get_reservations_filters_past_and_rejected(self):
         rejected_booking = Booking.objects.create(

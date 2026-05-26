@@ -467,6 +467,28 @@
   text-align: center;
 }
 
+.my-reservation-loading {
+  padding-top: var(--space-32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.my-reservation-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: var(--accent-primary);
+  box-sizing: border-box;
+  animation: myReservationLoadingSpin 0.7s linear infinite;
+}
+
+.my-reservation-loading .my-reservation-empty {
+  margin-top: 0;
+}
+
 .my-reservation-detail-shell {
   flex: 1 0 auto;
   min-height: 100%;
@@ -1094,5 +1116,11 @@
 
   to {
     background-position: -100% 0;
+  }
+}
+
+@keyframes myReservationLoadingSpin {
+  to {
+    transform: rotate(360deg);
   }
 }

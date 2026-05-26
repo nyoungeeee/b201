@@ -38,6 +38,7 @@ const repeatCheckResponseSchema = z.object({
 
 const unifiedReservationItemSchema = z.object({
     reservation_number: z.number(),
+    repeat_group_id: z.string().nullable().optional(),
     room_id: z.number(),
     room_name: z.string(),
     start_date: dateStringSchema,
@@ -55,6 +56,44 @@ const unifiedReservationItemSchema = z.object({
     applicant_name: z.string(),
     status: reservationStatusSchema,
     created_at: z.string(),
+});
+
+const reservationOccurrenceDetailSchema = z.object({
+    week: z.number().nullable().optional(),
+    reservation_number: z.number().nullable().optional(),
+    date: dateStringSchema,
+    start_time: timeStringSchema,
+    end_date: dateStringSchema,
+    end_time: timeStringSchema,
+    status: z.enum([
+        'PENDING',
+        'RESERVED',
+        'APPROVED',
+        'REJECTED',
+        'CANCELED',
+        'CANCELLED',
+        'CONFLICT',
+        'REAPPLIED',
+    ]),
+    approved_at: z.string().nullable().optional(),
+    canceled_at: z.string().nullable().optional(),
+    canceled_by: z.union([z.string(), z.number()]).nullable().optional(),
+    reason_code: z.string().nullable().optional(),
+    can_reapply: z.boolean(),
+});
+
+const reservationDetailSchema = unifiedReservationItemSchema.extend({
+    memo: z.string().optional(),
+    approved_at: z.string().nullable().optional(),
+    canceled_at: z.string().nullable().optional(),
+    canceled_by: z.union([z.string(), z.number()]).nullable().optional(),
+    repeat: z.object({
+        start_date: dateStringSchema,
+        end_date: dateStringSchema,
+        count: z.number(),
+        weekdays: z.array(z.number()).nullable().optional(),
+    }).nullable().optional(),
+    occurrences: z.array(reservationOccurrenceDetailSchema),
 });
 
 const reservationCreateResponseSchema = z.object({
@@ -78,6 +117,8 @@ export type RepeatCheckResponse = z.infer<typeof repeatCheckResponseSchema>;
 export type ReservationCreateResponse = z.infer<typeof reservationCreateResponseSchema>;
 export type ReservationListItem = z.infer<typeof unifiedReservationItemSchema>;
 export type ReservationListResponse = z.infer<typeof unifiedReservationListSchema>;
+export type ReservationDetailResponse = z.infer<typeof reservationDetailSchema>;
+export type ReservationOccurrenceDetail = z.infer<typeof reservationOccurrenceDetailSchema>;
 
 export interface CreateReservationParams {
     accessToken?: string | null;
@@ -107,7 +148,6 @@ export interface GetReservationsParams {
 export interface GetReservationByNumberParams {
     accessToken?: string | null;
     reservationNumber: number;
-    preferredPeriod?: 'upcoming' | 'past';
 }
 
 export interface CancelReservationParams {
@@ -311,35 +351,33 @@ export const getReservations = async ({
 export const getReservationByNumber = async ({
     accessToken,
     reservationNumber,
-    preferredPeriod,
-}: GetReservationByNumberParams): Promise<ReservationListItem> => {
-    const periods: Array<'upcoming' | 'past'> = preferredPeriod === 'past'
-        ? ['past', 'upcoming']
-        : ['upcoming', 'past'];
+}: GetReservationByNumberParams): Promise<ReservationDetailResponse> => {
+    const response = await fetch(
+        buildReservationUrl(`number/${reservationNumber}`),
+        {
+            method: 'GET',
+            headers: buildHeaders(accessToken),
+        },
+    );
+    const rawData = await readJson(response);
 
-    for (const period of periods) {
-        let page = 1;
-        let hasNext = true;
-
-        while (hasNext) {
-            const response = await getReservations({
-                accessToken,
-                period,
-                page,
-                size: 100,
-            });
-            const reservation = response.reservations.find(
-                (item) => item.reservation_number === reservationNumber,
-            );
-
-            if (reservation) return reservation;
-
-            hasNext = response.pagination.has_next;
-            page += 1;
-        }
+    if (!response.ok) {
+        throw new Error(
+            parseErrorMessage(
+                rawData,
+                `예약 상세 조회에 실패했습니다. (status: ${response.status})`,
+            ),
+        );
     }
 
-    throw new Error('예약 정보를 찾을 수 없어요.');
+    const parsedResult = reservationDetailSchema.safeParse(rawData);
+
+    if (!parsedResult.success) {
+        console.error('Reservation detail API validation failed:', parsedResult.error.format());
+        throw new Error('예약 상세 응답 형식이 올바르지 않습니다.');
+    }
+
+    return parsedResult.data;
 };
 
 export const cancelReservation = async ({
