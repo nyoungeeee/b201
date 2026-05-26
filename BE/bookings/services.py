@@ -331,11 +331,14 @@ class BookingCheckService:
             closure_date = closure.closure_date.isoformat()
             closure_start_time = closure.start_time or room.open_time
             closure_end_time = closure.end_time or room.close_time
-            is_full_day_closure = closure.is_all_day or BookingCheckService._covers_full_operating_window(
-                room=room,
-                target_date=closure.closure_date,
-                start_time=closure_start_time,
-                end_time=closure_end_time,
+            is_full_day_closure = (
+                closure.is_all_day
+                or BookingCheckService._covers_full_operating_window(
+                    room=room,
+                    target_date=closure.closure_date,
+                    start_time=closure_start_time,
+                    end_time=closure_end_time,
+                )
             )
 
             if not is_full_day_closure:
@@ -892,10 +895,10 @@ class ReservationQueryService:
                 grouped_bookings.append(booking)
                 continue
             existing_booking = grouped_bookings[existing_index]
-            if (
-                existing_booking.status in [BookingStatus.CANCELED, BookingStatus.REJECTED]
-                and booking.status in [BookingStatus.PENDING, BookingStatus.RESERVED]
-            ):
+            if existing_booking.status in [
+                BookingStatus.CANCELED,
+                BookingStatus.REJECTED,
+            ] and booking.status in [BookingStatus.PENDING, BookingStatus.RESERVED]:
                 grouped_bookings[existing_index] = booking
 
         return grouped_bookings

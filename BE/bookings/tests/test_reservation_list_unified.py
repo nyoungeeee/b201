@@ -285,7 +285,9 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.data["reservations"][0]["repeat_count"], 3)
         self.assertEqual(response.data["reservations"][0]["conflict_count"], 1)
 
-    def test_get_reservations_uses_active_occurrence_as_repeat_group_representative(self):
+    def test_get_reservations_uses_active_occurrence_as_repeat_group_representative(
+        self,
+    ):
         repeat_group_id = uuid4()
         Booking.objects.create(
             room=self.room,
