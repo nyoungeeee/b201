@@ -16,12 +16,8 @@ export const getJwtUserId = (accessToken: string): number | undefined => {
 };
 
 export const resolveAdminAccessToken = (
-    envAccessTokenKey: string | undefined,
+    _envAccessTokenKey: string | undefined,
     storedAccessToken: string | null,
 ): string => {
-    if (envAccessTokenKey && looksLikeJwt(envAccessTokenKey)) {
-        return envAccessTokenKey;
-    }
-
     return storedAccessToken ?? '';
 };

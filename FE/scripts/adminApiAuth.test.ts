@@ -8,7 +8,7 @@ import {
 const jwt =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.signature';
 
-assert.equal(resolveAdminAccessToken(jwt, null), jwt);
+assert.equal(resolveAdminAccessToken(jwt, null), '');
 assert.equal(resolveAdminAccessToken('b201_access_token', 'stored-token'), 'stored-token');
 assert.equal(resolveAdminAccessToken(undefined, null), '');
 assert.equal(getJwtUserId(jwt), 1);
