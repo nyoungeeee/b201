@@ -95,7 +95,12 @@ class DayBookingQueryParamsSerializer(serializers.Serializer):
     examples=[
         OpenApiExample(
             "월별 날짜 색상",
-            value={"date": "2026-05-22", "color": ["#FF6B6B"], "disabled": False},
+            value={
+                "date": "2026-05-22",
+                "color": ["#FF6B6B"],
+                "disabled": False,
+                "is_holiday": False,
+            },
             response_only=True,
         )
     ]
@@ -110,6 +115,10 @@ class MonthDateColorSerializer(serializers.Serializer):
         required=True,
         help_text="예약 불가 또는 비활성 날짜인지 여부",
     )
+    is_holiday = serializers.BooleanField(
+        required=True,
+        help_text="해당 날짜가 종일 휴무일인지 여부",
+    )
 
 
 @extend_schema_serializer(
@@ -122,7 +131,12 @@ class MonthDateColorSerializer(serializers.Serializer):
                 "year": 2026,
                 "month": 5,
                 "days": [
-                    {"date": "2026-05-22", "color": ["#FF6B6B"], "disabled": False}
+                    {
+                        "date": "2026-05-22",
+                        "color": ["#FF6B6B"],
+                        "disabled": False,
+                        "is_holiday": False,
+                    }
                 ],
             },
             response_only=True,
