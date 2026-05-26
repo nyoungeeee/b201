@@ -18,20 +18,36 @@ User = get_user_model()
 
 @override_settings(ROOT_URLCONF="config.urls")
 class TeamAPITestCase(APITestCase):
+    def _suffix(self):
+        return str(abs(hash(self.id())) % 1_000_000)
+
     def setUp(self):
+        suffix = self._suffix()
         for index, color in enumerate(["000000", "111111", "AABBCC", "DDEEFF"]):
             TeamColor.objects.update_or_create(
                 color=color,
                 defaults={"is_active": True, "display_order": index},
             )
 
-        self.leader = User.objects.create_user(kakao_id=4101, nickname="leader")
-        self.member = User.objects.create_user(kakao_id=4102, nickname="member")
-        self.new_user = User.objects.create_user(kakao_id=4103, nickname="newbie")
-        self.other_user = User.objects.create_user(kakao_id=4104, nickname="other")
+        self.leader = User.objects.create_user(
+            kakao_id=int(f"4101{suffix}"),
+            nickname=f"leader-{suffix}",
+        )
+        self.member = User.objects.create_user(
+            kakao_id=int(f"4102{suffix}"),
+            nickname=f"member-{suffix}",
+        )
+        self.new_user = User.objects.create_user(
+            kakao_id=int(f"4103{suffix}"),
+            nickname=f"newbie-{suffix}",
+        )
+        self.other_user = User.objects.create_user(
+            kakao_id=int(f"4104{suffix}"),
+            nickname=f"other-{suffix}",
+        )
 
         self.team = Team.objects.create(
-            name="team-a",
+            name=f"team-a-{suffix}",
             owner=self.leader,
             status=TeamStatus.ACTIVE,
         )
@@ -50,7 +66,7 @@ class TeamAPITestCase(APITestCase):
         )
 
         self.other_team = Team.objects.create(
-            name="team-b",
+            name=f"team-b-{suffix}",
             owner=self.other_user,
             status=TeamStatus.ACTIVE,
         )

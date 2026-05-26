@@ -32,8 +32,8 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
                 "ok": True,
                 "data": {
                     "id": self.member_user.id,
-                    "nickname": "member",
-                    "email": "member@example.com",
+                    "nickname": self.member_user.nickname,
+                    "email": self.member_user.email,
                     "status": "normal",
                     "joined_at": self.member_user.created_at.date().isoformat(),
                     "team_ids": [],
@@ -101,13 +101,16 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
     def test_user_list_filters_by_query_and_status(self):
         self.member_user.status = UserStatus.BLOCKED
         self.member_user.save(update_fields=["status"])
+        suffix = self._suffix()
         User.objects.create_user(
-            kakao_id=9003,
-            email="other@example.com",
-            nickname="other",
+            kakao_id=int(f"9003{suffix}"),
+            email=f"other-{suffix}@example.com",
+            nickname=f"other-{suffix}",
         )
 
-        response = self.client.get("/api/v1/admin/users?q=member&status=blocked")
+        response = self.client.get(
+            f"/api/v1/admin/users?q={self.member_user.nickname}&status=blocked"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 1)

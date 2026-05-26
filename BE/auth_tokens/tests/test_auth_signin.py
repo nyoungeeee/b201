@@ -18,10 +18,12 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         mock_get_access_token,
         mock_get_kakao_user_info,
     ):
+        suffix = self._suffix()
+        kakao_id = int(f"9999{suffix}")
         mock_get_access_token.return_value = "kakao-access-token"
         mock_get_kakao_user_info.return_value = KakaoUserInfo(
-            kakao_id=9999,
-            email="new@example.com",
+            kakao_id=kakao_id,
+            email=f"new-{suffix}@example.com",
         )
 
         response = self.client.post(
@@ -31,14 +33,14 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["email"], "new@example.com")
+        self.assertEqual(response.data["email"], f"new-{suffix}@example.com")
         self.assertIsNotNone(response.data["nickname"])
         self.assertLessEqual(len(response.data["nickname"]), 8)
         self.assertRegex(response.data["nickname"], r"^[가-힣]+[0-9]$")
         self.assertEqual(response.data["team"], [])
         self.assertIn("access", response.data["token"])
         self.assertIn("refresh", response.data["token"])
-        created_user = User.objects.get(kakao_id=9999)
+        created_user = User.objects.get(kakao_id=kakao_id)
         self.assertEqual(created_user.nickname, response.data["nickname"])
         self.assertEqual(RefreshToken.objects.count(), 1)
 
@@ -65,7 +67,7 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.user.id)
         self.assertEqual(response.data["email"], self.user.email)
-        self.assertEqual(response.data["nickname"], "tester")
+        self.assertEqual(response.data["nickname"], self.user.nickname)
         self.assertEqual(len(response.data["team"]), 1)
         self.assertEqual(response.data["team"][0]["id"], self.team.id)
         self.assertEqual(response.data["team"][0]["name"], self.team.name)

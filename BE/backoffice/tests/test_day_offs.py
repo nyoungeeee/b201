@@ -11,7 +11,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
     def setUp(self):
         super().setUp()
         self.room = StudioRoom.objects.create(
-            name="B201",
+            name=f"B201-{self._suffix()}",
             open_time=time(9, 0),
             close_time=time(23, 0),
             is_24_hours=False,

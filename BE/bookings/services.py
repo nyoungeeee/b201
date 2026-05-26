@@ -1271,10 +1271,8 @@ class ReservationCommandService:
         dates: list[date],
     ) -> CanceledRepeatOccurrenceList:
         try:
-            booking = (
-                Booking.objects.select_related("team")
-                .select_for_update()
-                .get(reservation_number=reservation_number)
+            booking = Booking.objects.select_for_update().get(
+                reservation_number=reservation_number
             )
         except Booking.DoesNotExist:
             raise NotFoundBookingError()
@@ -1299,7 +1297,6 @@ class ReservationCommandService:
         target_dates = set(dates)
         occurrences = list(
             ReservationRepeatOccurrence.objects.select_for_update()
-            .select_related("booking")
             .filter(repeat_group=repeat_group, date__in=target_dates)
             .order_by("week")
         )

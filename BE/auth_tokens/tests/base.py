@@ -14,18 +14,22 @@ User = get_user_model()
 
 @override_settings(ROOT_URLCONF="config.urls")
 class BaseAuthTokenAPITestCase(APITestCase):
+    def _suffix(self):
+        return str(abs(hash(self.id())) % 1_000_000)
+
     def setUp(self):
+        suffix = self._suffix()
         self.user = User.objects.create_user(
-            kakao_id=1001,
-            email="tester@example.com",
-            nickname="tester",
+            kakao_id=int(f"1001{suffix}"),
+            email=f"tester-{suffix}@example.com",
+            nickname=f"tester-{suffix}",
         )
         self.team = Team.objects.create(
-            name="team-a",
+            name=f"team-a-{suffix}",
             owner=self.user,
             status=TeamStatus.ACTIVE,
         )
-        TeamColor.objects.create(color="000000", team=self.team)
+        TeamColor.objects.create(color=f"{int(suffix) % 0xFFFFFF:06X}", team=self.team)
         TeamMember.objects.create(
             team=self.team,
             user=self.user,

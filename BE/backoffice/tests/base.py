@@ -8,17 +8,21 @@ User = get_user_model()
 
 @override_settings(ROOT_URLCONF="config.urls")
 class BaseBackofficeAPITestCase(APITestCase):
+    def _suffix(self):
+        return str(abs(hash(self.id())) % 1_000_000)
+
     def setUp(self):
+        suffix = self._suffix()
         self.admin_user = User.objects.create_user(
-            kakao_id=9001,
-            email="admin@example.com",
-            nickname="admin",
+            kakao_id=int(f"9001{suffix}"),
+            email=f"admin-{suffix}@example.com",
+            nickname=f"admin-{suffix}",
             is_staff=True,
         )
         self.member_user = User.objects.create_user(
-            kakao_id=9002,
-            email="member@example.com",
-            nickname="member",
+            kakao_id=int(f"9002{suffix}"),
+            email=f"member-{suffix}@example.com",
+            nickname=f"member-{suffix}",
         )
         self._authenticate(self.admin_user)
 

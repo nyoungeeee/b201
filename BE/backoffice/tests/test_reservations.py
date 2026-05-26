@@ -12,14 +12,17 @@ from .base import BaseBackofficeAPITestCase
 class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
     def setUp(self):
         super().setUp()
+        suffix = self._suffix()
         self.room = StudioRoom.objects.create(
-            name="B201",
+            name=f"B201-{suffix}",
             open_time=time(9, 0),
             close_time=time(23, 0),
             is_24_hours=False,
             status=StudioRoomStatus.ACTIVE,
         )
-        self.team = Team.objects.create(name="테스트팀", owner=self.admin_user)
+        self.team = Team.objects.create(
+            name=f"테스트팀-{suffix}", owner=self.admin_user
+        )
         self.today = date.today()
 
     def test_staff_can_create_owner_private_reservation_with_title_and_memo(self):

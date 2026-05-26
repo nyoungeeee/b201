@@ -25,7 +25,7 @@ class NicknameCheckAPITestCase(BaseAccountAPITestCase):
     def test_check_nickname_is_case_insensitive(self):
         response = self.client.get(
             "/api/v1/me/nickname/check/",
-            {"nickname": "TAKENNAME"},
+            {"nickname": self.other_user.nickname.upper()},
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

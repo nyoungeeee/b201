@@ -39,7 +39,7 @@ class MePatchAPITestCase(BaseAccountAPITestCase):
     def test_patch_user_info_rejects_case_insensitive_duplicate_nickname(self):
         response = self.client.patch(
             "/api/v1/me/",
-            {"nickname": "TAKENNAME"},
+            {"nickname": self.other_user.nickname.upper()},
             format="json",
         )
 
