@@ -3,6 +3,7 @@ from django.urls import path
 from bookings.views import (
     CancelReservationView,
     RepeatReservationCheckView,
+    RepeatOccurrenceCancelView,
     ReservationCreateView,
     ReservationListView,
 )
@@ -23,5 +24,10 @@ urlpatterns = [
         "number/<int:reservation_number>",
         CancelReservationView.as_view(),
         name="reservation-cancel",
+    ),
+    path(
+        "number/<int:reservation_number>/cancel-occurrences",
+        RepeatOccurrenceCancelView.as_view(),
+        name="repeat-occurrence-cancel",
     ),
 ]

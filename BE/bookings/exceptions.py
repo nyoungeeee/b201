@@ -51,6 +51,16 @@ class AlreadyCanceledReservationError(BookingCheckServiceError):
     message = "이미 취소된 예약입니다."
 
 
+class NotRepeatReservationError(BookingCheckServiceError):
+    code = "NOT_REPEAT_RESERVATION"
+    message = "반복 예약이 아닙니다."
+
+
+class NotFoundRepeatOccurrenceError(BookingCheckServiceError):
+    code = "NOT_FOUND_REPEAT_OCCURRENCE"
+    message = "해당 날짜의 반복 예약 회차를 찾을 수 없습니다."
+
+
 class InvalidBookingTimeError(BookingCheckServiceError):
     code = "INVALID_BOOKING_TIME"
     message = "예약 시간이 올바르지 않습니다."

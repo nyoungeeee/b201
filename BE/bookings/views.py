@@ -15,8 +15,10 @@ from bookings.exceptions import (
     InvalidBookingTimeError,
     NoAvailableRepeatDatesError,
     NotFoundBookingError,
+    NotFoundRepeatOccurrenceError,
     NotFoundStudioRoomError,
     NotFoundTeamError,
+    NotRepeatReservationError,
     OutsideOperatingHoursError,
 )
 from bookings.models import BookingStatus
@@ -29,6 +31,8 @@ from bookings.serializers import (
     PrivateReservationCreateRequestSerializer,
     PrivateReservationCreateResponseSerializer,
     ReservationDetailSerializer,
+    RepeatOccurrenceCancelRequestSerializer,
+    RepeatOccurrenceCancelResponseSerializer,
     RepeatReservationCheckResponseSerializer,
     TeamReservationCreateRequestSerializer,
     TeamReservationCreateResponseSerializer,
@@ -919,3 +923,48 @@ class CancelReservationView(APIView):
             raise InternalServerErrorException() from e
 
         return Response(status=status.HTTP_200_OK)
+
+
+class RepeatOccurrenceCancelView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RepeatOccurrenceCancelRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=RepeatOccurrenceCancelResponseSerializer,
+                description="반복 예약 회차 취소 성공",
+            ),
+            400: openapi_exception_response(NotRepeatReservationError),
+            403: openapi_exception_response(ForbiddenTeamBookingError),
+            404: openapi_exception_response(NotFoundBookingError),
+            409: openapi_exception_response(AlreadyCanceledReservationError),
+            500: openapi_exception_response(BaseServiceError),
+        },
+        description="반복 예약 번호와 날짜 목록으로 특정 회차를 취소",
+    )
+    def patch(self, request, reservation_number: int):
+        serializer = RepeatOccurrenceCancelRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = ReservationCommandService.cancel_repeat_occurrences(
+                user=request.user,
+                reservation_number=reservation_number,
+                dates=serializer.validated_data["dates"],
+            )
+        except ForbiddenTeamBookingError as e:
+            raise ForbiddenException(code=e.code, message=e.message) from e
+        except (NotFoundBookingError, NotFoundRepeatOccurrenceError) as e:
+            raise NotFoundException(code=e.code, message=e.message) from e
+        except NotRepeatReservationError as e:
+            raise BadRequestException(code=e.code, message=e.message) from e
+        except AlreadyCanceledReservationError as e:
+            raise ConflictException(code=e.code, message=e.message) from e
+        except Exception as e:
+            raise InternalServerErrorException() from e
+
+        return Response(
+            RepeatOccurrenceCancelResponseSerializer(result).data,
+            status=status.HTTP_200_OK,
+        )
