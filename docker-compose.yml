@@ -72,9 +72,6 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL is required}
         VITE_KAKAO_REST_API_KEY: ${VITE_KAKAO_REST_API_KEY:?VITE_KAKAO_REST_API_KEY is required}
         VITE_KAKAO_REDIRECT_URI: ${VITE_KAKAO_REDIRECT_URI:?VITE_KAKAO_REDIRECT_URI is required}
-        VITE_ACCESS_TOKEN_KEY: ${VITE_ACCESS_TOKEN_KEY:?VITE_ACCESS_TOKEN_KEY is required}
-        VITE_REFRESH_TOKEN_KEY: ${VITE_REFRESH_TOKEN_KEY:?VITE_REFRESH_TOKEN_KEY is required}
-        VITE_AUTH_USER_KEY: ${VITE_AUTH_USER_KEY:?VITE_AUTH_USER_KEY is required}
     container_name: b201-frontend
     profiles: ["prod"]
     restart: unless-stopped
