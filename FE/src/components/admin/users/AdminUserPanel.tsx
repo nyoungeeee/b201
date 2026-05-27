@@ -272,7 +272,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       );
     }
     goBack();
-    onToast?.("팀장을 변경했습니다.");
+    onToast?.("리더를 변경했습니다.");
   };
 
   const handleDeleteTeam = (teamId: number) => {
@@ -669,7 +669,7 @@ const TeamList = ({
         value={selectedLeaderId}
         icon={<AdminPersonIcon />}
         options={[
-          { value: "all", label: "팀장 전체" },
+          { value: "all", label: "리더 전체" },
           ...leaderOptions.map((leader) => ({ value: String(leader.id), label: leader.nickname })),
         ]}
         onChange={onLeaderFilterChange}
@@ -687,7 +687,7 @@ const TeamList = ({
             <div>
               <strong>{team.name}</strong>
               <span>
-                팀장 {leaderName} · 멤버 {team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
+                리더 {leaderName} · 멤버 {team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
               </span>
             </div>
             <AdminChevronRightIcon />
@@ -877,14 +877,14 @@ const TeamDetailScreen = ({
           <TeamAvatar team={team} color={color} size="lg" />
           <div>
             <h3>{team.name}</h3>
-            <span>팀장 {leaderName}</span>
+            <span>리더 {leaderName}</span>
           </div>
         </div>
         <InfoCard
           rows={[
             ["팀 이름", team.name],
             ["팀 컬러", `${color?.value ?? "-"}`],
-            ["팀장", leaderName],
+            ["리더", leaderName],
             ["멤버 수", `${members.length}명`],
             ["최근 수정일", team.updatedAt],
           ]}
@@ -896,14 +896,14 @@ const TeamDetailScreen = ({
               <strong>{member.nickname}</strong>
               <span>{member.email}</span>
               <span className="admin-member-list__role">
-                {member.id === team.leaderId && <em>팀장</em>}
+                {member.id === team.leaderId && <em>리더</em>}
               </span>
               <AdminChevronRightIcon />
             </button>
           ))}
         </section>
         <section className="admin-quick-actions">
-          <button type="button" onClick={onChangeLeader}>팀장 변경 <AdminChevronRightIcon /></button>
+          <button type="button" onClick={onChangeLeader}>리더 변경 <AdminChevronRightIcon /></button>
           <button type="button" onClick={onAddMembers}>멤버 추가 <AdminChevronRightIcon /></button>
         </section>
       </div>
@@ -963,17 +963,17 @@ const TeamSettingsScreen = ({
         <button className="admin-team-leader-card" type="button" onClick={onChangeLeader}>
           <AdminPersonIcon />
           <div>
-            <span>팀장</span>
+            <span>리더</span>
             <strong>{leaderName}</strong>
             {leaderEmail && <p>{leaderEmail}</p>}
           </div>
-          <em>{team.leaderId === OWNER_LEADER_ID ? "사장님" : "현재 팀장"}</em>
+          <em>{team.leaderId === OWNER_LEADER_ID ? "사장님" : "현재 리더"}</em>
           <AdminChevronRightIcon />
         </button>
-        <p className="admin-settings-help">각 팀은 반드시 팀장이 1명 지정되어야 합니다.</p>
+        <p className="admin-settings-help">각 팀은 반드시 리더가 1명 지정되어야 합니다.</p>
         <div className="admin-info-box">
           <AdminWarningIcon />
-          <p>모든 팀은 반드시 팀장이 1명 있어야 합니다.</p>
+          <p>모든 팀은 반드시 리더가 1명 있어야 합니다.</p>
         </div>
       </div>
       <footer className="admin-sub-actions">
@@ -1022,7 +1022,7 @@ const CreateTeamScreen = ({
     const trimmedTeamName = teamName.trim();
 
     if (!trimmedTeamName && leaderId === null) {
-      window.alert("팀 이름과 팀장을 입력해 주세요.");
+      window.alert("팀 이름과 리더를 입력해 주세요.");
       return;
     }
 
@@ -1032,7 +1032,7 @@ const CreateTeamScreen = ({
     }
 
     if (leaderId === null) {
-      window.alert("팀장을 선택해 주세요.");
+      window.alert("리더를 선택해 주세요.");
       return;
     }
 
@@ -1045,20 +1045,20 @@ const CreateTeamScreen = ({
       <div className="admin-sub-screen__content">
         <div className="admin-info-box">
           <AdminWarningIcon />
-          <p>팀은 반드시 팀장이 1명이어야 합니다. 사용 가능한 색상만 선택할 수 있습니다.</p>
+          <p>팀은 반드시 리더가 1명이어야 합니다. 사용 가능한 색상만 선택할 수 있습니다.</p>
         </div>
         <label className="admin-form-field">
           <span>팀 이름</span>
           <input value={teamName} maxLength={20} onChange={(event) => setTeamName(event.target.value)} placeholder="예) 마케팅팀" />
         </label>
         <ColorPicker colors={colors} selectedColorId={colorId} onSelect={setColorId} />
-        <h3 className="admin-users__section-title">팀장 설정</h3>
+        <h3 className="admin-users__section-title">리더 설정</h3>
         <label className="admin-user-search admin-user-search--wide">
           <AdminUserIcon />
           <input
             value={leaderQuery}
             onChange={(event) => setLeaderQuery(event.target.value)}
-            placeholder="팀장할 사용자 검색"
+            placeholder="리더로 지정할 사용자 검색"
           />
         </label>
         <div className="admin-member-list admin-member-list--leader-picker">
@@ -1078,13 +1078,13 @@ const CreateTeamScreen = ({
             onChange={(event) => setLeaderId(event.target.checked ? OWNER_LEADER_ID : null)}
           />
           <span>
-            <strong>사장님이 팀장하기</strong>
-            <em>사장님 계정이 팀장이 됩니다.</em>
+            <strong>사장님을 리더로 지정</strong>
+            <em>사장님 계정이 리더가 됩니다.</em>
           </span>
         </label>
         {selectedLeader && (
           <section className="admin-selected-leader">
-            <span>선택된 팀장</span>
+            <span>선택된 리더</span>
             <div className="admin-selected-leader__body">
               {isOwnerLeader ? (
                 <strong className="admin-owner-avatar">사</strong>
@@ -1096,7 +1096,7 @@ const CreateTeamScreen = ({
                 <small>{selectedLeader.email}</small>
               </div>
             </div>
-            <button type="button" aria-label="선택된 팀장 해제" onClick={clearLeader}>×</button>
+            <button type="button" aria-label="선택된 리더 해제" onClick={clearLeader}>×</button>
           </section>
         )}
       </div>
@@ -1224,20 +1224,20 @@ const ChangeLeaderScreen = ({
 
   return (
     <section className="admin-sub-screen">
-      <ScreenHeader title="팀장 변경" onBack={onBack} />
+      <ScreenHeader title="리더 변경" onBack={onBack} />
       <div className="admin-sub-screen__content">
         <div className="admin-team-current-leader">
           <TeamAvatar team={team} color={color} />
-          <div><span>현재 팀장</span><strong>{currentLeaderName}</strong></div>
+          <div><span>현재 리더</span><strong>{currentLeaderName}</strong></div>
           <strong>{team.memberIds.length}명</strong>
         </div>
-        <h3 className="admin-users__section-title">팀장으로 변경할 사용자 선택</h3>
+        <h3 className="admin-users__section-title">리더로 변경할 사용자 선택</h3>
         <label className="admin-user-search admin-user-search--wide">
           <AdminUserIcon />
           <input
             value={leaderQuery}
             onChange={(event) => setLeaderQuery(event.target.value)}
-            placeholder="팀장할 사용자 검색"
+            placeholder="리더로 지정할 사용자 검색"
           />
         </label>
         <div className="admin-member-list">
@@ -1256,20 +1256,20 @@ const ChangeLeaderScreen = ({
             onChange={(event) => setLeaderId(event.target.checked ? OWNER_LEADER_ID : fallbackMemberId)}
           />
           <span>
-            <strong>사장님이 팀장하기</strong>
-            <em>사장님 계정이 팀장이 됩니다.</em>
+            <strong>사장님을 리더로 지정</strong>
+            <em>사장님 계정이 리더가 됩니다.</em>
           </span>
         </label>
         {selectedLeader && (
           <section className="admin-selected-leader admin-selected-leader--compact">
-            <span>선택된 팀장</span>
+            <span>선택된 리더</span>
             <strong>{selectedLeader.nickname}</strong>
             <small>{selectedLeader.email}</small>
           </section>
         )}
         <div className="admin-info-box">
           <AdminWarningIcon />
-          <p>팀에는 반드시 한 명의 팀장이 필요합니다.</p>
+          <p>팀에는 반드시 한 명의 리더가 필요합니다.</p>
         </div>
       </div>
       <footer className="admin-sub-actions">
@@ -1310,7 +1310,7 @@ const DeleteTeamScreen = ({
           <TeamAvatar team={team} color={color} size="lg" />
           <div>
             <h3>{team.name}</h3>
-            <p>팀장 {leader?.nickname} · 멤버 수 {members.length}명</p>
+            <p>리더 {leader?.nickname} · 멤버 수 {members.length}명</p>
           </div>
         </div>
         <div className="admin-danger-guide">
