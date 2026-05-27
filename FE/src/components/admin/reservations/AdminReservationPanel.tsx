@@ -49,12 +49,19 @@ const AdminReservationPanel = ({
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
 
   useEffect(() => {
-    adminApi.getReservations().then((data) => {
-      setReservations(data);
-      if (initialReservationId !== null) {
-        setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
-      }
-    }).catch(console.error);
+    const refreshReservations = () => {
+      adminApi.getReservations().then((data) => {
+        setReservations(data);
+        if (initialReservationId !== null) {
+          setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
+        }
+      }).catch(console.error);
+    };
+
+    refreshReservations();
+    const intervalId = window.setInterval(refreshReservations, 5000);
+
+    return () => window.clearInterval(intervalId);
   }, [initialReservationId]);
 
   const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
