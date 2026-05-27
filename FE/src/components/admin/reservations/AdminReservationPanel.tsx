@@ -42,6 +42,8 @@ const AdminReservationPanel = ({
   onToast,
 }: AdminReservationPanelProps) => {
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
+  const [pendingTotalCount, setPendingTotalCount] = useState(0);
+  const [approvedTotalCount, setApprovedTotalCount] = useState(0);
   const [activeStatus, setActiveStatus] = useState<AdminReservationStatus>("pending");
   const [dateRange, setDateRange] = useState("7");
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
@@ -57,9 +59,11 @@ const AdminReservationPanel = ({
       roomFilter,
     });
 
-    setReservations(data);
+    setReservations(data.reservations);
+    setPendingTotalCount(data.pendingTotalCount);
+    setApprovedTotalCount(data.approvedTotalCount);
     if (initialReservationId !== null) {
-      setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
+      setSelectedReservation(data.reservations.find((r) => r.id === initialReservationId) ?? null);
     }
   }, [dateRange, initialReservationId, roomFilter, teamFilter]);
 
@@ -84,60 +88,15 @@ const AdminReservationPanel = ({
     }
   };
 
-  const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
-  const approvedCount = reservations.filter((reservation) => {
-    if (reservation.status !== "approved") {
-      return false;
-    }
-
-    if (reservation.dayOffset > Number(dateRange)) {
-      return false;
-    }
-
-    if (teamFilter === "team" && !reservation.teamName) {
-      return false;
-    }
-
-    if (teamFilter === "private" && reservation.teamName) {
-      return false;
-    }
-
-    if (roomFilter !== "all" && reservation.room !== roomFilter) {
-      return false;
-    }
-
-    return true;
-  }).length;
-
   const filteredReservations = useMemo(() => {
     return reservations.filter((reservation) => {
       if (reservation.status !== activeStatus) {
         return false;
       }
 
-      if (activeStatus === "approved" && reservation.dayOffset > Number(dateRange)) {
-        return false;
-      }
-
-      if (activeStatus === "approved" && teamFilter === "team" && !reservation.teamName) {
-        return false;
-      }
-
-      if (activeStatus === "approved" && teamFilter === "private" && reservation.teamName) {
-        return false;
-      }
-
-      if (
-        activeStatus === "approved" &&
-        roomFilter !== "all" &&
-        reservation.room !== roomFilter
-      ) {
-        return false;
-      }
-
       return true;
     });
-  }, [activeStatus, dateRange, reservations, roomFilter, teamFilter]);
+  }, [activeStatus, reservations]);
 
   const handleApprove = (id: number) => {
     adminApi.approveReservation(id).catch(console.error);
@@ -146,15 +105,25 @@ const AdminReservationPanel = ({
         reservation.id === id ? { ...reservation, status: "approved" } : reservation,
       ),
     );
+    setPendingTotalCount((currentCount) => Math.max(currentCount - 1, 0));
+    setApprovedTotalCount((currentCount) => currentCount + 1);
     setSelectedReservation(null);
     onToast?.("예약을 승인했습니다.");
   };
 
   const handleReject = (id: number) => {
+    const rejectedReservation = reservations.find((reservation) => reservation.id === id);
+
     adminApi.cancelReservation(id).catch(console.error);
     setReservations((currentReservations) =>
       currentReservations.filter((reservation) => reservation.id !== id),
     );
+    if (rejectedReservation?.status === "pending") {
+      setPendingTotalCount((currentCount) => Math.max(currentCount - 1, 0));
+    }
+    if (rejectedReservation?.status === "approved") {
+      setApprovedTotalCount((currentCount) => Math.max(currentCount - 1, 0));
+    }
     setSelectedReservation(null);
     onToast?.("예약을 취소했습니다.");
   };
@@ -234,8 +203,8 @@ const AdminReservationPanel = ({
       </div>
       <AdminReservationTabs
         activeStatus={activeStatus}
-        pendingCount={pendingCount}
-        approvedCount={approvedCount}
+        pendingCount={pendingTotalCount}
+        approvedCount={approvedTotalCount}
         onChange={setActiveStatus}
       />
 

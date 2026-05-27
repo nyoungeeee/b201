@@ -84,6 +84,19 @@ const ADMIN_API_MESSAGE = {
     roomNotFound: '선택한 합주실 정보를 찾을 수 없습니다.',
 } as const;
 
+type AdminPagination = {
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+};
+
+type AdminReservationListResult = {
+    reservations: AdminReservation[];
+    pendingTotalCount: number;
+    approvedTotalCount: number;
+};
+
 let cachedRooms: AdminPracticeRoom[] = [];
 
 const trimSlashes = (value: string): string => value.replace(/^\/+|\/+$/g, '');
@@ -145,6 +158,36 @@ const requestJson = async <T>(
     const data = (await response.json()) as AdminResponse<T>;
 
     return unwrapAdminResponse(data);
+};
+
+const requestJsonWithPagination = async <T>(
+    path: string,
+    init: RequestInit = {},
+    searchParams?: URLSearchParams,
+): Promise<{ data: T; pagination?: AdminPagination }> => {
+    const response = await fetch(buildAdminUrl(path, searchParams), {
+        ...init,
+        headers: {
+            ...getAuthHeaders(),
+            ...init.headers,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            `${ADMIN_API_MESSAGE.requestError} (status: ${response.status})`,
+        );
+    }
+
+    const responseData = (await response.json()) as AdminResponse<T>;
+    const data = unwrapAdminResponse(responseData);
+
+    return {
+        data,
+        pagination: responseData.ok
+            ? (responseData.pagination as AdminPagination | undefined)
+            : undefined,
+    };
 };
 
 const requestVoid = async (
@@ -249,7 +292,7 @@ export const getReservations = async ({
     dateRange = '7',
     teamFilter = 'all',
     roomFilter = 'all',
-}: AdminReservationListFilters = {}): Promise<AdminReservation[]> => {
+}: AdminReservationListFilters = {}): Promise<AdminReservationListResult> => {
     const roomId =
         roomFilter === 'all' ? undefined : await getRoomIdByName(roomFilter);
     const baseParams = {
@@ -257,8 +300,8 @@ export const getReservations = async ({
         page_size: '100',
         ...(roomId != null ? { room_id: String(roomId) } : {}),
     };
-    const [pendingReservations, approvedReservations] = await Promise.all([
-        requestJson<ApiReservation[]>(
+    const [pendingResult, approvedResult] = await Promise.all([
+        requestJsonWithPagination<ApiReservation[]>(
             'reservations',
             { method: 'GET' },
             new URLSearchParams({
@@ -266,7 +309,7 @@ export const getReservations = async ({
                 ...baseParams,
             }),
         ),
-        requestJson<ApiReservation[]>(
+        requestJsonWithPagination<ApiReservation[]>(
             'reservations',
             { method: 'GET' },
             new URLSearchParams({
@@ -278,10 +321,25 @@ export const getReservations = async ({
     ]);
 
     const adminUserId = getAdminUserId();
+    const reservations = [...pendingResult.data, ...approvedResult.data]
+        .map((reservation) =>
+            toReservation(reservation, new Date(), adminUserId),
+        )
+        .sort((leftReservation, rightReservation) => {
+            if (leftReservation.dayOffset !== rightReservation.dayOffset) {
+                return leftReservation.dayOffset - rightReservation.dayOffset;
+            }
 
-    return [...pendingReservations, ...approvedReservations].map((reservation) =>
-        toReservation(reservation, new Date(), adminUserId),
-    );
+            return leftReservation.timeLabel.localeCompare(
+                rightReservation.timeLabel,
+            );
+        });
+
+    return {
+        reservations,
+        pendingTotalCount: pendingResult.pagination?.total_count ?? 0,
+        approvedTotalCount: approvedResult.pagination?.total_count ?? 0,
+    };
 };
 
 export const checkAdminAccess = async (): Promise<boolean> => {
