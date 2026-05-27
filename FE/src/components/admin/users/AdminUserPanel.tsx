@@ -373,7 +373,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       <AddMembersScreen
         team={team}
         onBack={goBack}
-        onSave={(memberIds) => void handleUpdateMembers(team.id, memberIds).catch(console.error)}
+        onSave={(memberIds) => handleUpdateMembers(team.id, memberIds)}
       />
     );
   }
@@ -1141,12 +1141,13 @@ const AddMembersScreen = ({
 }: {
   team: AdminManagedTeam;
   onBack: () => void;
-  onSave: (memberIds: number[]) => void;
+  onSave: (memberIds: number[]) => Promise<void>;
 }) => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [members, setMembers] = useState<AdminTeamMemberEditUser[]>([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -1180,6 +1181,18 @@ const AddMembersScreen = ({
 
     return member.nickname.toLowerCase().includes(keyword) || member.email.toLowerCase().includes(keyword);
   });
+
+  const handleSave = async () => {
+    setIsSaving(true);
+
+    try {
+      await onSave(selectedIds);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "팀 멤버 수정에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <section className="admin-sub-screen">
@@ -1232,7 +1245,9 @@ const AddMembersScreen = ({
       </div>
       <footer className="admin-sub-actions">
         <button type="button" onClick={onBack}>취소</button>
-        <button type="button" onClick={() => onSave(selectedIds)} disabled={isLoading}>저장하기</button>
+        <button type="button" onClick={() => void handleSave()} disabled={isLoading || isSaving}>
+          {isSaving ? "저장 중" : "저장하기"}
+        </button>
       </footer>
     </section>
   );
