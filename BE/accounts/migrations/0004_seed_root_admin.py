@@ -3,7 +3,6 @@ import os
 from django.contrib.auth.hashers import make_password
 from django.db import migrations
 
-
 ROOT_ADMIN_KAKAO_ID = -1
 
 

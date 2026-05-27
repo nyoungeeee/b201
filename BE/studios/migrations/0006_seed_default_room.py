@@ -20,20 +20,21 @@ def create_default_room(apps, schema_editor):
     )
 
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             SELECT setval(
                 pg_get_serial_sequence('rooms', 'id'),
                 GREATEST((SELECT MAX(id) FROM rooms), 1),
                 true
             );
-            """
-        )
+            """)
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("studios", "0005_rename_room_closur_room_id_e6c6b5_idx_room_closur_room_id_75d42a_idx"),
+        (
+            "studios",
+            "0005_rename_room_closur_room_id_e6c6b5_idx_room_closur_room_id_75d42a_idx",
+        ),
     ]
 
     operations = [
