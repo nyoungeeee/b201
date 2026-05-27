@@ -58,8 +58,10 @@ class AdminUserService:
         page: int,
         page_size: int,
     ) -> AdminUserList:
-        queryset = User.objects.exclude(status=UserStatus.WITHDRAWN).order_by(
-            "-created_at", "-id"
+        queryset = (
+            User.objects.exclude(status=UserStatus.WITHDRAWN)
+            .filter(kakao_id__gte=0)
+            .order_by("-created_at", "-id")
         )
 
         if q:
@@ -275,7 +277,10 @@ class AdminTeamService:
             .annotate(
                 active_member_count=Count(
                     "team_members",
-                    filter=Q(team_members__status=TeamMemberStatus.ACTIVE),
+                    filter=Q(
+                        team_members__status=TeamMemberStatus.ACTIVE,
+                        team_members__user__kakao_id__gte=0,
+                    ),
                     distinct=True,
                 )
             )
@@ -504,6 +509,7 @@ class AdminTeamService:
             or TeamMember.objects.filter(
                 team=team,
                 status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
             ).count(),
             updated_at=team.updated_at.date(),
         )
@@ -513,7 +519,10 @@ class AdminTeamService:
         team = Team.objects.select_related("owner", "team_color").get(id=team.id)
         info = AdminTeamService._build_team_info(team)
         memberships = (
-            team.team_members.filter(status=TeamMemberStatus.ACTIVE)
+            team.team_members.filter(
+                status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
+            )
             .select_related("user")
             .order_by("joined_at", "id")
         )
@@ -537,7 +546,10 @@ class AdminTeamService:
     @staticmethod
     def _get_member_ids(team: Team) -> list[int]:
         return list(
-            team.team_members.filter(status=TeamMemberStatus.ACTIVE)
+            team.team_members.filter(
+                status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
+            )
             .order_by("joined_at", "id")
             .values_list("user_id", flat=True)
         )
