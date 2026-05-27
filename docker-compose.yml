@@ -22,6 +22,7 @@ services:
 
   backend:
     image: b201-backend:latest
+    pull_policy: build
     build:
       context: ./BE
       dockerfile: Dockerfile
@@ -50,6 +51,8 @@ services:
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY is required}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:?KAKAO_REDIRECT_URI is required}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET is required}
+      ROOT_ADMIN_ID: ${ROOT_ADMIN_ID:?ROOT_ADMIN_ID is required}
+      ROOT_ADMIN_PASSWORD: ${ROOT_ADMIN_PASSWORD:?ROOT_ADMIN_PASSWORD is required}
     command: >
       sh -c "python manage.py migrate &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000"
@@ -61,6 +64,7 @@ services:
 
   frontend:
     image: b201-frontend:latest
+    pull_policy: build
     build:
       context: ./FE
       dockerfile: Dockerfile
@@ -81,6 +85,7 @@ services:
 
   seed_dummy_data:
     image: b201-backend:latest
+    pull_policy: build
     build:
       context: ./BE
       dockerfile: Dockerfile
@@ -107,6 +112,8 @@ services:
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY is required}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:?KAKAO_REDIRECT_URI is required}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET is required}
+      ROOT_ADMIN_ID: ${ROOT_ADMIN_ID:-}
+      ROOT_ADMIN_PASSWORD: ${ROOT_ADMIN_PASSWORD:-}
     command: >
       sh -c "PGPASSWORD=\"${DB_PASSWORD}\" psql -h \"db\" -U \"${DB_USER}\" -d \"${DB_NAME}\" -v ON_ERROR_STOP=1 -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" &&
              python manage.py migrate &&

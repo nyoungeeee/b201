@@ -86,6 +86,9 @@ KAKAO_REST_API_KEY=your-production-kakao-rest-api-key
 KAKAO_REDIRECT_URI=https://your-domain.com/
 KAKAO_CLIENT_SECRET=your-production-kakao-client-secret
 
+ROOT_ADMIN_ID=your-root-admin-id
+ROOT_ADMIN_PASSWORD=your-root-admin-password
+
 VITE_API_BASE_URL=/api/v1
 VITE_KAKAO_REST_API_KEY=your-production-kakao-rest-api-key
 VITE_KAKAO_REDIRECT_URI=https://your-domain.com/
