@@ -51,13 +51,17 @@ const AdminReservationPanel = ({
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
 
   const refreshReservations = useCallback(async () => {
-    const data = await adminApi.getReservations();
+    const data = await adminApi.getReservations({
+      dateRange,
+      teamFilter,
+      roomFilter,
+    });
 
     setReservations(data);
     if (initialReservationId !== null) {
       setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
     }
-  }, [initialReservationId]);
+  }, [dateRange, initialReservationId, roomFilter, teamFilter]);
 
   useEffect(() => {
     refreshReservations().catch(console.error);

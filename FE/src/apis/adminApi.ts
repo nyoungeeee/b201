@@ -10,6 +10,8 @@ import type {
 import type {
     AdminReservation,
     AdminReservationConflict,
+    AdminRoomFilter,
+    AdminTeamFilter,
     NewAdminReservation,
 } from '../components/admin/reservations/types';
 import type {
@@ -237,14 +239,31 @@ const toDayOffRequest = async (
     };
 };
 
-export const getReservations = async (): Promise<AdminReservation[]> => {
+type AdminReservationListFilters = {
+    dateRange?: string;
+    teamFilter?: AdminTeamFilter;
+    roomFilter?: AdminRoomFilter;
+};
+
+export const getReservations = async ({
+    dateRange = '7',
+    teamFilter = 'all',
+    roomFilter = 'all',
+}: AdminReservationListFilters = {}): Promise<AdminReservation[]> => {
+    const roomId =
+        roomFilter === 'all' ? undefined : await getRoomIdByName(roomFilter);
+    const baseParams = {
+        team_type: teamFilter,
+        page_size: '100',
+        ...(roomId != null ? { room_id: String(roomId) } : {}),
+    };
     const [pendingReservations, approvedReservations] = await Promise.all([
         requestJson<ApiReservation[]>(
             'reservations',
             { method: 'GET' },
             new URLSearchParams({
                 status: 'pending',
-                page_size: '100',
+                ...baseParams,
             }),
         ),
         requestJson<ApiReservation[]>(
@@ -252,9 +271,8 @@ export const getReservations = async (): Promise<AdminReservation[]> => {
             { method: 'GET' },
             new URLSearchParams({
                 status: 'approved',
-                date_range: '90',
-                team_type: 'all',
-                page_size: '100',
+                date_range: dateRange,
+                ...baseParams,
             }),
         ),
     ]);
