@@ -7,6 +7,9 @@ ROOT_ADMIN_KAKAO_ID = -1
 
 
 def create_root_admin(apps, schema_editor):
+    if os.getenv("DJANGO_SETTINGS_MODULE") == "config.settings.test":
+        return
+
     root_admin_id = os.getenv("ROOT_ADMIN_ID")
     root_admin_password = os.getenv("ROOT_ADMIN_PASSWORD")
 
