@@ -73,6 +73,7 @@ FRONTEND_PORT=80
 
 CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
 
 ACCESS_TOKEN_LIFETIME=30
 REFRESH_TOKEN_LIFETIME=7
@@ -85,6 +86,9 @@ DJANGO_SETTINGS_MODULE=config.settings.prod
 KAKAO_REST_API_KEY=your-production-kakao-rest-api-key
 KAKAO_REDIRECT_URI=https://your-domain.com/
 KAKAO_CLIENT_SECRET=your-production-kakao-client-secret
+
+ROOT_ADMIN_ID=your-root-admin-id
+ROOT_ADMIN_PASSWORD=your-root-admin-password
 
 VITE_API_BASE_URL=/api/v1
 VITE_KAKAO_REST_API_KEY=your-production-kakao-rest-api-key

@@ -64,6 +64,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "kakao_id"
 
+    def __str__(self):
+        return str(self.kakao_id)
+
     class Meta:
         db_table = "users"
         indexes = [

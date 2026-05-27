@@ -5,6 +5,7 @@ import adminFavicon from '../assets/B201-admin-favicon.ico';
 import favicon from '../assets/favicon.ico';
 import RequireAuth from '../components/auth/RequireAuth';
 import AdminPage from '../pages/AdminPage';
+import AdminRoute from './AdminRoute';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
 import MyReservationDetailPage from '../pages/MyReservationDetailPage';
@@ -60,7 +61,14 @@ const AppRouter = () => {
                     <Route path="/team/:id/color" element={<TeamColorChangePage />} />
                     <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
                 </Route>
-                <Route path="/admin" element={<AdminPage />} />
+                <Route
+                    path="/admin"
+                    element={
+                        <AdminRoute>
+                            <AdminPage />
+                        </AdminRoute>
+                    }
+                />
             </Routes>
         </BrowserRouter>
     );

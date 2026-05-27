@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import date, time
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 import yaml
 
 from accounts.models import User
@@ -131,7 +131,7 @@ class SeedTestDummyDataCommandTests(TestCase):
         self.assertEqual(occupied[(room.id, target_date)], set(range(28)))
 
 
-class DockerComposeSeedConfigTests(TestCase):
+class DockerComposeSeedConfigTests(SimpleTestCase):
     def test_seed_service_resets_and_seeds_database_without_backend_server(self):
         compose_path = Path(__file__).resolve().parents[1] / "docker-compose.yml"
         compose_config = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
