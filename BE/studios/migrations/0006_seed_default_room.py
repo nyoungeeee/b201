@@ -1,9 +1,13 @@
+import os
 from datetime import time
 
 from django.db import migrations
 
 
 def create_default_room(apps, schema_editor):
+    if os.getenv("DJANGO_SETTINGS_MODULE") == "config.settings.test":
+        return
+
     StudioRoom = apps.get_model("studios", "StudioRoom")
 
     StudioRoom.objects.update_or_create(
