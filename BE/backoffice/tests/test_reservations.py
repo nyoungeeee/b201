@@ -253,10 +253,53 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(len(response.data["data"]), 1)
         self.assertEqual(response.data["data"][0]["kind"], "repeat")
         self.assertEqual(
-            response.data["data"][0]["id"], latest_booking.reservation_number
+            response.data["data"][0]["id"], first_booking.reservation_number
         )
         self.assertNotEqual(
-            response.data["data"][0]["id"], first_booking.reservation_number
+            response.data["data"][0]["id"], latest_booking.reservation_number
+        )
+
+    def test_reservation_list_orders_nearest_date_first(self):
+        far_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=7),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+        )
+        near_later_time_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=1),
+            start_time=time(12, 0),
+            end_time=time(13, 0),
+            status=BookingStatus.RESERVED,
+        )
+        near_earlier_time_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=1),
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get(
+            "/api/v1/admin/reservations?status=approved&date_range=30"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["id"] for item in response.data["data"]],
+            [
+                near_earlier_time_booking.reservation_number,
+                near_later_time_booking.reservation_number,
+                far_booking.reservation_number,
+            ],
         )
 
     def test_team_reservation_response_uses_user_nickname_as_reserver_name(self):

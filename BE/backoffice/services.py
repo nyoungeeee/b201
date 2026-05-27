@@ -873,7 +873,7 @@ class AdminReservationService:
             queryset = queryset.filter(room_id=room_id)
 
         queryset = queryset.order_by(
-            "-reservation_date", "-start_time", "-reservation_number"
+            "reservation_date", "start_time", "reservation_number"
         )
         bookings = AdminReservationService._collapse_repeat_groups(list(queryset))
         total_count = len(bookings)
