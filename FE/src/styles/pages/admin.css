@@ -149,6 +149,39 @@
   padding: 0 16px 18px;
 }
 
+.admin-reservation__topbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0 12px;
+}
+
+.admin-reservation__refresh-button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: rgba(247, 248, 251, 0.82);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.admin-reservation__refresh-button:active {
+  opacity: 0.72;
+}
+
+.admin-reservation__refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.admin-reservation__refresh-button.is-refreshing svg {
+  animation: adminReservationRefreshSpin 720ms linear infinite;
+}
+
 .admin-reservation-tabs {
   flex-shrink: 0;
   display: grid;
@@ -363,6 +396,16 @@
   color: rgba(247, 248, 251, 0.62);
   text-align: center;
   background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes adminReservationRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .admin-reservation-card {
