@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPlusIcon } from "../icons";
+import RefreshIcon from "../../common/icons/RefreshIcon";
 import AdminCreateReservationModal from "./AdminCreateReservationModal";
 import AdminReservationCard from "./AdminReservationCard";
 import AdminReservationDetail from "./AdminReservationDetail";
@@ -46,16 +47,42 @@ const AdminReservationPanel = ({
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
 
+  const refreshReservations = useCallback(async () => {
+    const data = await adminApi.getReservations({
+      dateRange,
+      teamFilter,
+      roomFilter,
+    });
+
+    setReservations(data);
+    if (initialReservationId !== null) {
+      setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
+    }
+  }, [dateRange, initialReservationId, roomFilter, teamFilter]);
+
   useEffect(() => {
-    adminApi.getReservations().then((data) => {
-      setReservations(data);
-      if (initialReservationId !== null) {
-        setSelectedReservation(data.find((r) => r.id === initialReservationId) ?? null);
-      }
-    }).catch(console.error);
-  }, [initialReservationId]);
+    refreshReservations().catch(console.error);
+    const intervalId = window.setInterval(() => {
+      refreshReservations().catch(console.error);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [refreshReservations]);
+
+  const handleRefresh = async () => {
+    setIsManualRefreshing(true);
+
+    try {
+      await refreshReservations();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   const pendingCount = reservations.filter((reservation) => reservation.status === "pending").length;
   const approvedCount = reservations.filter((reservation) => {
@@ -191,6 +218,20 @@ const AdminReservationPanel = ({
 
   return (
     <section className="admin-reservation" aria-label="예약 관리">
+      <div className="admin-reservation__topbar">
+        <button
+          className={[
+            "admin-reservation__refresh-button",
+            isManualRefreshing ? "is-refreshing" : "",
+          ].filter(Boolean).join(" ")}
+          type="button"
+          onClick={() => void handleRefresh()}
+          aria-label="예약 목록 새로고침"
+          disabled={isManualRefreshing}
+        >
+          <RefreshIcon />
+        </button>
+      </div>
       <AdminReservationTabs
         activeStatus={activeStatus}
         pendingCount={pendingCount}

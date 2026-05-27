@@ -10,6 +10,8 @@ import type {
 import type {
     AdminReservation,
     AdminReservationConflict,
+    AdminRoomFilter,
+    AdminTeamFilter,
     NewAdminReservation,
 } from '../components/admin/reservations/types';
 import type {
@@ -22,6 +24,8 @@ import type {
     AdminManagedTeam,
     AdminManagedUser,
     AdminTeamColor,
+    AdminTeamMemberEditList,
+    AdminTeamMemberEditUser,
     AdminTeamLeaderFilterOption,
 } from '../components/admin/users/types';
 import {
@@ -47,6 +51,19 @@ type ApiTeamColor = {
     name: string;
     value: string;
     available: boolean;
+};
+
+type ApiTeamMember = {
+    id: number;
+    nickname?: string | null;
+    email?: string | null;
+    status: 'normal' | 'blocked';
+    is_leader: boolean;
+};
+
+type ApiTeamMemberEditList = {
+    members: ApiTeamMember[];
+    non_members: ApiTeamMember[];
 };
 
 type ApiLog = {
@@ -139,6 +156,27 @@ const requestVoid = async (
 
 const toApiDate = (dateLabel: string): string => dateLabel.replaceAll('.', '-');
 
+const toTeamMemberEditUser = (
+    user: ApiTeamMember,
+    isMember: boolean,
+): AdminTeamMemberEditUser => ({
+    id: user.id,
+    nickname: user.nickname || '이름 없음',
+    email: user.email || '',
+    status: user.status,
+    isLeader: user.is_leader,
+    isMember,
+});
+
+const toTeamMemberEditList = (
+    data: ApiTeamMemberEditList,
+): AdminTeamMemberEditList => ({
+    members: data.members.map((user) => toTeamMemberEditUser(user, true)),
+    nonMembers: data.non_members.map((user) =>
+        toTeamMemberEditUser(user, false),
+    ),
+});
+
 const formatLogTime = (value: string): string => {
     const date = new Date(value);
 
@@ -201,14 +239,31 @@ const toDayOffRequest = async (
     };
 };
 
-export const getReservations = async (): Promise<AdminReservation[]> => {
+type AdminReservationListFilters = {
+    dateRange?: string;
+    teamFilter?: AdminTeamFilter;
+    roomFilter?: AdminRoomFilter;
+};
+
+export const getReservations = async ({
+    dateRange = '7',
+    teamFilter = 'all',
+    roomFilter = 'all',
+}: AdminReservationListFilters = {}): Promise<AdminReservation[]> => {
+    const roomId =
+        roomFilter === 'all' ? undefined : await getRoomIdByName(roomFilter);
+    const baseParams = {
+        team_type: teamFilter,
+        page_size: '100',
+        ...(roomId != null ? { room_id: String(roomId) } : {}),
+    };
     const [pendingReservations, approvedReservations] = await Promise.all([
         requestJson<ApiReservation[]>(
             'reservations',
             { method: 'GET' },
             new URLSearchParams({
                 status: 'pending',
-                page_size: '100',
+                ...baseParams,
             }),
         ),
         requestJson<ApiReservation[]>(
@@ -216,9 +271,8 @@ export const getReservations = async (): Promise<AdminReservation[]> => {
             { method: 'GET' },
             new URLSearchParams({
                 status: 'approved',
-                date_range: '90',
-                team_type: 'all',
-                page_size: '100',
+                date_range: dateRange,
+                ...baseParams,
             }),
         ),
     ]);
@@ -425,6 +479,32 @@ export const addTeamMembers = async (
         method: 'POST',
         body: JSON.stringify({ user_ids: memberIds }),
     });
+};
+
+export const getTeamMemberEditList = async (
+    id: number,
+): Promise<AdminTeamMemberEditList> => {
+    const data = await requestJson<ApiTeamMemberEditList>(
+        `teams/${id}/members`,
+        { method: 'GET' },
+    );
+
+    return toTeamMemberEditList(data);
+};
+
+export const updateTeamMembers = async (
+    id: number,
+    memberIds: number[],
+): Promise<AdminTeamMemberEditList> => {
+    const data = await requestJson<ApiTeamMemberEditList>(
+        `teams/${id}/members`,
+        {
+            method: 'PATCH',
+            body: JSON.stringify({ user_ids: memberIds }),
+        },
+    );
+
+    return toTeamMemberEditList(data);
 };
 
 export const changeTeamLeader = async (

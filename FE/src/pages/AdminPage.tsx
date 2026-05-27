@@ -25,7 +25,7 @@ const initialAdminLogs: AdminLogEntry[] = [
     category: "팀",
     action: "팀 생성",
     target: "A팀",
-    detail: "관리자가 팀을 생성하고 팀장을 지정했습니다.",
+    detail: "관리자가 팀을 생성하고 리더를 지정했습니다.",
     createdAt: "2026.05.18 10:04",
   },
   {
