@@ -12,6 +12,8 @@ import {
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
 import * as adminApi from "../../../apis/adminApi";
+import { getJwtUserId } from "../../../apis/adminApiAuth";
+import { getAccessToken } from "../../../utils/authStorage";
 import type {
   AdminManagedTeam,
   AdminManagedUser,
@@ -62,6 +64,12 @@ const getLeaderEmail = (leaderId: number, users: AdminManagedUser[]) => {
   }
 
   return users.find((user) => user.id === leaderId)?.email ?? "";
+};
+
+const getCurrentUserId = () => {
+  const accessToken = getAccessToken();
+
+  return accessToken ? getJwtUserId(accessToken) : undefined;
 };
 
 const UserAvatar = ({
@@ -1268,10 +1276,12 @@ const ChangeLeaderScreen = ({
 }) => {
   const [leaderId, setLeaderId] = useState(team.leaderId);
   const [leaderQuery, setLeaderQuery] = useState("");
+  const currentUserId = getCurrentUserId();
   const isOwnerLeader = leaderId === OWNER_LEADER_ID;
   const members = team.memberIds
     .map((id) => users.find((user) => user.id === id))
-    .filter((user): user is AdminManagedUser => Boolean(user));
+    .filter((user): user is AdminManagedUser => Boolean(user))
+    .filter((user) => user.id !== currentUserId);
   const filteredMembers = members.filter((user) => {
     const keyword = leaderQuery.trim().toLowerCase();
 
