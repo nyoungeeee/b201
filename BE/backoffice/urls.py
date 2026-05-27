@@ -5,6 +5,7 @@ from backoffice.views import (
     AdminDayOffDetailView,
     AdminDayOffListView,
     AdminLogListView,
+    AdminMeView,
     AdminReservationApproveView,
     AdminReservationCancelView,
     AdminReservationCancelOccurrencesView,
@@ -25,6 +26,7 @@ from backoffice.views import (
 )
 
 urlpatterns = [
+    path("me", AdminMeView.as_view(), name="admin-me"),
     path("users", AdminUserListView.as_view(), name="admin-users"),
     path("users/<int:user_id>", AdminUserDetailView.as_view(), name="admin-user"),
     path(

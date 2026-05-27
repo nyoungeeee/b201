@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import adminFavicon from '../assets/B201-admin-favicon.ico';
 import favicon from '../assets/favicon.ico';
 import AdminPage from '../pages/AdminPage';
+import AdminRoute from './AdminRoute';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
 import MyReservationDetailPage from '../pages/MyReservationDetailPage';
@@ -57,7 +58,14 @@ const AppRouter = () => {
                 <Route path="/team/:id" element={<MyTeamDetailPage />} />
                 <Route path="/team/:id/color" element={<TeamColorChangePage />} />
                 <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
-                <Route path="/admin" element={<AdminPage />} />
+                <Route
+                    path="/admin"
+                    element={
+                        <AdminRoute>
+                            <AdminPage />
+                        </AdminRoute>
+                    }
+                />
             </Routes>
         </BrowserRouter>
     );

@@ -902,6 +902,15 @@ class AdminEmptySuccessSerializer(serializers.Serializer):
     ok = serializers.BooleanField(required=True, help_text="요청 성공 여부")
 
 
+class AdminMeSerializer(serializers.Serializer):
+    is_staff = serializers.BooleanField(required=True, help_text="관리자 권한 여부")
+
+
+class AdminMeResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True, help_text="요청 성공 여부")
+    data = AdminMeSerializer(required=True, help_text="현재 사용자 관리자 권한 정보")
+
+
 class AdminUserListResponseSerializer(serializers.Serializer):
     ok = serializers.BooleanField(required=True, help_text="요청 성공 여부")
     data = AdminUserSerializer(many=True, help_text="사용자 목록")
