@@ -571,6 +571,11 @@ const ReservationApplyPage = () => {
             .filter((day) => day.disabled)
             .map((day) => day.date) ?? [],
     ), [monthSchedule?.days]);
+    const holidayDateSet = useMemo(() => new Set(
+        monthSchedule?.days
+            .filter((day) => day.isHoliday)
+            .map((day) => day.date) ?? [],
+    ), [monthSchedule?.days]);
     const isCalendarDayDisabled = useCallback((dateString: string) => (
         dateString < todayDate ||
         disabledDateSet.has(dateString)
@@ -1440,6 +1445,10 @@ const ReservationApplyPage = () => {
                                 <div className="reservation-apply-calendar__grid">
                                     {calendarDays.map((day) => {
                                         const isDisabled = isCalendarDayDisabled(day.fullDate);
+                                        const isHoliday = (
+                                            day.isCurrentMonth &&
+                                            holidayDateSet.has(day.fullDate)
+                                        );
 
                                         return (
                                             <button
@@ -1459,8 +1468,16 @@ const ReservationApplyPage = () => {
                                                     handleSelectCalendarDay(day, isDisabled)
                                                 )}
                                                 disabled={isDisabled}
+                                                aria-label={isHoliday
+                                                    ? `${visibleCalendar.month}월 ${day.date}일, 휴무, 선택 불가`
+                                                    : undefined}
                                             >
-                                                {day.date}
+                                                <span>{day.date}</span>
+                                                {isHoliday && (
+                                                    <span className="reservation-apply-calendar__holiday">
+                                                        휴무
+                                                    </span>
+                                                )}
                                             </button>
                                         );
                                     })}

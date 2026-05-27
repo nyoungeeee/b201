@@ -13,6 +13,7 @@ interface CalendarGridDay {
     visibleColors: string[];
     extraCount: number;
     disabled: boolean;
+    isHoliday: boolean;
 }
 
 interface CalendarSectionProps {
@@ -51,6 +52,7 @@ const getCalendarDays = (
                 visibleColors: day.dotDisplay.visibleColors,
                 extraCount: day.dotDisplay.extraCount,
                 disabled: day.disabled,
+                isHoliday: day.isHoliday,
             },
         ]),
     );
@@ -76,6 +78,7 @@ const getCalendarDays = (
             visibleColors: [],
             extraCount: 0,
             disabled: false,
+            isHoliday: false,
         });
     }
 
@@ -93,6 +96,7 @@ const getCalendarDays = (
             visibleColors: dotInfo?.visibleColors ?? [],
             extraCount: dotInfo?.extraCount ?? 0,
             disabled: dotInfo?.disabled ?? false,
+            isHoliday: dotInfo?.isHoliday ?? false,
         });
     }
 
@@ -117,6 +121,7 @@ const getCalendarDays = (
             visibleColors: [],
             extraCount: 0,
             disabled: false,
+            isHoliday: false,
         });
     }
 
@@ -272,26 +277,34 @@ const CalendarSection = ({
                             day.isSaturday ? 'calendar-day--sat' : '',
                             day.isSelected ? 'calendar-day--selected' : '',
                             day.disabled ? 'calendar-day--disabled' : '',
+                            day.isHoliday ? 'calendar-day--holiday' : '',
                         ]
                             .filter(Boolean)
                             .join(' ')}
                         onClick={() => handleSelectDay(day.fullDate)}
+                        aria-label={day.isHoliday ? `${day.date}일, 휴무` : undefined}
                     >
                         <span className="calendar-day__label">{day.date}</span>
 
                         <span className="calendar-day__dots">
-                            {day.visibleColors.map((dotColor, dotIndex) => (
-                                <span
-                                    key={`${day.fullDate}-dot-${dotIndex}`}
-                                    className="calendar-day__dot"
-                                    style={{ backgroundColor: dotColor }}
-                                />
-                            ))}
+                            {day.isHoliday ? (
+                                <span className="calendar-day__holiday">휴무</span>
+                            ) : (
+                                <>
+                                    {day.visibleColors.map((dotColor, dotIndex) => (
+                                        <span
+                                            key={`${day.fullDate}-dot-${dotIndex}`}
+                                            className="calendar-day__dot"
+                                            style={{ backgroundColor: dotColor }}
+                                        />
+                                    ))}
 
-                            {day.extraCount > 0 && (
-                                <span className="calendar-day__dot-count">
-                                    +{day.extraCount}
-                                </span>
+                                    {day.extraCount > 0 && (
+                                        <span className="calendar-day__dot-count">
+                                            +{day.extraCount}
+                                        </span>
+                                    )}
+                                </>
                             )}
                         </span>
                     </button>

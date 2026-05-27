@@ -78,6 +78,7 @@ const reservationOccurrenceDetailSchema = z.object({
     approved_at: z.string().nullable().optional(),
     canceled_at: z.string().nullable().optional(),
     canceled_by: z.union([z.string(), z.number()]).nullable().optional(),
+    canceled_by_name: z.string().nullable().optional(),
     reason_code: z.string().nullable().optional(),
     can_reapply: z.boolean(),
 });
@@ -87,6 +88,7 @@ const reservationDetailSchema = unifiedReservationItemSchema.extend({
     approved_at: z.string().nullable().optional(),
     canceled_at: z.string().nullable().optional(),
     canceled_by: z.union([z.string(), z.number()]).nullable().optional(),
+    canceled_by_name: z.string().nullable().optional(),
     repeat: z.object({
         start_date: dateStringSchema,
         end_date: dateStringSchema,
