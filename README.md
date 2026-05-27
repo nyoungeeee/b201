@@ -73,6 +73,7 @@ FRONTEND_PORT=80
 
 CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
 
 ACCESS_TOKEN_LIFETIME=30
 REFRESH_TOKEN_LIFETIME=7
