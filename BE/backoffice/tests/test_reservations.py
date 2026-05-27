@@ -114,6 +114,68 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         booking.refresh_from_db()
         self.assertEqual(booking.status, BookingStatus.RESERVED)
 
+    def test_staff_can_approve_repeat_reservation_group(self):
+        repeat_group_id = uuid4()
+        first_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=7),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=14),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+
+        approve_response = self.client.patch(
+            f"/api/v1/admin/reservations/{first_booking.reservation_number}/approve"
+        )
+        pending_response = self.client.get("/api/v1/admin/reservations?status=pending")
+        approved_response = self.client.get(
+            "/api/v1/admin/reservations?status=approved&date_range=30"
+        )
+
+        self.assertEqual(approve_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Booking.objects.filter(
+                repeat_group_id=repeat_group_id,
+                status=BookingStatus.RESERVED,
+            ).count(),
+            3,
+        )
+        self.assertEqual(pending_response.data["pagination"]["total_count"], 0)
+        self.assertEqual(approved_response.data["pagination"]["total_count"], 1)
+        self.assertEqual(approved_response.data["data"][0]["kind"], "repeat")
+
     def test_staff_can_get_reservation_list_and_detail(self):
         booking = Booking.objects.create(
             room=self.room,

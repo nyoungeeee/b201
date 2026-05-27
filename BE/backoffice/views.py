@@ -47,6 +47,9 @@ from backoffice.serializers import (
     AdminTeamListResponseSerializer,
     AdminTeamMemberAddRequestSerializer,
     AdminTeamMemberAddResponseSerializer,
+    AdminTeamMemberEditListResponseSerializer,
+    AdminTeamMemberEditListSerializer,
+    AdminTeamMemberUpdateRequestSerializer,
     AdminTeamSerializer,
     AdminTeamUpdateRequestSerializer,
     AdminUserListQuerySerializer,
@@ -71,6 +74,7 @@ from backoffice.services import (
     NotRepeatReservationError,
     ReservationConflictError,
     RoomInactiveError,
+    TeamLeaderRequiredError,
 )
 from bookings.models import Booking
 from studios.models import RoomClosure, StudioRoom
@@ -149,6 +153,7 @@ class AdminUserListView(APIView):
             status=serializer.validated_data["status"],
             page=serializer.validated_data["page"],
             page_size=serializer.validated_data["page_size"],
+            requester_user_id=request.user.id,
         )
         return admin_success(
             data=AdminUserSerializer(user_list.users, many=True).data,
@@ -460,6 +465,29 @@ class AdminTeamMemberListView(APIView):
     permission_classes = [IsAuthenticated, IsStaffAdmin]
 
     @extend_schema(
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=AdminTeamMemberEditListResponseSerializer,
+                description="팀 멤버 편집용 사용자 목록 조회 성공. members와 non_members로 구분해 반환합니다.",
+            ),
+            403: OpenApiResponse(description="관리자 권한이 없는 사용자입니다."),
+            404: OpenApiResponse(description="해당 팀을 찾을 수 없습니다."),
+        },
+        description="팀 멤버 편집 화면에서 사용할 현재 멤버 목록과 멤버가 아닌 사용자 목록을 조회합니다.",
+    )
+    def get(self, request, team_id: int):
+        try:
+            result = AdminTeamService.get_member_edit_list(
+                team_id=team_id,
+                requester_user_id=request.user.id,
+            )
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        return admin_success(data=AdminTeamMemberEditListSerializer(result).data)
+
+    @extend_schema(
         request=AdminTeamMemberAddRequestSerializer,
         responses={
             200: OpenApiResponse(
@@ -499,6 +527,56 @@ class AdminTeamMemberListView(APIView):
             detail=", ".join(str(user_id) for user_id in result.added_user_ids),
         )
         return admin_success(data=result.__dict__)
+
+    @extend_schema(
+        request=AdminTeamMemberUpdateRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=AdminTeamMemberEditListResponseSerializer,
+                description="팀 멤버 편집 성공. 편집 후 members와 non_members를 다시 반환합니다.",
+            ),
+            403: OpenApiResponse(description="관리자 권한이 없는 사용자입니다."),
+            404: OpenApiResponse(
+                description="팀 또는 사용자 중 찾을 수 없는 리소스가 있습니다."
+            ),
+        },
+        description="팀 멤버 목록을 전달한 사용자 ID 목록으로 교체합니다. 팀장은 반드시 멤버로 남아야 합니다.",
+    )
+    def patch(self, request, team_id: int):
+        serializer = AdminTeamMemberUpdateRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = AdminTeamService.update_members(
+                team_id=team_id,
+                user_ids=serializer.validated_data["user_ids"],
+                requester_user_id=request.user.id,
+            )
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except BlockedUserIncludedError:
+            return admin_error(
+                error_code="BLOCKED_USER_INCLUDED",
+                message="차단된 사용자는 팀에 추가할 수 없습니다.",
+            )
+        except TeamLeaderRequiredError:
+            return admin_error(
+                error_code="TEAM_LEADER_REQUIRED",
+                message="팀장은 팀 멤버에서 제외할 수 없습니다.",
+            )
+
+        team = AdminTeamService.get_team(team_id=team_id)
+        AdminLogService.record(
+            admin=request.user,
+            category="팀",
+            action="팀원 목록을 수정했습니다",
+            target=team.name,
+            detail=", ".join(
+                str(user_id) for user_id in serializer.validated_data["user_ids"]
+            ),
+        )
+        return admin_success(data=AdminTeamMemberEditListSerializer(result).data)
 
 
 class AdminTeamLeaderView(APIView):

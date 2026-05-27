@@ -109,6 +109,74 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         member_ids = [item["id"] for item in detail_response.data["data"]["members"]]
         self.assertNotIn(service_user.id, member_ids)
 
+    def test_staff_can_get_team_member_edit_list(self):
+        suffix = self._suffix()
+        non_member = User.objects.create_user(
+            kakao_id=int(f"9105{suffix}"),
+            email=f"non-member-{suffix}@example.com",
+            nickname=f"non-member-{suffix}",
+        )
+        service_user = User.objects.create_user(
+            kakao_id=-1,
+            email=f"service-edit-{suffix}@example.com",
+            nickname=f"service-edit-{suffix}",
+        )
+
+        response = self.client.get(f"/api/v1/admin/teams/{self.team.id}/members")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        member_ids = [item["id"] for item in response.data["data"]["members"]]
+        non_member_ids = [item["id"] for item in response.data["data"]["non_members"]]
+        self.assertEqual(member_ids, [self.leader.id, self.member_user.id])
+        self.assertIn(non_member.id, non_member_ids)
+        self.assertNotIn(self.admin_user.id, non_member_ids)
+        self.assertNotIn(service_user.id, non_member_ids)
+
+    def test_staff_can_update_team_members(self):
+        suffix = self._suffix()
+        new_user = User.objects.create_user(
+            kakao_id=int(f"9106{suffix}"),
+            email=f"new-member-{suffix}@example.com",
+            nickname=f"new-member-{suffix}",
+        )
+
+        response = self.client.patch(
+            f"/api/v1/admin/teams/{self.team.id}/members",
+            {"user_ids": [self.leader.id, new_user.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        member_ids = [item["id"] for item in response.data["data"]["members"]]
+        non_member_ids = [item["id"] for item in response.data["data"]["non_members"]]
+        self.assertEqual(member_ids, [self.leader.id, new_user.id])
+        self.assertIn(self.member_user.id, non_member_ids)
+        self.assertTrue(
+            TeamMember.objects.filter(
+                team=self.team,
+                user=new_user,
+                status=TeamMemberStatus.ACTIVE,
+            ).exists()
+        )
+        self.assertTrue(
+            TeamMember.objects.filter(
+                team=self.team,
+                user=self.member_user,
+                status=TeamMemberStatus.LEFT,
+            ).exists()
+        )
+
+    def test_update_team_members_requires_leader(self):
+        response = self.client.patch(
+            f"/api/v1/admin/teams/{self.team.id}/members",
+            {"user_ids": [self.member_user.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["ok"])
+        self.assertEqual(response.data["error_code"], "TEAM_LEADER_REQUIRED")
+
     def test_staff_can_create_team_with_current_admin_as_leader_for_zero(self):
         team_name = f"team-b-{self._suffix()}"
         response = self.client.post(
