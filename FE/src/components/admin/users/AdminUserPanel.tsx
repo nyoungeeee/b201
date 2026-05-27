@@ -16,6 +16,7 @@ import type {
   AdminManagedTeam,
   AdminManagedUser,
   AdminTeamColor,
+  AdminTeamMemberEditUser,
   AdminTeamLeaderFilterOption,
 } from "./types";
 
@@ -217,30 +218,27 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     onToast?.("팀 설정을 저장했습니다.");
   };
 
-  const handleAddMembers = (teamId: number, memberIds: number[]) => {
-    adminApi.addTeamMembers(teamId, memberIds).catch(console.error);
-    setTeams((currentTeams) =>
-      currentTeams.map((team) => {
-        if (team.id !== teamId) {
-          return team;
-        }
+  const handleUpdateMembers = async (teamId: number, memberIds: number[]) => {
+    const updatedMembers = await adminApi.updateTeamMembers(teamId, memberIds);
+    const updatedMemberIds = updatedMembers.members.map((member) => member.id);
 
-        return {
-          ...team,
-          memberIds: Array.from(new Set([...team.memberIds, ...memberIds])),
-          updatedAt: "2026.05.14",
-        };
-      }),
-    );
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        memberIds.includes(user.id) && !user.teams.includes(teamId)
-          ? { ...user, teams: [...user.teams, teamId] }
-          : user,
+    setTeams((currentTeams) =>
+      currentTeams.map((team) =>
+        team.id === teamId
+          ? { ...team, memberIds: updatedMemberIds, updatedAt: "2026.05.14" }
+          : team,
       ),
     );
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => ({
+        ...user,
+        teams: updatedMemberIds.includes(user.id)
+          ? Array.from(new Set([...user.teams, teamId]))
+          : user.teams.filter((id) => id !== teamId),
+      })),
+    );
     goBack();
-    onToast?.("팀 멤버를 추가했습니다.");
+    onToast?.("팀 멤버를 수정했습니다.");
   };
 
   const handleChangeLeader = (teamId: number, leaderId: number) => {
@@ -374,9 +372,8 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     return (
       <AddMembersScreen
         team={team}
-        users={users}
         onBack={goBack}
-        onAdd={(memberIds) => handleAddMembers(team.id, memberIds)}
+        onSave={(memberIds) => void handleUpdateMembers(team.id, memberIds).catch(console.error)}
       />
     );
   }
@@ -904,7 +901,7 @@ const TeamDetailScreen = ({
         </section>
         <section className="admin-quick-actions">
           <button type="button" onClick={onChangeLeader}>리더 변경 <AdminChevronRightIcon /></button>
-          <button type="button" onClick={onAddMembers}>멤버 추가 <AdminChevronRightIcon /></button>
+          <button type="button" onClick={onAddMembers}>멤버 수정 <AdminChevronRightIcon /></button>
         </section>
       </div>
       <footer className="admin-sub-actions">
@@ -1139,52 +1136,103 @@ const ColorPicker = ({
 
 const AddMembersScreen = ({
   team,
-  users,
   onBack,
-  onAdd,
+  onSave,
 }: {
   team: AdminManagedTeam;
-  users: AdminManagedUser[];
   onBack: () => void;
-  onAdd: (memberIds: number[]) => void;
+  onSave: (memberIds: number[]) => void;
 }) => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const candidates = users.filter((user) => user.status !== "blocked");
+  const [members, setMembers] = useState<AdminTeamMemberEditUser[]>([]);
+  const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    adminApi.getTeamMemberEditList(team.id).then((data) => {
+      if (!isMounted) {
+        return;
+      }
+
+      const nextMembers = [...data.members, ...data.nonMembers];
+
+      setMembers(nextMembers);
+      setSelectedIds(data.members.map((member) => member.id));
+    }).catch(console.error).finally(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [team.id]);
+
+  const filteredMembers = members.filter((member) => {
+    const keyword = query.trim().toLowerCase();
+
+    if (!keyword) {
+      return true;
+    }
+
+    return member.nickname.toLowerCase().includes(keyword) || member.email.toLowerCase().includes(keyword);
+  });
 
   return (
     <section className="admin-sub-screen">
-      <ScreenHeader title="멤버 추가" onBack={onBack} />
+      <ScreenHeader title="멤버 수정" onBack={onBack} />
       <div className="admin-sub-screen__content">
         <p className="admin-subtitle">대상 팀: <strong>{team.name}</strong></p>
         <label className="admin-user-search admin-user-search--wide">
           <AdminUserIcon />
-          <input placeholder="닉네임 또는 이메일 검색" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="닉네임 또는 이메일 검색"
+          />
         </label>
         <div className="admin-member-list">
-          {candidates.map((user) => {
-            const checked = selectedIds.includes(user.id);
+          {isLoading ? (
+            <p className="admin-member-list__empty">멤버 목록을 불러오는 중입니다.</p>
+          ) : filteredMembers.length > 0 ? (
+            filteredMembers.map((user) => {
+              const checked = selectedIds.includes(user.id);
 
-            return (
-              <label className="admin-selectable-user admin-selectable-user--no-avatar" key={user.id}>
-                <strong>{user.nickname}</strong>
-                <span>{user.email}</span>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() =>
-                    setSelectedIds((currentIds) =>
-                      checked ? currentIds.filter((id) => id !== user.id) : [...currentIds, user.id],
-                    )
-                  }
-                />
-              </label>
-            );
-          })}
+              return (
+                <label
+                  className={[
+                    "admin-selectable-user",
+                    "admin-selectable-user--no-avatar",
+                    user.isMember ? "is-member" : "",
+                  ].filter(Boolean).join(" ")}
+                  key={user.id}
+                >
+                  <strong>{user.nickname}</strong>
+                  <span>{user.email}</span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={user.isLeader}
+                    onChange={() =>
+                      setSelectedIds((currentIds) =>
+                        checked ? currentIds.filter((id) => id !== user.id) : [...currentIds, user.id],
+                      )
+                    }
+                  />
+                </label>
+              );
+            })
+          ) : (
+            <p className="admin-member-list__empty">조건에 맞는 사용자가 없습니다.</p>
+          )}
         </div>
       </div>
       <footer className="admin-sub-actions">
         <button type="button" onClick={onBack}>취소</button>
-        <button type="button" onClick={() => onAdd(selectedIds)}>추가하기</button>
+        <button type="button" onClick={() => onSave(selectedIds)} disabled={isLoading}>저장하기</button>
       </footer>
     </section>
   );

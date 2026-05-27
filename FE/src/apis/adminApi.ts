@@ -22,6 +22,8 @@ import type {
     AdminManagedTeam,
     AdminManagedUser,
     AdminTeamColor,
+    AdminTeamMemberEditList,
+    AdminTeamMemberEditUser,
     AdminTeamLeaderFilterOption,
 } from '../components/admin/users/types';
 import {
@@ -47,6 +49,19 @@ type ApiTeamColor = {
     name: string;
     value: string;
     available: boolean;
+};
+
+type ApiTeamMember = {
+    id: number;
+    nickname?: string | null;
+    email?: string | null;
+    status: 'normal' | 'blocked';
+    is_leader: boolean;
+};
+
+type ApiTeamMemberEditList = {
+    members: ApiTeamMember[];
+    non_members: ApiTeamMember[];
 };
 
 type ApiLog = {
@@ -138,6 +153,27 @@ const requestVoid = async (
 };
 
 const toApiDate = (dateLabel: string): string => dateLabel.replaceAll('.', '-');
+
+const toTeamMemberEditUser = (
+    user: ApiTeamMember,
+    isMember: boolean,
+): AdminTeamMemberEditUser => ({
+    id: user.id,
+    nickname: user.nickname || '이름 없음',
+    email: user.email || '',
+    status: user.status,
+    isLeader: user.is_leader,
+    isMember,
+});
+
+const toTeamMemberEditList = (
+    data: ApiTeamMemberEditList,
+): AdminTeamMemberEditList => ({
+    members: data.members.map((user) => toTeamMemberEditUser(user, true)),
+    nonMembers: data.non_members.map((user) =>
+        toTeamMemberEditUser(user, false),
+    ),
+});
 
 const formatLogTime = (value: string): string => {
     const date = new Date(value);
@@ -425,6 +461,32 @@ export const addTeamMembers = async (
         method: 'POST',
         body: JSON.stringify({ user_ids: memberIds }),
     });
+};
+
+export const getTeamMemberEditList = async (
+    id: number,
+): Promise<AdminTeamMemberEditList> => {
+    const data = await requestJson<ApiTeamMemberEditList>(
+        `teams/${id}/members`,
+        { method: 'GET' },
+    );
+
+    return toTeamMemberEditList(data);
+};
+
+export const updateTeamMembers = async (
+    id: number,
+    memberIds: number[],
+): Promise<AdminTeamMemberEditList> => {
+    const data = await requestJson<ApiTeamMemberEditList>(
+        `teams/${id}/members`,
+        {
+            method: 'PATCH',
+            body: JSON.stringify({ user_ids: memberIds }),
+        },
+    );
+
+    return toTeamMemberEditList(data);
 };
 
 export const changeTeamLeader = async (

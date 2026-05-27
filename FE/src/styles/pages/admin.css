@@ -2131,6 +2131,15 @@
   grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr) auto;
 }
 
+.admin-member-list__empty {
+  margin: 0;
+  padding: 18px 0;
+  color: rgba(247, 248, 251, 0.58);
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  text-align: center;
+}
+
 .admin-user-team-info strong,
 .admin-user-team-info__item strong,
 .admin-member-list strong,

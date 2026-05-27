@@ -25,6 +25,20 @@ export type AdminManagedTeam = {
   updatedAt: string;
 };
 
+export type AdminTeamMemberEditUser = {
+  id: number;
+  nickname: string;
+  email: string;
+  status: AdminUserStatus;
+  isLeader: boolean;
+  isMember: boolean;
+};
+
+export type AdminTeamMemberEditList = {
+  members: AdminTeamMemberEditUser[];
+  nonMembers: AdminTeamMemberEditUser[];
+};
+
 export type AdminTeamLeaderFilterOption = {
   id: number;
   nickname: string;
