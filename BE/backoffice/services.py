@@ -863,7 +863,7 @@ class AdminReservationService:
             today = timezone.localdate()
             queryset = queryset.filter(
                 reservation_date__gte=today,
-                reservation_date__lte=today + timedelta(days=date_range),
+                reservation_date__lte=today + timedelta(days=date_range - 1),
             )
         if team_type == "team":
             queryset = queryset.filter(booking_type=BookingType.TEAM)
