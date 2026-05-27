@@ -61,6 +61,21 @@ const formatOccurrenceLabel = (date: Date, timeLabel: string) => {
   return `${year}.${month}.${day} ${weekdays[date.getDay()]} ${timeLabel}`;
 };
 
+const formatCanceledDateLabel = (dateValue: string) => {
+  const date = new Date(`${dateValue}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateValue.replaceAll("-", ".");
+  }
+
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}.${month}.${day} ${weekdays[date.getDay()]}`;
+};
+
 const parsePeriodDate = (value: string, year: number) => {
   const [month, day] = value.split(".").map(Number);
 
@@ -159,6 +174,10 @@ const AdminReservationDetail = ({
   const [selectedOccurrenceDates, setSelectedOccurrenceDates] = useState<string[]>([]);
   const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
   const remainingOccurrences = useMemo(() => getRemainingOccurrences(reservation), [reservation]);
+  const canceledOccurrenceLabels = useMemo(
+    () => [...(reservation.canceledOccurrenceDates ?? [])].sort().map(formatCanceledDateLabel),
+    [reservation.canceledOccurrenceDates],
+  );
   const canSelectOccurrences = !isPending && isRepeatReservation;
   const areAllOccurrencesSelected =
     remainingOccurrences.length > 0 && selectedOccurrenceDates.length === remainingOccurrences.length;
@@ -277,6 +296,24 @@ const AdminReservationDetail = ({
           </h3>
           <p>{reservation.memo || "등록된 메모가 없습니다."}</p>
         </section>
+
+        {canceledOccurrenceLabels.length > 0 && (
+          <section className="admin-detail-card admin-conflict-dates">
+            <h3>
+              <span>
+                <AdminCalendarIcon size={26} />
+              </span>
+              충돌 날짜
+            </h3>
+            <div className="admin-conflict-dates__list">
+              {canceledOccurrenceLabels.map((dateLabel) => (
+                <span className="admin-conflict-dates__item" key={dateLabel}>
+                  {dateLabel}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         {canSelectOccurrences && (
           <section className="admin-detail-card admin-repeat-cancel">

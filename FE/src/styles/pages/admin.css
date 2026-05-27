@@ -709,6 +709,25 @@
   line-height: 1.55;
 }
 
+.admin-conflict-dates__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-conflict-dates__item {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  color: #ffffff;
+  background: rgba(47, 140, 255, 0.16);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+}
+
 .admin-repeat-cancel__header {
   display: flex;
   align-items: center;
