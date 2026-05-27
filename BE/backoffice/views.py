@@ -18,6 +18,7 @@ from backoffice.serializers import (
     AdminLogListResponseSerializer,
     AdminLogQuerySerializer,
     AdminLogSerializer,
+    AdminMeResponseSerializer,
     AdminReservationCancelOccurrencesRequestSerializer,
     AdminReservationCancelOccurrencesResponseSerializer,
     AdminReservationCancelOccurrencesSerializer,
@@ -102,6 +103,25 @@ def admin_error(
     if data is not None:
         body["data"] = data
     return Response(body, status=status_code)
+
+
+class AdminMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="admin_me",
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=AdminMeResponseSerializer,
+                description="현재 로그인 사용자의 관리자 권한 여부를 조회합니다.",
+            ),
+            401: OpenApiResponse(description="로그인이 필요합니다."),
+        },
+        description="관리자 화면 진입 전 현재 사용자의 is_staff 여부를 확인합니다.",
+    )
+    def get(self, request):
+        return admin_success(data={"is_staff": request.user.is_staff})
 
 
 class AdminUserListView(APIView):

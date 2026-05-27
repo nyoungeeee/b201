@@ -58,6 +58,10 @@ type ApiLog = {
     created_at: string;
 };
 
+type ApiAdminMe = {
+    is_staff: boolean;
+};
+
 const ADMIN_API_MESSAGE = {
     requestError: '관리자 API 요청에 실패했습니다.',
     roomNotFound: '선택한 합주실 정보를 찾을 수 없습니다.',
@@ -224,6 +228,12 @@ export const getReservations = async (): Promise<AdminReservation[]> => {
     return [...pendingReservations, ...approvedReservations].map((reservation) =>
         toReservation(reservation, new Date(), adminUserId),
     );
+};
+
+export const checkAdminAccess = async (): Promise<boolean> => {
+    const data = await requestJson<ApiAdminMe>('me', { method: 'GET' });
+
+    return data.is_staff;
 };
 
 export const approveReservation = async (id: number): Promise<void> => {
