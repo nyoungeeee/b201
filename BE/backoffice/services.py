@@ -57,10 +57,12 @@ class AdminUserService:
         status: str,
         page: int,
         page_size: int,
+        requester_user_id: int,
     ) -> AdminUserList:
         queryset = (
             User.objects.exclude(status=UserStatus.WITHDRAWN)
             .filter(kakao_id__gte=0)
+            .exclude(id=requester_user_id)
             .order_by("-created_at", "-id")
         )
 

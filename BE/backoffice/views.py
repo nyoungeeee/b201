@@ -149,6 +149,7 @@ class AdminUserListView(APIView):
             status=serializer.validated_data["status"],
             page=serializer.validated_data["page"],
             page_size=serializer.validated_data["page_size"],
+            requester_user_id=request.user.id,
         )
         return admin_success(
             data=AdminUserSerializer(user_list.users, many=True).data,
