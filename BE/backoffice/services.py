@@ -173,6 +173,12 @@ class AdminTeamDetail(AdminTeamInfo):
 
 
 @dataclass
+class AdminTeamMemberEditList:
+    members: list[AdminTeamMemberInfo]
+    non_members: list[AdminTeamMemberInfo]
+
+
+@dataclass
 class AdminTeamList:
     teams: list[AdminTeamInfo]
     pagination: dict[str, int]
@@ -318,6 +324,33 @@ class AdminTeamService:
     def get_team(team_id: int) -> AdminTeamDetail:
         return AdminTeamService._build_team_detail(
             AdminTeamService._get_active_team(team_id)
+        )
+
+    @staticmethod
+    def get_member_edit_list(team_id: int, requester_user_id: int):
+        team = AdminTeamService._get_active_team(team_id)
+        member_infos = AdminTeamService._get_team_member_infos(
+            team=team,
+            exclude_user_id=requester_user_id,
+        )
+        member_ids = [member.id for member in member_infos]
+        non_members = (
+            User.objects.exclude(status=UserStatus.WITHDRAWN)
+            .filter(kakao_id__gte=0, is_active=True)
+            .exclude(id=requester_user_id)
+            .exclude(id__in=member_ids)
+            .order_by("-created_at", "-id")
+        )
+
+        return AdminTeamMemberEditList(
+            members=member_infos,
+            non_members=[
+                AdminTeamService._build_team_member_info(
+                    user=user,
+                    is_leader=False,
+                )
+                for user in non_members
+            ],
         )
 
     @staticmethod
@@ -520,6 +553,17 @@ class AdminTeamService:
     def _build_team_detail(team: Team) -> AdminTeamDetail:
         team = Team.objects.select_related("owner", "team_color").get(id=team.id)
         info = AdminTeamService._build_team_info(team)
+        members = AdminTeamService._get_team_member_infos(team=team)
+        return AdminTeamDetail(
+            **info.__dict__,
+            member_ids=[member.id for member in members],
+            members=members,
+        )
+
+    @staticmethod
+    def _get_team_member_infos(
+        team: Team, exclude_user_id: int | None = None
+    ) -> list[AdminTeamMemberInfo]:
         memberships = (
             team.team_members.filter(
                 status=TeamMemberStatus.ACTIVE,
@@ -528,21 +572,28 @@ class AdminTeamService:
             .select_related("user")
             .order_by("joined_at", "id")
         )
-        members = [
-            AdminTeamMemberInfo(
-                id=membership.user_id,
-                nickname=membership.user.nickname,
-                email=membership.user.email,
-                status=AdminUserService._map_status(membership.user.status),
-                is_leader=membership.user_id == team.owner_id
-                or membership.role == TeamMemberRole.LEADER,
+        if exclude_user_id is not None:
+            memberships = memberships.exclude(user_id=exclude_user_id)
+
+        return [
+            AdminTeamService._build_team_member_info(
+                user=membership.user,
+                is_leader=(
+                    membership.user_id == team.owner_id
+                    or membership.role == TeamMemberRole.LEADER
+                ),
             )
             for membership in memberships
         ]
-        return AdminTeamDetail(
-            **info.__dict__,
-            member_ids=[member.id for member in members],
-            members=members,
+
+    @staticmethod
+    def _build_team_member_info(user, is_leader: bool) -> AdminTeamMemberInfo:
+        return AdminTeamMemberInfo(
+            id=user.id,
+            nickname=user.nickname,
+            email=user.email,
+            status=AdminUserService._map_status(user.status),
+            is_leader=is_leader,
         )
 
     @staticmethod

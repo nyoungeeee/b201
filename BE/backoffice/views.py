@@ -47,6 +47,8 @@ from backoffice.serializers import (
     AdminTeamListResponseSerializer,
     AdminTeamMemberAddRequestSerializer,
     AdminTeamMemberAddResponseSerializer,
+    AdminTeamMemberEditListResponseSerializer,
+    AdminTeamMemberEditListSerializer,
     AdminTeamSerializer,
     AdminTeamUpdateRequestSerializer,
     AdminUserListQuerySerializer,
@@ -459,6 +461,29 @@ class AdminTeamDetailView(APIView):
 
 class AdminTeamMemberListView(APIView):
     permission_classes = [IsAuthenticated, IsStaffAdmin]
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=AdminTeamMemberEditListResponseSerializer,
+                description="팀 멤버 편집용 사용자 목록 조회 성공. members와 non_members로 구분해 반환합니다.",
+            ),
+            403: OpenApiResponse(description="관리자 권한이 없는 사용자입니다."),
+            404: OpenApiResponse(description="해당 팀을 찾을 수 없습니다."),
+        },
+        description="팀 멤버 편집 화면에서 사용할 현재 멤버 목록과 멤버가 아닌 사용자 목록을 조회합니다.",
+    )
+    def get(self, request, team_id: int):
+        try:
+            result = AdminTeamService.get_member_edit_list(
+                team_id=team_id,
+                requester_user_id=request.user.id,
+            )
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        return admin_success(data=AdminTeamMemberEditListSerializer(result).data)
 
     @extend_schema(
         request=AdminTeamMemberAddRequestSerializer,

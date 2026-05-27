@@ -188,6 +188,19 @@ class AdminTeamDetailSerializer(AdminTeamSerializer):
     )
 
 
+class AdminTeamMemberEditListSerializer(serializers.Serializer):
+    members = AdminTeamMemberSerializer(
+        many=True,
+        required=True,
+        help_text="현재 팀에 속한 사용자 목록",
+    )
+    non_members = AdminTeamMemberSerializer(
+        many=True,
+        required=True,
+        help_text="현재 팀에 속하지 않은 사용자 목록",
+    )
+
+
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
@@ -940,6 +953,13 @@ class AdminTeamListResponseSerializer(serializers.Serializer):
 class AdminTeamDetailResponseSerializer(serializers.Serializer):
     ok = serializers.BooleanField(required=True, help_text="요청 성공 여부")
     data = AdminTeamDetailSerializer(required=True, help_text="팀 상세 정보")
+
+
+class AdminTeamMemberEditListResponseSerializer(serializers.Serializer):
+    ok = serializers.BooleanField(required=True, help_text="요청 성공 여부")
+    data = AdminTeamMemberEditListSerializer(
+        required=True, help_text="팀 멤버 편집용 사용자 목록"
+    )
 
 
 class AdminTeamMemberAddDataSerializer(serializers.Serializer):
