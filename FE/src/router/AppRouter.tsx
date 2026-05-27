@@ -1,5 +1,8 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
+import adminFavicon from '../assets/B201-admin-favicon.ico';
+import favicon from '../assets/favicon.ico';
 import AdminPage from '../pages/AdminPage';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
@@ -16,9 +19,29 @@ import TeamColorChangePage from '../pages/TeamColorChangePage';
 import TeamLeaderChangePage from '../pages/TeamLeaderChangePage';
 import WithdrawPage from '../pages/WithdrawPage';
 
+const AppDocumentMetadata = () => {
+    const { pathname } = useLocation();
+    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+
+    useEffect(() => {
+        document.title = isAdminRoute ? 'ADMIN - B201' : 'B201';
+
+        const faviconLink = document.querySelector<HTMLLinkElement>(
+            'link#app-favicon',
+        );
+
+        if (faviconLink) {
+            faviconLink.href = isAdminRoute ? adminFavicon : favicon;
+        }
+    }, [isAdminRoute]);
+
+    return null;
+};
+
 const AppRouter = () => {
     return (
         <BrowserRouter>
+            <AppDocumentMetadata />
             <Routes>
                 <Route path="/" element={<ReservationStatusPage />} />
                 <Route path="/reservation/apply" element={<ReservationApplyPage />} />

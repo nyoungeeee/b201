@@ -104,6 +104,13 @@
   border-radius: 999px;
 }
 
+.calendar-day__holiday {
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  color: var(--text-muted);
+}
+
 .calendar-day--adjacent .calendar-day__label {
   color: var(--calendar-text-adjacent);
 }
@@ -122,6 +129,10 @@
 
 .calendar-day--sat.calendar-day--adjacent .calendar-day__label {
   color: var(--calendar-saturday-adjacent);
+}
+
+.calendar-day--holiday .calendar-day__label {
+  color: var(--text-muted);
 }
 
 .calendar-day--selected {

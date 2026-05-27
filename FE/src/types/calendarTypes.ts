@@ -35,6 +35,7 @@ export interface MonthScheduleDay {
     colors: string[];
     dotDisplay: CalendarDotDisplay;
     disabled: boolean;
+    isHoliday: boolean;
 }
 
 export interface MonthSchedule {

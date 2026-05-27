@@ -82,6 +82,7 @@ export const mapRoomMonthResponse = (
                 colors: normalizedColors,
                 dotDisplay: mapCalendarDotDisplay(normalizedColors),
                 disabled: day.disabled,
+                isHoliday: day.is_holiday,
             };
         }),
     };

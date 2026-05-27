@@ -1,16 +1,21 @@
 .reservation-apply-page {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: 100%;
   width: 100%;
   max-width: var(--mobile-max-width);
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-block: var(--space-16) calc(var(--cta-height) + var(--space-56));
+  padding-top: var(--space-16);
+  padding-bottom: calc(
+    var(--button-height-md)
+    + var(--space-28)
+    + var(--space-20)
+  );
   padding-inline: var(--space-16);
   margin: 0 auto;
   background: var(--bg-primary);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .reservation-apply-page > * {
@@ -316,6 +321,7 @@
 
 .reservation-date-section {
   margin-top: var(--space-28);
+  padding-bottom: var(--space-28);
 }
 
 .reservation-date-section__title {
@@ -402,6 +408,7 @@
 .reservation-apply-calendar__day {
   width: 44px;
   aspect-ratio: 1 / 1;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -456,6 +463,17 @@
 .reservation-apply-calendar__day.is-disabled.is-selected {
   color: var(--text-disabled);
   background: transparent;
+}
+
+.reservation-apply-calendar__holiday {
+  position: absolute;
+  top: calc(50% + 13px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  color: var(--text-muted);
 }
 
 .reservation-time-section {
