@@ -58,8 +58,10 @@ class AdminUserService:
         page: int,
         page_size: int,
     ) -> AdminUserList:
-        queryset = User.objects.exclude(status=UserStatus.WITHDRAWN).order_by(
-            "-created_at", "-id"
+        queryset = (
+            User.objects.exclude(status=UserStatus.WITHDRAWN)
+            .filter(kakao_id__gte=0)
+            .order_by("-created_at", "-id")
         )
 
         if q:
@@ -275,7 +277,10 @@ class AdminTeamService:
             .annotate(
                 active_member_count=Count(
                     "team_members",
-                    filter=Q(team_members__status=TeamMemberStatus.ACTIVE),
+                    filter=Q(
+                        team_members__status=TeamMemberStatus.ACTIVE,
+                        team_members__user__kakao_id__gte=0,
+                    ),
                     distinct=True,
                 )
             )
@@ -504,6 +509,7 @@ class AdminTeamService:
             or TeamMember.objects.filter(
                 team=team,
                 status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
             ).count(),
             updated_at=team.updated_at.date(),
         )
@@ -513,7 +519,10 @@ class AdminTeamService:
         team = Team.objects.select_related("owner", "team_color").get(id=team.id)
         info = AdminTeamService._build_team_info(team)
         memberships = (
-            team.team_members.filter(status=TeamMemberStatus.ACTIVE)
+            team.team_members.filter(
+                status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
+            )
             .select_related("user")
             .order_by("joined_at", "id")
         )
@@ -537,7 +546,10 @@ class AdminTeamService:
     @staticmethod
     def _get_member_ids(team: Team) -> list[int]:
         return list(
-            team.team_members.filter(status=TeamMemberStatus.ACTIVE)
+            team.team_members.filter(
+                status=TeamMemberStatus.ACTIVE,
+                user__kakao_id__gte=0,
+            )
             .order_by("joined_at", "id")
             .values_list("user_id", flat=True)
         )
@@ -740,13 +752,14 @@ class AdminReservationService:
         queryset = queryset.order_by(
             "-reservation_date", "-start_time", "-reservation_number"
         )
-        total_count = queryset.count()
+        bookings = AdminReservationService._collapse_repeat_groups(list(queryset))
+        total_count = len(bookings)
         start = (page - 1) * page_size
         end = start + page_size
         return AdminReservationList(
             reservations=[
                 AdminReservationService._build_reservation_info(booking)
-                for booking in queryset[start:end]
+                for booking in bookings[start:end]
             ],
             pagination=build_pagination(
                 page=page,
@@ -925,6 +938,22 @@ class AdminReservationService:
                 booking.canceled_by.nickname if booking.canceled_by_id else None
             ),
         )
+
+    @staticmethod
+    def _collapse_repeat_groups(bookings: list[Booking]) -> list[Booking]:
+        grouped_bookings = []
+        repeat_group_ids = set()
+
+        for booking in bookings:
+            if booking.repeat_group_id is None:
+                grouped_bookings.append(booking)
+                continue
+            if booking.repeat_group_id in repeat_group_ids:
+                continue
+            repeat_group_ids.add(booking.repeat_group_id)
+            grouped_bookings.append(booking)
+
+        return grouped_bookings
 
     @staticmethod
     def _build_conflict_info(booking: Booking) -> AdminReservationConflictInfo:

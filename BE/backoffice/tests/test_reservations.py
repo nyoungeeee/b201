@@ -140,6 +140,63 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["data"]["id"], booking.reservation_number)
 
+    def test_repeat_reservation_list_collapses_same_repeat_group(self):
+        repeat_group_id = uuid4()
+        first_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=7),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+        latest_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=14),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+            repeat_group_id=repeat_group_id,
+            repeat_weekdays=[2],
+            repeat_start_date=self.today,
+            repeat_end_date=self.today + timedelta(days=14),
+        )
+
+        response = self.client.get(
+            "/api/v1/admin/reservations?status=approved&date_range=30"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(len(response.data["data"]), 1)
+        self.assertEqual(response.data["data"][0]["kind"], "repeat")
+        self.assertEqual(
+            response.data["data"][0]["id"], latest_booking.reservation_number
+        )
+        self.assertNotEqual(
+            response.data["data"][0]["id"], first_booking.reservation_number
+        )
+
     def test_team_reservation_response_uses_user_nickname_as_reserver_name(self):
         booking = Booking.objects.create(
             room=self.room,

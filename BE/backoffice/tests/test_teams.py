@@ -86,6 +86,29 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         )
         self.assertTrue(response.data["data"]["members"][0]["is_leader"])
 
+    def test_team_user_lists_exclude_negative_kakao_id_accounts(self):
+        service_user = User.objects.create_user(
+            kakao_id=-1,
+            email="service-team@example.com",
+            nickname="service-team",
+        )
+        TeamMember.objects.create(
+            team=self.team,
+            user=service_user,
+            role=TeamMemberRole.MEMBER,
+            status=TeamMemberStatus.ACTIVE,
+        )
+
+        list_response = self.client.get("/api/v1/admin/teams")
+        detail_response = self.client.get(f"/api/v1/admin/teams/{self.team.id}")
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data["data"][0]["member_count"], 2)
+        self.assertNotIn(service_user.id, detail_response.data["data"]["member_ids"])
+        member_ids = [item["id"] for item in detail_response.data["data"]["members"]]
+        self.assertNotIn(service_user.id, member_ids)
+
     def test_staff_can_create_team_with_current_admin_as_leader_for_zero(self):
         team_name = f"team-b-{self._suffix()}"
         response = self.client.post(

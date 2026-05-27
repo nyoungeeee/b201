@@ -15,6 +15,20 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(users[self.admin_user.id]["status"], "normal")
         self.assertEqual(users[self.member_user.id]["team_ids"], [])
 
+    def test_user_list_excludes_negative_kakao_id_accounts(self):
+        service_user = User.objects.create_user(
+            kakao_id=-1,
+            email="service@example.com",
+            nickname="service",
+        )
+
+        response = self.client.get("/api/v1/admin/users")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 2)
+        user_ids = [item["id"] for item in response.data["data"]]
+        self.assertNotIn(service_user.id, user_ids)
+
     def test_non_staff_cannot_get_user_list(self):
         self._authenticate(self.member_user)
 
