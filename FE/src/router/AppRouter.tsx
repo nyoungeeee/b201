@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 import adminFavicon from '../assets/B201-admin-favicon.ico';
 import favicon from '../assets/favicon.ico';
+import RequireAuth from '../components/auth/RequireAuth';
 import AdminPage from '../pages/AdminPage';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
@@ -44,19 +45,21 @@ const AppRouter = () => {
             <AppDocumentMetadata />
             <Routes>
                 <Route path="/" element={<ReservationStatusPage />} />
-                <Route path="/reservation/apply" element={<ReservationApplyPage />} />
                 <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
-                <Route path="/my" element={<MyInfoPage />} />
-                <Route path="/reservations" element={<MyReservationPage />} />
-                <Route path="/reservations/:reservationId" element={<MyReservationDetailPage />} />
-                <Route path="/my/nickname" element={<NicknameEditPage />} />
-                <Route path="/my/detail" element={<MyInfoDetailPage />} />
                 <Route path="/my/detail/:type" element={<PolicyPage />} />
-                <Route path="/my/detail/withdraw" element={<WithdrawPage />} />
-                <Route path="/team" element={<MyTeamPage />} />
-                <Route path="/team/:id" element={<MyTeamDetailPage />} />
-                <Route path="/team/:id/color" element={<TeamColorChangePage />} />
-                <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
+                <Route element={<RequireAuth />}>
+                    <Route path="/reservation/apply" element={<ReservationApplyPage />} />
+                    <Route path="/my" element={<MyInfoPage />} />
+                    <Route path="/reservations" element={<MyReservationPage />} />
+                    <Route path="/reservations/:reservationId" element={<MyReservationDetailPage />} />
+                    <Route path="/my/nickname" element={<NicknameEditPage />} />
+                    <Route path="/my/detail" element={<MyInfoDetailPage />} />
+                    <Route path="/my/detail/withdraw" element={<WithdrawPage />} />
+                    <Route path="/team" element={<MyTeamPage />} />
+                    <Route path="/team/:id" element={<MyTeamDetailPage />} />
+                    <Route path="/team/:id/color" element={<TeamColorChangePage />} />
+                    <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
+                </Route>
                 <Route path="/admin" element={<AdminPage />} />
             </Routes>
         </BrowserRouter>

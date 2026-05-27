@@ -33,3 +33,4 @@ export const AUTH_USER_KEY = getStorageKey(
     DEFAULT_AUTH_USER_KEY,
 );
 export const KAKAO_AUTH_STATE_KEY = 'b201_kakao_auth_state';
+export const KAKAO_AUTH_RETURN_TO_KEY = 'b201_kakao_auth_return_to';

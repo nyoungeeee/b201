@@ -6,7 +6,10 @@ import BottomHero from '../components/branding/BottomHero';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
 import { saveAuthSession } from '../utils/authStorage';
-import { verifyKakaoAuthState } from '../utils/kakaoAuth';
+import {
+    takeKakaoAuthReturnTo,
+    verifyKakaoAuthState,
+} from '../utils/kakaoAuth';
 
 const KAKAO_CALLBACK_TEXT = {
     loading: '로그인 중...',
@@ -26,6 +29,7 @@ const KakaoCallbackPage = () => {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
+        const returnTo = takeKakaoAuthReturnTo();
 
         if (error || !code || !verifyKakaoAuthState(state)) {
             navigate('/', {
@@ -42,7 +46,7 @@ const KakaoCallbackPage = () => {
                 const signinResponse = await signinWithKakao(code);
                 saveAuthSession(signinResponse);
 
-                navigate('/', {
+                navigate(returnTo, {
                     replace: true,
                     state: {
                         toastMessage: KAKAO_CALLBACK_TEXT.success,
