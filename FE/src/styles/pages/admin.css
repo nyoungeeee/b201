@@ -1850,7 +1850,14 @@
 }
 
 .admin-team-avatar {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 6px;
   border-radius: 12px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-user-card__body {
