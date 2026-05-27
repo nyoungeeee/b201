@@ -286,6 +286,23 @@ class AdminTeamMemberAddRequestSerializer(serializers.Serializer):
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
+            "팀 멤버 편집 요청",
+            value={"user_ids": [2, 3]},
+            request_only=True,
+        )
+    ]
+)
+class AdminTeamMemberUpdateRequestSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1, help_text="최종 팀 멤버 사용자 ID"),
+        required=True,
+        help_text="편집 후 팀에 남길 사용자 ID 목록. 요청자 본인은 제외해도 기존 멤버 상태가 유지됩니다.",
+    )
+
+
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
             "팀장 변경 요청",
             value={"leader_id": 2},
             request_only=True,

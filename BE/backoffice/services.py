@@ -220,6 +220,10 @@ class NotTeamMemberError(Exception):
     pass
 
 
+class TeamLeaderRequiredError(Exception):
+    pass
+
+
 class DuplicateRoomNameError(Exception):
     pass
 
@@ -436,6 +440,66 @@ class AdminTeamService:
         return AdminTeamMemberAddResult(
             added_user_ids=added_user_ids,
             member_ids=AdminTeamService._get_member_ids(team),
+        )
+
+    @staticmethod
+    @transaction.atomic
+    def update_members(
+        team_id: int,
+        user_ids: list[int],
+        requester_user_id: int,
+    ) -> AdminTeamMemberEditList:
+        team = AdminTeamService._get_active_team(team_id)
+        requested_user_ids = set(user_ids) - {requester_user_id}
+        protected_user_ids = set(
+            TeamMember.objects.filter(
+                team=team,
+                user_id=requester_user_id,
+                status=TeamMemberStatus.ACTIVE,
+            ).values_list("user_id", flat=True)
+        )
+        target_user_ids = requested_user_ids | protected_user_ids
+
+        if team.owner_id not in target_user_ids:
+            raise TeamLeaderRequiredError()
+
+        users = list(
+            User.objects.exclude(status=UserStatus.WITHDRAWN).filter(
+                id__in=requested_user_ids,
+                is_active=True,
+                kakao_id__gte=0,
+            )
+        )
+        if len(users) != len(requested_user_ids):
+            raise User.DoesNotExist()
+        if any(user.status == UserStatus.BLOCKED for user in users):
+            raise BlockedUserIncludedError()
+
+        TeamMember.objects.filter(
+            team=team,
+            status=TeamMemberStatus.ACTIVE,
+        ).exclude(user_id__in=target_user_ids).update(
+            status=TeamMemberStatus.LEFT,
+            role=TeamMemberRole.MEMBER,
+        )
+
+        for user in users:
+            membership, _ = TeamMember.objects.get_or_create(
+                team=team,
+                user=user,
+                defaults={
+                    "role": TeamMemberRole.MEMBER,
+                    "status": TeamMemberStatus.ACTIVE,
+                },
+            )
+            if membership.status != TeamMemberStatus.ACTIVE:
+                membership.status = TeamMemberStatus.ACTIVE
+                membership.role = TeamMemberRole.MEMBER
+                membership.save(update_fields=["status", "role"])
+
+        return AdminTeamService.get_member_edit_list(
+            team_id=team_id,
+            requester_user_id=requester_user_id,
         )
 
     @staticmethod
