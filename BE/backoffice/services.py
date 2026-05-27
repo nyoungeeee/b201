@@ -10,7 +10,13 @@ from django.utils import timezone
 
 from accounts.models import UserStatus
 from backoffice.models import AdminActionLog
-from bookings.models import Booking, BookingStatus, BookingType
+from bookings.models import (
+    Booking,
+    BookingStatus,
+    BookingType,
+    ReservationRepeatOccurrence,
+    ReservationRepeatOccurrenceStatus,
+)
 from studios.models import ClosureType, RoomClosure, StudioRoom, StudioRoomStatus
 from teams.models import (
     Team,
@@ -954,10 +960,31 @@ class AdminReservationService:
     @transaction.atomic
     def approve_reservation(reservation_id: int) -> AdminReservationInfo:
         booking = AdminReservationService._get_booking(reservation_id)
-        if booking.status == BookingStatus.RESERVED:
+        if not booking.repeat_group_id:
+            if booking.status == BookingStatus.RESERVED:
+                raise AlreadyApprovedError()
+            booking.status = BookingStatus.RESERVED
+            booking.save(update_fields=["status", "updated_at"])
+            return AdminReservationService._build_reservation_info(booking)
+
+        repeat_bookings = Booking.objects.filter(
+            repeat_group_id=booking.repeat_group_id
+        )
+        if not repeat_bookings.filter(status=BookingStatus.PENDING).exists():
             raise AlreadyApprovedError()
-        booking.status = BookingStatus.RESERVED
-        booking.save(update_fields=["status", "updated_at"])
+
+        repeat_bookings.filter(status=BookingStatus.PENDING).update(
+            status=BookingStatus.RESERVED,
+            updated_at=timezone.now(),
+        )
+        ReservationRepeatOccurrence.objects.filter(
+            repeat_group_id=booking.repeat_group_id,
+            status=ReservationRepeatOccurrenceStatus.PENDING,
+        ).update(
+            status=ReservationRepeatOccurrenceStatus.RESERVED,
+            updated_at=timezone.now(),
+        )
+        booking.refresh_from_db()
         return AdminReservationService._build_reservation_info(booking)
 
     @staticmethod
