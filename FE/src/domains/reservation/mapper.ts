@@ -62,5 +62,5 @@ export const mapReservationDetail = (
     }),
     approvedAt: detail.approved_at ?? undefined,
     canceledAt: detail.canceled_at ?? undefined,
-    canceledBy: detail.canceled_by ?? undefined,
+    canceledBy: detail.canceled_by_name ?? undefined,
 });

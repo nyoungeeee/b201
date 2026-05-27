@@ -25,7 +25,7 @@ export interface MyReservation {
     kind: ReservationKind;
     isRepeat: boolean;
     canceledAt?: string;
-    canceledBy?: string | number;
+    canceledBy?: string;
     conflictCount?: number;
     repeatEndAt?: string;
     color: string;

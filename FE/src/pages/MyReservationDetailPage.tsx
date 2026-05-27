@@ -123,11 +123,7 @@ const getApprovedAtLabel = (approvedAt?: string) => (
     approvedAt ? formatDetailDateTime(approvedAt) : '-'
 );
 
-const getCanceledByLabel = (canceledBy?: string | number) => {
-    if (typeof canceledBy === 'number') return `ID ${canceledBy}`;
-
-    return canceledBy ?? '-';
-};
+const getCanceledByLabel = (canceledBy?: string) => canceledBy ?? '-';
 
 const getRepeatRoundStateView = (round: RepeatRound) => {
     if (round.status === 'completed') {

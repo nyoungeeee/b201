@@ -25,7 +25,7 @@ export interface RepeatRound {
     status: RepeatRoundStatus;
     approvedAt?: string;
     canceledAt?: string;
-    canceledBy?: string | number;
+    canceledBy?: string;
 }
 
 const formatRoundTime = (time: string) => time.slice(0, 5);
@@ -72,7 +72,7 @@ export const mapReservationDetailRounds = (
         status: mapOccurrenceStatus(occurrence, now),
         approvedAt: occurrence.approved_at ?? undefined,
         canceledAt: occurrence.canceled_at ?? undefined,
-        canceledBy: occurrence.canceled_by ?? undefined,
+        canceledBy: occurrence.canceled_by_name ?? undefined,
     }))
 );
 
