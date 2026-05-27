@@ -740,13 +740,14 @@ class AdminReservationService:
         queryset = queryset.order_by(
             "-reservation_date", "-start_time", "-reservation_number"
         )
-        total_count = queryset.count()
+        bookings = AdminReservationService._collapse_repeat_groups(list(queryset))
+        total_count = len(bookings)
         start = (page - 1) * page_size
         end = start + page_size
         return AdminReservationList(
             reservations=[
                 AdminReservationService._build_reservation_info(booking)
-                for booking in queryset[start:end]
+                for booking in bookings[start:end]
             ],
             pagination=build_pagination(
                 page=page,
@@ -925,6 +926,22 @@ class AdminReservationService:
                 booking.canceled_by.nickname if booking.canceled_by_id else None
             ),
         )
+
+    @staticmethod
+    def _collapse_repeat_groups(bookings: list[Booking]) -> list[Booking]:
+        grouped_bookings = []
+        repeat_group_ids = set()
+
+        for booking in bookings:
+            if booking.repeat_group_id is None:
+                grouped_bookings.append(booking)
+                continue
+            if booking.repeat_group_id in repeat_group_ids:
+                continue
+            repeat_group_ids.add(booking.repeat_group_id)
+            grouped_bookings.append(booking)
+
+        return grouped_bookings
 
     @staticmethod
     def _build_conflict_info(booking: Booking) -> AdminReservationConflictInfo:
