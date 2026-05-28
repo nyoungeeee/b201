@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
+  AdminExitIcon,
   AdminReservationIcon,
   AdminRoomIcon,
   AdminUserIcon,
@@ -23,6 +25,7 @@ const adminNavItems = [
 export type AdminNavId = (typeof adminNavItems)[number]["id"];
 
 const AdminLayout = ({ children, onNavChange, toastMessage }: AdminLayoutProps) => {
+  const navigate = useNavigate();
   const [activeNavId, setActiveNavId] = useState<AdminNavId>(adminNavItems[0].id);
   const activeNavItem = adminNavItems.find((item) => item.id === activeNavId) ?? adminNavItems[0];
   const handleNavChange = (navId: AdminNavId) => {
@@ -68,6 +71,16 @@ const AdminLayout = ({ children, onNavChange, toastMessage }: AdminLayoutProps) 
                 </button>
               );
             })}
+            <button
+              className="admin-bottom-nav__item"
+              type="button"
+              aria-label="나가기"
+              title="나가기"
+              onClick={() => navigate("/")}
+            >
+              <AdminExitIcon />
+              <span>나가기</span>
+            </button>
           </nav>
         </div>
       </div>
