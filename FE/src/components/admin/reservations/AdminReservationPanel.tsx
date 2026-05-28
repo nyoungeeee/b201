@@ -10,11 +10,13 @@ import AdminReservationTabs from "./AdminReservationTabs";
 import * as adminApi from "../../../apis/adminApi";
 import type {
   AdminReservation,
+  AdminReservationRoomOption,
   AdminReservationStatus,
   AdminRoomFilter,
   AdminTeamFilter,
   NewAdminReservation,
 } from "./types";
+import type { AdminPracticeRoom } from "../rooms/types";
 
 type AdminReservationTeamOption = {
   id: number;
@@ -23,7 +25,7 @@ type AdminReservationTeamOption = {
 
 type AdminReservationPanelProps = {
   initialReservationId?: number | null;
-  rooms?: string[];
+  rooms?: AdminPracticeRoom[];
   ownerTeamOptions?: AdminReservationTeamOption[];
   isActive?: boolean;
   onInitialBack?: () => void;
@@ -101,6 +103,14 @@ const AdminReservationPanel = ({
     useState<Record<AdminReservationStatus, boolean>>(INITIAL_HAS_NEXT_STATE);
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const roomOptions = useMemo(
+    () => rooms.map((room) => room.name),
+    [rooms],
+  );
+  const createRoomOptions: AdminReservationRoomOption[] = useMemo(
+    () => rooms.map((room) => ({ name: room.name, openTime: room.openTime })),
+    [rooms],
+  );
 
   const refreshReservations = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -379,7 +389,7 @@ const AdminReservationPanel = ({
             dateRange={dateRange}
             teamFilter={teamFilter}
             roomFilter={roomFilter}
-            roomOptions={rooms}
+            roomOptions={roomOptions}
             onDateRangeChange={setDateRange}
             onTeamFilterChange={setTeamFilter}
             onRoomFilterChange={setRoomFilter}
@@ -433,7 +443,7 @@ const AdminReservationPanel = ({
         <AdminCreateReservationModal
           onClose={() => setIsCreateOpen(false)}
           onCreate={handleCreate}
-          rooms={rooms}
+          rooms={createRoomOptions}
           teamOptions={ownerTeamOptions}
         />
       )}
