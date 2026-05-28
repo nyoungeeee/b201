@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -82,12 +82,23 @@ const AdminCreateReservationModal = ({
   const [reservationOwnerType, setReservationOwnerType] = useState<"owner" | "team">("owner");
   const [selectedTeamId, setSelectedTeamId] = useState(String(teamOptions[0]?.id ?? ""));
   const [title, setTitle] = useState("");
+  const [isTitleInvalid, setIsTitleInvalid] = useState(false);
   const [memo, setMemo] = useState("");
   const [pendingReservation, setPendingReservation] = useState<NewAdminReservation | null>(null);
   const [conflicts, setConflicts] = useState<AdminReservationConflict[]>([]);
   const [isChecking, setIsChecking] = useState(false);
+  const titleFieldRef = useRef<HTMLLabelElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const isTitleEmpty = !title.trim();
 
   const handleSubmit = async () => {
+    if (isTitleEmpty) {
+      setIsTitleInvalid(true);
+      titleFieldRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      titleInputRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
     if (!date || !startTime || !endTime || !room || !title.trim()) {
       return;
     }
@@ -229,16 +240,26 @@ const AdminCreateReservationModal = ({
           )}
         </fieldset>
 
-        <label className="admin-create-field">
+        <label
+          className={`admin-create-field${isTitleInvalid ? " is-invalid" : ""}`}
+          ref={titleFieldRef}
+        >
           <span>
             예약명 <strong>*</strong>
           </span>
           <div className="admin-create-control">
             <AdminReservationIcon size={28} />
             <input
+              ref={titleInputRef}
               value={title}
               maxLength={30}
-              onChange={(event) => setTitle(event.target.value)}
+              aria-invalid={isTitleInvalid}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                if (event.target.value.trim()) {
+                  setIsTitleInvalid(false);
+                }
+              }}
               placeholder="ex ) 사장님 개인 사용"
             />
           </div>
@@ -270,7 +291,13 @@ const AdminCreateReservationModal = ({
         <button className="admin-create-actions__cancel" type="button" onClick={onClose}>
           취소
         </button>
-        <button className="admin-create-actions__submit" type="button" onClick={handleSubmit} disabled={isChecking}>
+        <button
+          className={`admin-create-actions__submit${isTitleEmpty ? " is-incomplete" : ""}`}
+          type="button"
+          aria-disabled={isTitleEmpty || isChecking}
+          onClick={handleSubmit}
+          disabled={isChecking}
+        >
           {isChecking ? "확인 중" : "예약하기"}
         </button>
       </footer>
