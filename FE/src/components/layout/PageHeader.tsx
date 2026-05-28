@@ -4,8 +4,8 @@ import { checkAdminAccess } from '../../apis/adminApi';
 import logo from '../../assets/B201_header_logo.png';
 import { roomDayQueryKeys } from '../../hooks/queries/useRoomDay';
 import { roomMonthQueryKeys } from '../../hooks/queries/useRoomMonth';
-import { useRefreshAuthUser } from '../../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../../hooks/useAuthSession';
+import { useRefreshAuthUser } from '../../hooks/useRefreshAuthUser';
 import { queryClient } from '../../lib/queryClient';
 import { HamburgerIcon } from '../common/icons';
 import SideNavModal from '../navigation/SideNavModal';
@@ -14,10 +14,15 @@ const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
     const [hasAdminAccess, setHasAdminAccess] = useState(false);
     const { isLoggedIn, user } = useAuthSession();
-    useRefreshAuthUser({ enabled: isLoggedIn && isSideNavOpen });
+
+    const shouldCheckAdminAccess = isLoggedIn && isSideNavOpen;
+    const canShowAdminAccess = shouldCheckAdminAccess && hasAdminAccess;
+
+    useRefreshAuthUser({ enabled: shouldCheckAdminAccess });
 
     const handleClickLogo = (event: MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
+
         queryClient.removeQueries({
             queryKey: roomDayQueryKeys.all,
         });
@@ -34,7 +39,7 @@ const PageHeader = () => {
     };
 
     useEffect(() => {
-        if (!isSideNavOpen) return;
+        if (!isSideNavOpen) return undefined;
 
         const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
@@ -45,12 +50,9 @@ const PageHeader = () => {
     }, [isSideNavOpen]);
 
     useEffect(() => {
-        let isMounted = true;
+        if (!shouldCheckAdminAccess) return undefined;
 
-        if (!isLoggedIn || !isSideNavOpen) {
-            setHasAdminAccess(false);
-            return undefined;
-        }
+        let isMounted = true;
 
         checkAdminAccess()
             .then((isAllowed) => {
@@ -67,7 +69,7 @@ const PageHeader = () => {
         return () => {
             isMounted = false;
         };
-    }, [isLoggedIn, isSideNavOpen]);
+    }, [shouldCheckAdminAccess]);
 
     return (
         <>
@@ -98,7 +100,7 @@ const PageHeader = () => {
                 onClose={() => setIsSideNavOpen(false)}
                 isLoggedIn={isLoggedIn}
                 nickname={user?.nickname ?? undefined}
-                hasAdminAccess={hasAdminAccess}
+                hasAdminAccess={canShowAdminAccess}
             />
         </>
     );
