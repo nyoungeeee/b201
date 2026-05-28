@@ -116,8 +116,6 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   useEffect(() => {
     let isActive = true;
 
-    setIsLoading(true);
-
     Promise.allSettled([
       adminApi.getUsers().then((nextUsers) => {
         if (isActive) setUsers(nextUsers);

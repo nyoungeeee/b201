@@ -112,7 +112,6 @@ const AdminPage = () => {
 
   useEffect(() => {
     let isActive = true;
-    setIsLoadingAdminData(true);
 
     Promise.allSettled([
       adminApi.getRooms().then((nextRooms) => {
