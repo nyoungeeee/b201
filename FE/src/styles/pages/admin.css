@@ -45,6 +45,37 @@
   padding-bottom: 8px;
 }
 
+.admin-loading-state {
+  min-height: 100%;
+  padding: 32px 20px 96px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-loading-state__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-loading-state p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
 .admin-toast {
   position: absolute;
   left: 22px;
@@ -424,7 +455,76 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.admin-reservation-list-loading {
+  min-height: 132px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.admin-reservation-list-loading--compact {
+  min-height: 88px;
+  padding: 16px;
+}
+
+.admin-reservation-list-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-reservation-list-loading--compact .admin-reservation-list-loading__spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.admin-reservation-list-loading p {
+  margin: 0;
+  color: rgba(247, 248, 251, 0.68);
+  font-family: var(--font-title);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+}
+
+.admin-list-end {
+  margin: 12px 0 4px;
+  color: rgba(247, 248, 251, 0.42);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-list-end::before,
+.admin-list-end::after {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  margin: 0 10px 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 @keyframes adminReservationRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes adminLoadingSpin {
   from {
     transform: rotate(0deg);
   }
@@ -1697,6 +1797,37 @@
   background: #2f8cff;
 }
 
+.admin-user-loading {
+  min-height: 280px;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-user-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-user-loading p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
 .admin-user-stats,
 .admin-team-stats {
   display: grid;
@@ -2655,6 +2786,37 @@
   flex-direction: column;
   gap: 12px;
   margin-top: 16px;
+}
+
+.admin-log-loading {
+  min-height: 280px;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-log-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-log-loading p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
 }
 
 .admin-log-card {
