@@ -38,11 +38,14 @@ const MY_INFO_DETAIL_ROUTES = [
 
 const MyInfoDetailPage = () => {
     const navigate = useNavigate();
-    useRefreshAuthUser();
+    const { isRefreshing, refreshAuthUser } = useRefreshAuthUser();
     const { user } = useAuthSession();
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefreshing}
+            onRefresh={refreshAuthUser}
+        >
             <PageSubHeader />
 
             <main className="my-info-page">

@@ -25,12 +25,15 @@ const MY_INFO_MENU = [
 
 const MyInfoPage = () => {
     const navigate = useNavigate();
-    useRefreshAuthUser();
+    const { isRefreshing, refreshAuthUser } = useRefreshAuthUser();
     const { user } = useAuthSession();
     const nickname = user?.nickname ?? MY_INFO_TEXT.defaultNickname;
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefreshing}
+            onRefresh={refreshAuthUser}
+        >
             <PageHeader />
 
             <main className="my-info-page">

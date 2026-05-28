@@ -488,7 +488,10 @@ const getCalendarMonthState = (dateString: string) => {
 const ReservationApplyPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    useRefreshAuthUser();
+    const {
+        isRefreshing: isAuthUserRefreshing,
+        refreshAuthUser,
+    } = useRefreshAuthUser();
     const { accessToken, user, isLoggedIn } = useAuthSession();
     const initialDate = useMemo(() => {
         const routeState = location.state as { selectedDate?: string } | null;
@@ -550,15 +553,31 @@ const ReservationApplyPage = () => {
     const selectedRepeatCount = selectedRepeatValue > 0 ? selectedRepeatValue : 1;
     const isRepeatReservation = selectedRepeatValue > 0;
 
-    const { data: daySchedule } = useRoomDay({
+    const {
+        data: daySchedule,
+        isRefetching: isDayScheduleRefetching,
+        refetch: refetchDaySchedule,
+    } = useRoomDay({
         roomId: DEFAULT_ROOM_ID,
         date: selectedDate,
     });
-    const { data: monthSchedule } = useRoomMonth({
+    const {
+        data: monthSchedule,
+        isRefetching: isMonthScheduleRefetching,
+        refetch: refetchMonthSchedule,
+    } = useRoomMonth({
         roomId: DEFAULT_ROOM_ID,
         year: visibleCalendar.year,
         month: visibleCalendar.month,
     });
+
+    const handleRefresh = async () => {
+        await Promise.all([
+            refetchDaySchedule(),
+            refetchMonthSchedule(),
+            refreshAuthUser(),
+        ]);
+    };
 
     const teamOptions = useMemo<ReservationTeamOption[]>(() => [
         PRIVATE_TEAM_OPTION,
@@ -1297,6 +1316,12 @@ const ReservationApplyPage = () => {
 
     return (
         <MobilePageLayout
+            isRefreshing={
+                isDayScheduleRefetching ||
+                isMonthScheduleRefetching ||
+                isAuthUserRefreshing
+            }
+            onRefresh={handleRefresh}
             header={(
                 <PageSubHeader
                     title="예약 신청"

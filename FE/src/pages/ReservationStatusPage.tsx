@@ -9,6 +9,7 @@ import ReservationApplyButton from '../components/reservation/ReservationApplyBu
 import TimelineSection from '../components/timeline/TimelineSection';
 import { DEFAULT_ROOM_ID } from '../constants/global';
 import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
+import { roomMonthQueryKeys } from '../hooks/queries/useRoomMonth';
 import { queryClient } from '../lib/queryClient';
 import { getTodayInSeoul } from '../utils/timelineUtils';
 
@@ -25,6 +26,7 @@ const ReservationStatusPage = () => {
             ? locationState.selectedDate
             : today,
     );
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const handleSelectDate = (date: string) => {
         queryClient.invalidateQueries({
@@ -38,8 +40,33 @@ const ReservationStatusPage = () => {
         setSelectedDate(date);
     };
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+
+        try {
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: roomDayQueryKeys.detail({
+                        roomId: DEFAULT_ROOM_ID,
+                        date: selectedDate,
+                    }),
+                    exact: true,
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: roomMonthQueryKeys.all,
+                }),
+            ]);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     return (
-        <MobilePageLayout header={<PageHeader />}>
+        <MobilePageLayout
+            header={<PageHeader />}
+            isRefreshing={isRefreshing}
+            onRefresh={handleRefresh}
+        >
             <div className="reservation-status-page">
                 <CalendarSection
                     key={selectedDate}

@@ -53,6 +53,8 @@ const TeamColorChangePage = () => {
         data: colors = [],
         isError,
         isLoading,
+        isRefetching,
+        refetch,
     } = useTeamColors({
         teamId,
         accessToken,
@@ -111,6 +113,8 @@ const TeamColorChangePage = () => {
 
     return (
         <MobilePageLayout
+            isRefreshing={isRefetching}
+            onRefresh={() => refetch()}
             header={
                 <PageSubHeader
                     title={TEAM_COLOR_TEXT.headerTitle}

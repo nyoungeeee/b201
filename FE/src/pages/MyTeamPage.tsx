@@ -10,7 +10,7 @@ import { useAuthSession } from '../hooks/useAuthSession';
 
 const MyTeamPage = () => {
     const navigate = useNavigate();
-    useRefreshAuthUser();
+    const { isRefreshing, refreshAuthUser } = useRefreshAuthUser();
     const { user } = useAuthSession();
 
     const teams = user?.team ?? [];
@@ -21,7 +21,10 @@ const MyTeamPage = () => {
     };
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefreshing}
+            onRefresh={refreshAuthUser}
+        >
             <PageHeader />
 
             <main className="my-team-page">
