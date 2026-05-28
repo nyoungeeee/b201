@@ -354,6 +354,36 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             response.data["data"][0]["id"], in_range_booking.reservation_number
         )
 
+    def test_pending_reservation_list_limits_future_date_range(self):
+        in_range_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=6),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=7),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get(
+            "/api/v1/admin/reservations?status=pending&date_range=7"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(
+            response.data["data"][0]["id"], in_range_booking.reservation_number
+        )
+
     def test_staff_can_cancel_reservation(self):
         booking = Booking.objects.create(
             room=self.room,
