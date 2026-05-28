@@ -1175,6 +1175,11 @@
   opacity: 0;
 }
 
+.admin-create-field.is-invalid .admin-create-control {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.18);
+}
+
 .admin-create-time-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
@@ -1400,6 +1405,17 @@
   color: rgba(247, 248, 251, 0.26);
 }
 
+.admin-day-picker__grid button.is-disabled,
+.admin-day-picker__grid button:disabled {
+  color: rgba(247, 248, 251, 0.22);
+  cursor: not-allowed;
+}
+
+.admin-day-picker__grid button.is-disabled:hover,
+.admin-day-picker__grid button:disabled:hover {
+  background: transparent;
+}
+
 .admin-day-picker__grid button.is-sun {
   color: rgba(255, 110, 110, 0.85);
 }
@@ -1499,6 +1515,12 @@
 
 .admin-create-actions__submit {
   background: linear-gradient(135deg, #2f8cff 0%, #1673ff 100%);
+}
+
+.admin-create-actions__submit.is-incomplete {
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.18);
+  cursor: pointer;
 }
 
 .admin-create-actions__submit:disabled {

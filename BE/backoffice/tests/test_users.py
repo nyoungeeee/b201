@@ -10,16 +10,17 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
-        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(response.data["pagination"]["total_count"], 2)
         users = {item["id"]: item for item in response.data["data"]}
         self.assertEqual(users[self.member_user.id]["team_ids"], [])
+        self.assertEqual(users[self.admin_user.id]["team_ids"], [])
 
-    def test_user_list_excludes_request_user(self):
+    def test_user_list_includes_request_user(self):
         response = self.client.get("/api/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_ids = [item["id"] for item in response.data["data"]]
-        self.assertNotIn(self.admin_user.id, user_ids)
+        self.assertIn(self.admin_user.id, user_ids)
 
     def test_user_list_excludes_negative_kakao_id_accounts(self):
         service_user = User.objects.create_user(
@@ -31,7 +32,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         response = self.client.get("/api/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(response.data["pagination"]["total_count"], 2)
         user_ids = [item["id"] for item in response.data["data"]]
         self.assertNotIn(service_user.id, user_ids)
 

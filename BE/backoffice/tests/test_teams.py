@@ -129,7 +129,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         non_member_ids = [item["id"] for item in response.data["data"]["non_members"]]
         self.assertEqual(member_ids, [self.leader.id, self.member_user.id])
         self.assertIn(non_member.id, non_member_ids)
-        self.assertNotIn(self.admin_user.id, non_member_ids)
+        self.assertIn(self.admin_user.id, non_member_ids)
         self.assertNotIn(service_user.id, non_member_ids)
 
     def test_staff_can_update_team_members(self):

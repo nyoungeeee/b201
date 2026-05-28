@@ -153,7 +153,6 @@ class AdminUserListView(APIView):
             status=serializer.validated_data["status"],
             page=serializer.validated_data["page"],
             page_size=serializer.validated_data["page_size"],
-            requester_user_id=request.user.id,
         )
         return admin_success(
             data=AdminUserSerializer(user_list.users, many=True).data,
@@ -478,10 +477,7 @@ class AdminTeamMemberListView(APIView):
     )
     def get(self, request, team_id: int):
         try:
-            result = AdminTeamService.get_member_edit_list(
-                team_id=team_id,
-                requester_user_id=request.user.id,
-            )
+            result = AdminTeamService.get_member_edit_list(team_id=team_id)
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -549,7 +545,6 @@ class AdminTeamMemberListView(APIView):
             result = AdminTeamService.update_members(
                 team_id=team_id,
                 user_ids=serializer.validated_data["user_ids"],
-                requester_user_id=request.user.id,
             )
         except Team.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)

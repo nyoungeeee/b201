@@ -50,6 +50,28 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(booking.title, "사장님 개인 사용")
         self.assertEqual(booking.memo, "앰프 점검")
 
+    def test_create_owner_reservation_rejects_past_date(self):
+        response = self.client.post(
+            "/api/v1/admin/reservations",
+            {
+                "date": (self.today - timedelta(days=1)).isoformat(),
+                "start_time": "10:00:00",
+                "end_time": "11:00:00",
+                "end_next_day": False,
+                "room_id": self.room.id,
+                "team_id": None,
+                "title": "사장님 개인 사용",
+                "memo": "앰프 점검",
+                "force_cancel_conflict_ids": [],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_INPUT")
+        self.assertIn("date", response.data["errors"])
+        self.assertFalse(Booking.objects.exists())
+
     def test_admin_created_title_and_memo_are_visible_in_existing_room_day_api(self):
         Booking.objects.create(
             room=self.room,
@@ -447,6 +469,21 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["data"][0]["id"], booking.reservation_number)
         self.assertEqual(response.data["data"][0]["status"], "pending")
+
+    def test_conflict_check_rejects_past_date(self):
+        response = self.client.get(
+            "/api/v1/admin/reservations/conflicts",
+            {
+                "room_id": self.room.id,
+                "date": (self.today - timedelta(days=1)).isoformat(),
+                "start_time": "10:30:00",
+                "end_time": "11:30:00",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "INVALID_INPUT")
+        self.assertIn("date", response.data["errors"])
 
     def test_staff_can_cancel_repeat_reservation_occurrences(self):
         booking = Booking.objects.create(

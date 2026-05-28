@@ -90,10 +90,9 @@ const AdminPage = () => {
     : `default-${navResetKey}`;
   const reservationPanelKey = externalReservationId === null ? `default-${navResetKey}` : `reservation-${externalReservationId}`;
   const roomPanelKey = `room-${navResetKey}`;
-  const activeRoomNames = rooms
+  const activeRooms = rooms
     .filter((room) => room.isActive)
-    .sort((leftRoom, rightRoom) => leftRoom.sortOrder - rightRoom.sortOrder)
-    .map((room) => room.name);
+    .sort((leftRoom, rightRoom) => leftRoom.sortOrder - rightRoom.sortOrder);
   const showToast = (message: string) => {
     setToastMessage(null);
     window.setTimeout(() => setToastMessage(message), 0);
@@ -172,7 +171,7 @@ const AdminPage = () => {
                   <AdminReservationPanel
                     key={reservationPanelKey}
                     initialReservationId={externalReservationId}
-                    rooms={activeRoomNames}
+                    rooms={activeRooms}
                     ownerTeamOptions={ownerTeamOptions}
                     isActive={activeNavId === "reservation"}
                     onInitialBack={() => {

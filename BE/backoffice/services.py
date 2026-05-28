@@ -63,12 +63,10 @@ class AdminUserService:
         status: str,
         page: int,
         page_size: int,
-        requester_user_id: int,
     ) -> AdminUserList:
         queryset = (
             User.objects.exclude(status=UserStatus.WITHDRAWN)
             .filter(kakao_id__gte=0)
-            .exclude(id=requester_user_id)
             .order_by("-created_at", "-id")
         )
 
@@ -337,17 +335,13 @@ class AdminTeamService:
         )
 
     @staticmethod
-    def get_member_edit_list(team_id: int, requester_user_id: int):
+    def get_member_edit_list(team_id: int):
         team = AdminTeamService._get_active_team(team_id)
-        member_infos = AdminTeamService._get_team_member_infos(
-            team=team,
-            exclude_user_id=requester_user_id,
-        )
+        member_infos = AdminTeamService._get_team_member_infos(team=team)
         member_ids = [member.id for member in member_infos]
         non_members = (
             User.objects.exclude(status=UserStatus.WITHDRAWN)
             .filter(kakao_id__gte=0, is_active=True)
-            .exclude(id=requester_user_id)
             .exclude(id__in=member_ids)
             .order_by("-created_at", "-id")
         )
@@ -453,30 +447,21 @@ class AdminTeamService:
     def update_members(
         team_id: int,
         user_ids: list[int],
-        requester_user_id: int,
     ) -> AdminTeamMemberEditList:
         team = AdminTeamService._get_active_team(team_id)
-        requested_user_ids = set(user_ids) - {requester_user_id}
-        protected_user_ids = set(
-            TeamMember.objects.filter(
-                team=team,
-                user_id=requester_user_id,
-                status=TeamMemberStatus.ACTIVE,
-            ).values_list("user_id", flat=True)
-        )
-        target_user_ids = requested_user_ids | protected_user_ids
+        target_user_ids = set(user_ids)
 
         if team.owner_id not in target_user_ids:
             raise TeamLeaderRequiredError()
 
         users = list(
             User.objects.exclude(status=UserStatus.WITHDRAWN).filter(
-                id__in=requested_user_ids,
+                id__in=target_user_ids,
                 is_active=True,
                 kakao_id__gte=0,
             )
         )
-        if len(users) != len(requested_user_ids):
+        if len(users) != len(target_user_ids):
             raise User.DoesNotExist()
         if any(user.status == UserStatus.BLOCKED for user in users):
             raise BlockedUserIncludedError()
@@ -503,10 +488,7 @@ class AdminTeamService:
                 membership.role = TeamMemberRole.MEMBER
                 membership.save(update_fields=["status", "role"])
 
-        return AdminTeamService.get_member_edit_list(
-            team_id=team_id,
-            requester_user_id=requester_user_id,
-        )
+        return AdminTeamService.get_member_edit_list(team_id=team_id)
 
     @staticmethod
     @transaction.atomic
@@ -631,9 +613,7 @@ class AdminTeamService:
         )
 
     @staticmethod
-    def _get_team_member_infos(
-        team: Team, exclude_user_id: int | None = None
-    ) -> list[AdminTeamMemberInfo]:
+    def _get_team_member_infos(team: Team) -> list[AdminTeamMemberInfo]:
         memberships = (
             team.team_members.filter(
                 status=TeamMemberStatus.ACTIVE,
@@ -642,8 +622,6 @@ class AdminTeamService:
             .select_related("user")
             .order_by("joined_at", "id")
         )
-        if exclude_user_id is not None:
-            memberships = memberships.exclude(user_id=exclude_user_id)
 
         return [
             AdminTeamService._build_team_member_info(

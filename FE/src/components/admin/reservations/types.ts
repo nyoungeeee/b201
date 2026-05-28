@@ -1,6 +1,10 @@
 export type AdminReservationStatus = "pending" | "approved";
 export type AdminReservationKind = "single" | "repeat";
 export type AdminRoom = string;
+export type AdminReservationRoomOption = {
+  name: AdminRoom;
+  openTime: string;
+};
 export type AdminTeamFilter = "all" | "team" | "private";
 export type AdminRoomFilter = "all" | AdminRoom;
 
