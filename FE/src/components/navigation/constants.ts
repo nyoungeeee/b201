@@ -11,6 +11,7 @@ export const MEMBER_NAV_TEXT = {
     defaultNickname: '사용자',
     greeting: 'B201에 오신 것을 환영합니다.',
     nicknameSuffix: ' 님',
+    adminButton: '합주실 관리',
     logoutButton: '로그아웃',
     logoutToast: '다음에 또 만나요!',
 } as const;

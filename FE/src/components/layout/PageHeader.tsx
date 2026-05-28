@@ -1,5 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react';
 
+import { checkAdminAccess } from '../../apis/adminApi';
 import logo from '../../assets/B201_header_logo.png';
 import { roomDayQueryKeys } from '../../hooks/queries/useRoomDay';
 import { roomMonthQueryKeys } from '../../hooks/queries/useRoomMonth';
@@ -11,6 +12,7 @@ import SideNavModal from '../navigation/SideNavModal';
 
 const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
+    const [hasAdminAccess, setHasAdminAccess] = useState(false);
     const { isLoggedIn, user } = useAuthSession();
     useRefreshAuthUser({ enabled: isLoggedIn && isSideNavOpen });
 
@@ -42,6 +44,31 @@ const PageHeader = () => {
         };
     }, [isSideNavOpen]);
 
+    useEffect(() => {
+        let isMounted = true;
+
+        if (!isLoggedIn || !isSideNavOpen) {
+            setHasAdminAccess(false);
+            return undefined;
+        }
+
+        checkAdminAccess()
+            .then((isAllowed) => {
+                if (isMounted) {
+                    setHasAdminAccess(isAllowed);
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setHasAdminAccess(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isLoggedIn, isSideNavOpen]);
+
     return (
         <>
             <header className="page-header">
@@ -71,6 +98,7 @@ const PageHeader = () => {
                 onClose={() => setIsSideNavOpen(false)}
                 isLoggedIn={isLoggedIn}
                 nickname={user?.nickname ?? undefined}
+                hasAdminAccess={hasAdminAccess}
             />
         </>
     );

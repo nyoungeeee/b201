@@ -9,11 +9,18 @@ type Props = {
     onClose: () => void;
     isLoggedIn: boolean;
     nickname?: string;
+    hasAdminAccess?: boolean;
 };
 
 const ANIMATION_DURATION = 240;
 
-const SideNavModal = ({ isOpen, onClose, isLoggedIn, nickname }: Props) => {
+const SideNavModal = ({
+    isOpen,
+    onClose,
+    isLoggedIn,
+    nickname,
+    hasAdminAccess = false,
+}: Props) => {
     const [isVisible, setIsVisible] = useState(isOpen);
 
     useEffect(() => {
@@ -54,6 +61,7 @@ const SideNavModal = ({ isOpen, onClose, isLoggedIn, nickname }: Props) => {
                 {isLoggedIn ? (
                     <MemberNavContent
                         nickname={nickname}
+                        hasAdminAccess={hasAdminAccess}
                         onClose={onClose}
                     />
                 ) : (
