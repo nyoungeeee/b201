@@ -32,6 +32,7 @@ import { mapCreatedRepeatRounds } from '../domains/reservation/repeatRounds';
 import type { MyReservation } from '../domains/reservation/types';
 import { useRoomDay } from '../hooks/queries/useRoomDay';
 import { useRoomMonth } from '../hooks/queries/useRoomMonth';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 import {
     addDays,
@@ -487,6 +488,7 @@ const getCalendarMonthState = (dateString: string) => {
 const ReservationApplyPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    useRefreshAuthUser();
     const { accessToken, user, isLoggedIn } = useAuthSession();
     const initialDate = useMemo(() => {
         const routeState = location.state as { selectedDate?: string } | null;

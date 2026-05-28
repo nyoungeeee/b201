@@ -11,6 +11,7 @@ import CheckCircleIcon from '../components/common/icons/CheckCircleIcon';
 import ErrorCircleIcon from '../components/common/icons/ErrorCircleIcon';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { MAX_LENGTH } from '../constants/global';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { saveAuthUser } from '../utils/authStorage';
@@ -77,6 +78,7 @@ const getNicknameMessage = (checkStatus: NicknameCheckStatus) => {
 
 const NicknameEditPage = () => {
     const navigate = useNavigate();
+    useRefreshAuthUser();
     const { accessToken, user } = useAuthSession();
 
     const [nickname, setNickname] = useState(user?.nickname ?? '');

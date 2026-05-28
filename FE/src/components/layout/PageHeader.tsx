@@ -3,6 +3,7 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import logo from '../../assets/B201_header_logo.png';
 import { roomDayQueryKeys } from '../../hooks/queries/useRoomDay';
 import { roomMonthQueryKeys } from '../../hooks/queries/useRoomMonth';
+import { useRefreshAuthUser } from '../../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../../hooks/useAuthSession';
 import { queryClient } from '../../lib/queryClient';
 import { HamburgerIcon } from '../common/icons';
@@ -11,6 +12,7 @@ import SideNavModal from '../navigation/SideNavModal';
 const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
     const { isLoggedIn, user } = useAuthSession();
+    useRefreshAuthUser({ enabled: isLoggedIn && isSideNavOpen });
 
     const handleClickLogo = (event: MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();

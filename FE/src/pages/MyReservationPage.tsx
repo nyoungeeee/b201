@@ -21,6 +21,7 @@ import {
     useInfiniteReservations,
     useReservations,
 } from '../hooks/queries/useReservations';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { queryClient } from '../lib/queryClient';
 
@@ -55,6 +56,7 @@ const SORT_OPTIONS: Array<{
 const MyReservationPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    useRefreshAuthUser();
     const { accessToken, user } = useAuthSession();
     const locationState = location.state as {
         listViewState?: ReservationListViewState;

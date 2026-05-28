@@ -5,10 +5,12 @@ import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
 import { MY_TEAM_TEXT } from '../domains/team/constants';
 import { TEAM_ROUTE } from '../domains/team/routes';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 
 const MyTeamPage = () => {
     const navigate = useNavigate();
+    useRefreshAuthUser();
     const { user } = useAuthSession();
 
     const teams = user?.team ?? [];

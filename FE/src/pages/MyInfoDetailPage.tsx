@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 
 const MY_INFO_DETAIL_TEXT = {
@@ -37,6 +38,7 @@ const MY_INFO_DETAIL_ROUTES = [
 
 const MyInfoDetailPage = () => {
     const navigate = useNavigate();
+    useRefreshAuthUser();
     const { user } = useAuthSession();
 
     return (

@@ -9,6 +9,7 @@ const ACCOUNT_API_MESSAGE = {
     nicknameCheckError: '닉네임 중복 확인에 실패했습니다.',
     nicknameUpdateError: '닉네임 변경에 실패했습니다.',
     userInfoResponseError: '사용자 정보 응답 형식이 올바르지 않습니다.',
+    userInfoFetchError: '사용자 정보 조회에 실패했습니다.',
     nicknameCheckResponseError:
         '닉네임 중복 확인 응답 형식이 올바르지 않습니다.',
 } as const;
@@ -73,6 +74,31 @@ export const checkNicknameAvailability = async ({
     }
 
     return data.available;
+};
+
+export const getMyInfo = async ({
+    accessToken,
+}: {
+    accessToken: string;
+}): Promise<AuthUser> => {
+    const response = await fetch(buildMeUrl(), {
+        method: 'GET',
+        headers: buildAuthHeaders(accessToken),
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            `${ACCOUNT_API_MESSAGE.userInfoFetchError} (status: ${response.status})`,
+        );
+    }
+
+    const data: unknown = await response.json();
+
+    if (!isAuthUser(data)) {
+        throw new Error(ACCOUNT_API_MESSAGE.userInfoResponseError);
+    }
+
+    return data;
 };
 
 export const updateMyNickname = async ({
