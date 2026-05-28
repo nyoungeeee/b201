@@ -87,10 +87,10 @@ const AdminDayPicker = ({
 
   const handleSelect = (cellValue: string) => {
     const { year, month } = parseValue(cellValue);
+    setIsOpen(false);
     setViewYear(year);
     setViewMonth(month);
     onChange(cellValue);
-    setIsOpen(false);
   };
 
   return (

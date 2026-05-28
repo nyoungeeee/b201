@@ -26,6 +26,10 @@ const AdminSelect = <T extends string>({
 }: AdminSelectProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const handleSelect = (nextValue: T) => {
+    setIsOpen(false);
+    onChange(nextValue);
+  };
 
   return (
     <div
@@ -56,10 +60,7 @@ const AdminSelect = <T extends string>({
               role="option"
               aria-selected={option.value === value}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
+              onClick={() => handleSelect(option.value)}
             >
               {option.label}
             </button>
