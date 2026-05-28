@@ -163,6 +163,7 @@ const AdminCreateReservationModal = ({
           <AdminDayPicker
             className="admin-create-control admin-create-control--picker"
             value={date}
+            minValue={getTodayDateDot()}
             onChange={setDate}
           />
         </label>

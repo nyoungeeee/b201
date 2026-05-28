@@ -2,8 +2,15 @@ import base64
 import binascii
 from datetime import datetime
 
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
+
+
+def validate_not_past_reservation_date(value):
+    if value < timezone.localdate():
+        raise serializers.ValidationError("과거 날짜는 예약할 수 없습니다.")
+    return value
 
 
 @extend_schema_serializer(
@@ -579,6 +586,9 @@ class AdminReservationCreateRequestSerializer(serializers.Serializer):
         help_text="예약 생성 전 충돌 예약을 강제 취소할 때 전달하는 예약 ID 목록",
     )
 
+    def validate_date(self, value):
+        return validate_not_past_reservation_date(value)
+
 
 class AdminReservationListQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(
@@ -630,6 +640,9 @@ class AdminReservationConflictQuerySerializer(serializers.Serializer):
         min_value=1,
         help_text="예약 수정 시 충돌 검사에서 제외할 예약 ID",
     )
+
+    def validate_date(self, value):
+        return validate_not_past_reservation_date(value)
 
 
 @extend_schema_serializer(

@@ -9,6 +9,7 @@ type AdminDayPickerProps = {
   value: string; // "YYYY.MM.DD"
   onChange: (value: string) => void;
   className?: string;
+  minValue?: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -55,6 +56,7 @@ const AdminDayPicker = ({
   value,
   onChange,
   className = "admin-room-form-select admin-room-form-select--sm",
+  minValue,
 }: AdminDayPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { year: selYear, month: selMonth, day: selDay } = parseValue(value);
@@ -86,6 +88,10 @@ const AdminDayPicker = ({
   };
 
   const handleSelect = (cellValue: string) => {
+    if (minValue && cellValue < minValue) {
+      return;
+    }
+
     const { year, month } = parseValue(cellValue);
     setIsOpen(false);
     setViewYear(year);
@@ -151,6 +157,7 @@ const AdminDayPicker = ({
               const cellValue = formatValue(year, month, day);
               const isSelected = cellValue === value;
               const isToday = cellValue === todayValue;
+              const isDisabled = Boolean(minValue && cellValue < minValue);
               const isSun = new Date(year, month - 1, day).getDay() === 0;
               const isSat = new Date(year, month - 1, day).getDay() === 6;
 
@@ -161,12 +168,14 @@ const AdminDayPicker = ({
                   className={[
                     isSelected && "is-selected",
                     isToday && !isSelected && "is-today",
+                    isDisabled && "is-disabled",
                     !isCurrentMonth && "is-other-month",
-                    isSun && !isSelected && "is-sun",
-                    isSat && !isSelected && "is-sat",
+                    isSun && !isSelected && !isDisabled && "is-sun",
+                    isSat && !isSelected && !isDisabled && "is-sat",
                   ]
                     .filter(Boolean)
                     .join(" ")}
+                  disabled={isDisabled}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelect(cellValue)}
                 >

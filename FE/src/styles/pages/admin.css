@@ -1405,6 +1405,17 @@
   color: rgba(247, 248, 251, 0.26);
 }
 
+.admin-day-picker__grid button.is-disabled,
+.admin-day-picker__grid button:disabled {
+  color: rgba(247, 248, 251, 0.22);
+  cursor: not-allowed;
+}
+
+.admin-day-picker__grid button.is-disabled:hover,
+.admin-day-picker__grid button:disabled:hover {
+  background: transparent;
+}
+
 .admin-day-picker__grid button.is-sun {
   color: rgba(255, 110, 110, 0.85);
 }
