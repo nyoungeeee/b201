@@ -1,0 +1,46 @@
+
+.reservation-apply-button {
+  position: absolute;
+  left: var(--space-16);
+  right: var(--space-16);
+  top: 0;
+  transform: translateY(-50%);
+  height: var(--cta-height);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--button-filled-bg);
+  color: var(--button-filled-color);
+  font-family: var(--font-title);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-button);
+  z-index: var(--z-floating);
+}
+
+.floating-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-overlay);
+  padding: 0 var(--space-16) var(--space-20);
+  background: var(--bg-primary);
+}
+
+.floating-cta::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--space-32));
+  height: var(--space-32);
+  background: linear-gradient(
+    to top,
+    var(--bg-primary) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+}

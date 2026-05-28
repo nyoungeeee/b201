@@ -1,0 +1,108 @@
+.form-input {
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  border: var(--border-width-sm) solid var(--text-muted);
+  border-radius: var(--radius-sm);
+  background-color: var(--input-bg);
+
+  transition: var(--transition-input);
+}
+
+.form-input.is-invalid,
+.form-input.is-unavailable,
+.form-input.is-error {
+  border-color: var(--text-error);
+  box-shadow: var(--input-status-error-shadow);
+}
+
+.form-input.is-available,
+.form-input.is-success {
+  border-color: var(--text-success);
+  box-shadow: var(--input-status-success-shadow);
+}
+
+.form-input__control {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-14);
+  box-sizing: border-box;
+
+  border: 0;
+  outline: none;
+  background: transparent;
+
+  color: var(--text-primary);
+  font-size: var(--text-md);
+}
+
+.form-input__control::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input__action,
+.form-input > svg {
+  margin-right: var(--space-10);
+  flex-shrink: 0;
+}
+
+.form-input__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  border: 0;
+  background: none;
+
+  cursor: pointer;
+  animation: statusFadeIn 160ms ease-out;
+}
+
+.form-input__action svg,
+.form-input > svg {
+  display: block;
+  width: var(--spinner-size-sm);
+  height: var(--spinner-size-sm);
+
+  transform-origin: center;
+  animation: statusPop 180ms ease-out;
+}
+
+.form-message {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-4);
+
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.form-message svg {
+  flex-shrink: 0;
+  margin-top: var(--border-width-sm);
+}
+
+.form-message p {
+  flex: 1;
+  margin: 0;
+
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+}
+
+.form-message.is-error p,
+.form-message p.is-error {
+  color: var(--text-error);
+}
+
+.form-message.is-success p,
+.form-message p.is-success {
+  color: var(--text-success);
+}

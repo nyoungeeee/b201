@@ -1,0 +1,55 @@
+.kakao-callback-page {
+  flex: 1;
+  min-height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  background-color: var(--bg-primary);
+}
+
+.kakao-callback-page__content {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-32) var(--space-20);
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+}
+
+.kakao-callback-page__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: var(--accent-primary);
+
+  box-sizing: border-box;
+
+  animation:
+    kakaoCallbackSpin 0.7s linear infinite,
+    statusFadeIn 160ms ease-out;
+}
+
+.kakao-callback-page__message {
+  margin-top: 10px;
+
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+@keyframes kakaoCallbackSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

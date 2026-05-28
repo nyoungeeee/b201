@@ -1,0 +1,80 @@
+:root {
+  /* Button */
+  --button-height-sm: 44px;
+  --button-height-md: 52px;
+  --button-height-lg: 56px;
+  --button-height-xs: 24px;
+  --card-row-height: 60px;
+  --team-color-swatch-size: 45px;
+
+  --button-radius-sm: 8px;
+  --button-radius-md: 10px;
+  --button-radius-lg: 14px;
+
+  --button-padding-x-sm: 12px;
+  --button-padding-x-md: 16px;
+  --button-padding-x-lg: 20px;
+
+  --button-font-size-sm: var(--text-sm);
+  --button-font-size-md: var(--text-md);
+  --button-font-size-lg: var(--text-lg);
+  --button-font-weight: var(--weight-medium);
+
+  --button-transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+
+  --button-shadow-default:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 4px 12px rgba(0, 0, 0, 0.24);
+
+  --button-shadow-pressed:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+
+  --button-filled-bg: var(--accent-primary);
+  --button-filled-color: var(--text-primary);
+  --button-danger-bg: var(--text-error);
+  --button-disabled-bg: #3a3a3c;
+  --button-disabled-color: var(--text-secondary);
+  --button-outline-bg: transparent;
+  --button-outline-border: var(--accent-info);
+  --button-outline-color: var(--accent-info);
+  --button-ghost-bg: transparent;
+  --button-ghost-border: var(--text-primary);
+  --button-ghost-color: var(--text-primary);
+
+  /* Modal */
+  --modal-padding: 20px;
+  --modal-backdrop-bg: rgba(0, 0, 0, 0.72);
+  --modal-panel-width-sm: 300px;
+  --modal-panel-width-md: 340px;
+  --modal-panel-padding: 28px 20px 20px;
+  --modal-radius: 18px;
+  --modal-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --modal-backdrop-blur: blur(4px);
+  --modal-button-height: 52px;
+  --modal-button-radius: 10px;
+
+  /* Input */
+  --input-height-sm: 44px;
+  --textarea-min-height: 72px;
+  --input-status-error-shadow:
+    0 0 0 2px rgba(255, 59, 48, 0.15);
+  --input-status-success-shadow:
+    0 0 0 2px rgba(0, 200, 83, 0.15);
+
+  /* Spinner */
+  --spinner-size-sm: 18px;
+  --spinner-border:
+    2px solid rgba(255, 255, 255, 0.18);
+
+  /* Toast */
+  --toast-min-height: 48px;
+  --role-badge-min-width: 45px;
+}

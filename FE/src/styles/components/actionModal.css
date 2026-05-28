@@ -1,0 +1,111 @@
+/* =========================================================
+ * Action Modal
+ * ========================================================= */
+
+.action-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--modal-padding);
+}
+
+.action-modal__backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: var(--modal-backdrop-bg);
+  backdrop-filter: var(--modal-backdrop-blur);
+}
+
+.action-modal__panel {
+  position: relative;
+
+  width: 100%;
+  max-width: var(--modal-panel-width-md);
+
+  padding: var(--modal-panel-padding);
+
+  border-radius: var(--modal-radius);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(28, 28, 30, 0.98) 0%,
+      rgba(20, 20, 22, 0.98) 100%
+    );
+
+  box-shadow: var(--modal-shadow);
+
+  animation: modalFadeUp 180ms ease-out;
+}
+
+.action-modal__actions {
+  display: flex;
+  gap: var(--space-10);
+
+  margin-top: var(--space-24);
+}
+
+.action-modal__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-16);
+}
+
+.action-modal__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-tight);
+  text-align: center;
+}
+
+.action-modal__description {
+  margin-top: var(--space-20);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
+.action-modal__button {
+  flex: 1;
+  height: 52px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
+.action-modal__button--cancel {
+  background: var(--bg-elevated);
+}
+
+.action-modal__button--primary,
+.action-modal__button--danger {
+  background: var(--text-error);
+}
+
+.action-modal__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@keyframes modalFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-8)) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

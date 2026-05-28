@@ -1,0 +1,232 @@
+/* ===== 모달 전체 오버레이 ===== */
+.side-nav-modal {
+  position: absolute; /* 모바일 레이아웃 기준으로 덮기 */
+  inset: 0; /* top/right/bottom/left: 0 */
+  z-index: var(--z-modal);
+  background-color: rgba(0, 0, 0, 0.8); /* 어두운 배경 */
+  backdrop-filter: blur(var(--border-width-sm));
+}
+
+/* 모달 열릴 때 fade in */
+.side-nav-modal.is-open {
+  animation: fadeIn 200ms ease-out forwards;
+}
+
+/* 모달 닫힐 때 fade out */
+.side-nav-modal.is-closing {
+  animation: fadeOut 200ms ease-in forwards;
+}
+
+/* ===== 사이드 패널 ===== */
+.side-nav-modal__panel {
+  position: relative; /* 내부 absolute 요소 기준 */
+  width: var(--side-modal-width);
+  height: 100dvh; /* 모바일 실제 화면 높이 */
+  padding: var(--space-32) var(--space-12) var(--space-24);
+  background-color: var(--side-modal-bg);
+  box-sizing: border-box;
+}
+
+/* 패널 슬라이드 인 */
+.side-nav-modal__panel.is-open {
+  animation: slideIn 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 패널 슬라이드 아웃 */
+.side-nav-modal__panel.is-closing {
+  animation: slideOut 200ms ease-in forwards;
+}
+
+/* ===== 닫기 버튼 ===== */
+.side-nav-modal__close {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-12);
+  width: var(--space-24);
+  height: var(--space-24);
+  border: none;
+  background: none;
+  color: #777;
+  font-size: var(--text-3xl);
+  line-height: 1;
+  padding: 0;
+}
+
+/* ===== Guest 상태: 큰 로고 ===== */
+.side-nav-modal__logo--guest {
+  display: flex;
+  justify-content: center; /* 중앙 정렬 */
+  width: 100%;
+  margin: var(--space-24) 0 var(--space-20);
+}
+
+.side-nav-modal__logo--guest img {
+  width: 163px;
+  height: auto;
+}
+
+/* ===== Member 상태: 작은 로고 + 유저 정보 ===== */
+.side-nav-modal__member-header {
+  display: flex;
+  flex-direction: column; /* 세로 정렬 */
+  align-items: flex-start; /* 왼쪽 정렬 */
+  padding: 0 var(--space-12);
+  margin-top: var(--space-24);
+}
+
+/* 작은 로고 */
+.side-nav-modal__logo--member {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: var(--space-12);
+}
+
+.side-nav-modal__logo--member img {
+  width: 63px;
+  height: auto;
+}
+
+/* 유저 정보 영역 */
+.side-nav-modal__user {
+  margin: 0;
+}
+
+/* 인사말 */
+.side-nav-modal__greeting {
+  margin: 0 0 var(--space-6);
+  color: var(--accent-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-light);
+}
+
+/* 닉네임 */
+.side-nav-modal__nickname {
+  margin: 0;
+  color: var(--accent-primary);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+}
+
+/* "님" suffix */
+.side-nav-modal__nickname-suffix {
+  color: var(--accent-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-light);
+}
+
+/* ===== 카카오 로그인 버튼 ===== */
+.side-nav-modal__login {
+  width: 100%;
+  height: var(--space-40);
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 가운데 정렬 */
+  gap: var(--space-6);
+  padding: 0 var(--space-8);
+  border: none;
+  border-radius: var(--radius-pill);
+  background-color: var(--kakao-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* 카카오 아이콘 (원형) */
+.side-nav-modal__kakao-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background-color: var(--kakao-cymbol);
+  mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
+  -webkit-mask: url("../../assets/kakao_speech_bubble.svg") center / contain no-repeat;
+}
+
+/* ===== 구분선 ===== */
+.side-nav-modal__divider {
+  width: 100%;
+  height: var(--border-width-sm);
+  margin: var(--space-24) 0;
+  background-color: var(--border-primary);
+}
+
+/* 하단 고정 구분선 */
+.side-nav-modal__divider-bottom {
+  position: absolute;
+  left: var(--space-12);
+  right: var(--space-12);
+  bottom: var(--space-24);
+  height: var(--border-width-sm);
+  background-color: var(--border-primary);
+  z-index: var(--z-base);
+}
+
+/* ===== 메뉴 리스트 ===== */
+.side-nav-modal__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* 메뉴 아이템 */
+.side-nav-modal__menu-item {
+  width: 100%;
+  height: var(--button-height-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  padding-left: 5%;
+  padding-right: 5%;
+  margin-bottom: var(--space-8);
+}
+
+/* 오른쪽 화살표 */
+.side-nav-modal__arrow {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+/* ===== 애니메이션 ===== */
+
+/* 패널 슬라이드 인 */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* 패널 슬라이드 아웃 */
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* 배경 페이드 인 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 배경 페이드 아웃 */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
