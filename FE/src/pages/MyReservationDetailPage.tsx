@@ -491,6 +491,8 @@ const DetailShell = ({
     children: ReactNode;
 }) => (
     <MobilePageLayout
+        isRefreshing={isRefreshing}
+        onRefresh={onRefresh}
         header={(
             <PageSubHeader
                 title={title}
@@ -1109,6 +1111,8 @@ const MyReservationDetailPage = () => {
     if (!reservation) {
         return (
             <MobilePageLayout
+                isRefreshing={isRefreshing}
+                onRefresh={handleRefresh}
                 header={(
                     <PageSubHeader
                         title="예약 상세보기"

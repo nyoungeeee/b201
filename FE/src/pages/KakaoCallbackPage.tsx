@@ -13,9 +13,12 @@ import {
 
 const KAKAO_CALLBACK_TEXT = {
     loading: '로그인 중...',
-    success: '로그인 되었어요.',
     error: '카카오 로그인에 실패했어요. 다시 시도해주세요.',
 } as const;
+
+const getSigninSuccessToastMessage = (nickname: string | null) => {
+    return `어서오세요. ${nickname ?? '사용자'}님`;
+};
 
 const KakaoCallbackPage = () => {
     const navigate = useNavigate();
@@ -49,7 +52,9 @@ const KakaoCallbackPage = () => {
                 navigate(returnTo, {
                     replace: true,
                     state: {
-                        toastMessage: KAKAO_CALLBACK_TEXT.success,
+                        toastMessage: getSigninSuccessToastMessage(
+                            signinResponse.nickname,
+                        ),
                     },
                 });
             } catch (signinError) {

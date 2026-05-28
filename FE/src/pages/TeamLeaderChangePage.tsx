@@ -27,6 +27,8 @@ const TeamLeaderChangePage = () => {
         data: team,
         isError,
         isLoading,
+        isRefetching,
+        refetch,
     } = useTeamDetail({
         teamId,
         accessToken,
@@ -101,6 +103,8 @@ const TeamLeaderChangePage = () => {
 
     return (
         <MobilePageLayout
+            isRefreshing={isRefetching}
+            onRefresh={() => refetch()}
             header={
                 <PageSubHeader
                     title={TEAM_LEADER_CHANGE_TEXT.headerTitle}

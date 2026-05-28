@@ -21,6 +21,7 @@ import {
     useInfiniteReservations,
     useReservations,
 } from '../hooks/queries/useReservations';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { queryClient } from '../lib/queryClient';
 
@@ -55,6 +56,10 @@ const SORT_OPTIONS: Array<{
 const MyReservationPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const {
+        isRefreshing: isAuthUserRefreshing,
+        refreshAuthUser,
+    } = useRefreshAuthUser();
     const { accessToken, user } = useAuthSession();
     const locationState = location.state as {
         listViewState?: ReservationListViewState;
@@ -176,7 +181,8 @@ const MyReservationPage = () => {
     const isRefreshing = (
         visibleReservationsQuery.isRefetching ||
         upcomingCountQuery.isRefetching ||
-        pastCountQuery.isRefetching
+        pastCountQuery.isRefetching ||
+        isAuthUserRefreshing
     );
     const stateFilterLabel = STATE_FILTER_OPTIONS.find(
         (option) => option.value === stateFilter,
@@ -210,6 +216,7 @@ const MyReservationPage = () => {
                 visibleReservationsQuery.refetch(),
                 upcomingCountQuery.refetch(),
                 pastCountQuery.refetch(),
+                refreshAuthUser(),
             ]);
         } finally {
             setIsManualRefreshing(false);
@@ -306,6 +313,8 @@ const MyReservationPage = () => {
 
     return (
         <MobilePageLayout
+            isRefreshing={isRefreshing || isManualRefreshing}
+            onRefresh={handleRefresh}
             header={(
                 <PageSubHeader
                     title="내 예약 현황"

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 
 const MY_INFO_TEXT = {
@@ -24,11 +25,15 @@ const MY_INFO_MENU = [
 
 const MyInfoPage = () => {
     const navigate = useNavigate();
+    const { isRefreshing, refreshAuthUser } = useRefreshAuthUser();
     const { user } = useAuthSession();
     const nickname = user?.nickname ?? MY_INFO_TEXT.defaultNickname;
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefreshing}
+            onRefresh={refreshAuthUser}
+        >
             <PageHeader />
 
             <main className="my-info-page">

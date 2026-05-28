@@ -12,6 +12,7 @@ import ErrorCircleIcon from '../components/common/icons/ErrorCircleIcon';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageSubHeader from '../components/layout/PageSubHeader';
 import { MAX_LENGTH } from '../constants/global';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
 import { saveAuthUser } from '../utils/authStorage';
 import { getNicknameLength, isValidNickname } from '../utils/commonUtils';
@@ -77,6 +78,7 @@ const getNicknameMessage = (checkStatus: NicknameCheckStatus) => {
 
 const NicknameEditPage = () => {
     const navigate = useNavigate();
+    const { isRefreshing, refreshAuthUser } = useRefreshAuthUser();
     const { accessToken, user } = useAuthSession();
 
     const [nickname, setNickname] = useState(user?.nickname ?? '');
@@ -162,7 +164,10 @@ const NicknameEditPage = () => {
     };
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefreshing}
+            onRefresh={refreshAuthUser}
+        >
             <div className="nickname-edit-page">
                 <PageSubHeader />
 

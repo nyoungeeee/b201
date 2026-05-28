@@ -62,6 +62,8 @@ const MyTeamDetailPage = () => {
         data: team,
         isError,
         isLoading,
+        isRefetching,
+        refetch,
     } = useTeamDetail({
         teamId,
         accessToken,
@@ -146,7 +148,10 @@ const MyTeamDetailPage = () => {
     };
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isRefetching}
+            onRefresh={() => refetch()}
+        >
             <PageSubHeader
                 title={MY_TEAM_DETAIL_TEXT.headerTitle}
                 rightContent={

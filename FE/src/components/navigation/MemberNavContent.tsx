@@ -10,11 +10,13 @@ import {
 
 type Props = {
     nickname?: string;
+    hasAdminAccess?: boolean;
     onClose: () => void;
 };
 
 const MemberNavContent = ({
     nickname = MEMBER_NAV_TEXT.defaultNickname,
+    hasAdminAccess = false,
     onClose,
 }: Props) => {
     const navigate = useNavigate();
@@ -72,6 +74,19 @@ const MemberNavContent = ({
                         )}
                     </button>
                 ))}
+
+                {hasAdminAccess && (
+                    <button
+                        type="button"
+                        className="side-nav-modal__menu-item"
+                        onClick={() => handleMove('/admin')}
+                    >
+                        <span>{MEMBER_NAV_TEXT.adminButton}</span>
+                        <span className="side-nav-modal__arrow">
+                            <ChevronRightIcon />
+                        </span>
+                    </button>
+                )}
 
                 <button
                     type="button"
