@@ -860,10 +860,11 @@ class AdminReservationService:
             "room", "user", "team", "team__team_color", "canceled_by"
         )
         today = timezone.localdate()
-        queryset = queryset.filter(
-            reservation_date__gte=today,
-            reservation_date__lte=today + timedelta(days=date_range - 1),
-        )
+        if date_range != 0:
+            queryset = queryset.filter(
+                reservation_date__gte=today,
+                reservation_date__lte=today + timedelta(days=date_range - 1),
+            )
         if team_type == "team":
             queryset = queryset.filter(booking_type=BookingType.TEAM)
         elif team_type == "private":
