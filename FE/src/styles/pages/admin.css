@@ -232,6 +232,22 @@
   gap: 8px;
 }
 
+.admin-reservation-filters .admin-select-chip {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-reservation-filters .admin-custom-select__button {
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 6px;
+  padding: 0 9px;
+}
+
+.admin-reservation-filters .admin-custom-select__button > svg {
+  width: 18px;
+  height: 18px;
+}
+
 .admin-select-chip {
   position: relative;
   min-width: 0;
@@ -335,6 +351,16 @@
 
 .admin-select-chip option {
   color: #151922;
+}
+
+@media (max-width: 420px) {
+  .admin-reservation-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-reservation-filters .admin-custom-select:nth-child(3) {
+    grid-column: 1 / -1;
+  }
 }
 
 .admin-create-button {
@@ -1724,13 +1750,17 @@
 
 .admin-user-filter-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 22px;
 }
 
 .admin-user-filter-row--team {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-user-filter-row:not(.admin-user-filter-row--team) .admin-user-search {
+  grid-column: 1 / -1;
 }
 
 .admin-user-filter-row > button,
@@ -1751,6 +1781,17 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   font-size: 14px;
   font-weight: var(--weight-bold);
+}
+
+.admin-user-filter-row .admin-custom-select__button {
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.admin-user-filter-row .admin-custom-select__button > svg {
+  width: 18px;
+  height: 18px;
 }
 
 .admin-user-select-filter select {
@@ -1781,6 +1822,23 @@
 .admin-user-search--wide {
   width: 100%;
   margin-bottom: 14px;
+}
+
+@media (max-width: 420px) {
+  .admin-user-filter-row {
+    gap: 8px;
+  }
+
+  .admin-user-search,
+  .admin-user-select-filter {
+    height: 46px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .admin-user-search input {
+    font-size: 13px;
+  }
 }
 
 .admin-users__section-title {
