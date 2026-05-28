@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import {
   AdminCalendarIcon,
   AdminChevronRightIcon,
@@ -10,17 +12,24 @@ import type { AdminReservation } from "./types";
 
 type AdminReservationCardProps = {
   reservation: AdminReservation;
+  index?: number;
   onSelect: (reservation: AdminReservation) => void;
   onApprove: (id: number) => void;
 };
 
-const AdminReservationCard = ({ reservation, onSelect, onApprove }: AdminReservationCardProps) => {
+const AdminReservationCard = ({
+  reservation,
+  index = 0,
+  onSelect,
+  onApprove,
+}: AdminReservationCardProps) => {
   const isPending = reservation.status === "pending";
   const reservationDate = formatReservationCardDate(reservation);
 
   return (
     <article
       className={`admin-reservation-card admin-reservation-card--${reservation.kind}`}
+      style={{ "--admin-reservation-card-index": index } as CSSProperties}
       onClick={() => onSelect(reservation)}
     >
       <div className="admin-reservation-card__body">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -594,10 +594,11 @@ const UserList = ({
       <h2 className="admin-users__section-title">등록된 사용자</h2>
       <div className="admin-user-card-list">
         {users.length > 0 ? (
-          users.map((user) => (
+          users.map((user, index) => (
             <UserCard
               key={user.id}
               user={user}
+              index={index}
               teams={teams}
               colors={colors}
               onClick={() => onSelect(user.id)}
@@ -613,11 +614,13 @@ const UserList = ({
 
 const UserCard = ({
   user,
+  index = 0,
   teams,
   colors,
   onClick,
 }: {
   user: AdminManagedUser;
+  index?: number;
   teams: AdminManagedTeam[];
   colors: AdminTeamColor[];
   onClick: () => void;
@@ -629,7 +632,12 @@ const UserCard = ({
   const hiddenTeamCount = Math.max(userTeams.length - visibleTeams.length, 0);
 
   return (
-    <button className="admin-user-card" type="button" onClick={onClick}>
+    <button
+      className="admin-user-card"
+      type="button"
+      style={{ "--admin-list-item-index": index } as CSSProperties}
+      onClick={onClick}
+    >
       <div className="admin-user-card__body">
         <strong>{user.nickname}</strong>
         <span>{user.email}</span>
@@ -719,12 +727,18 @@ const TeamList = ({
     <h2 className="admin-users__section-title">등록된 팀</h2>
     <div className="admin-team-list">
       {teams.length > 0 ? (
-        teams.map((team) => {
+        teams.map((team, index) => {
           const leaderName = getLeaderName(team.leaderId, users);
           const color = colors.find((teamColor) => teamColor.id === team.colorId);
 
           return (
-            <button className="admin-team-card" key={team.id} type="button" onClick={() => onSelect(team.id)}>
+            <button
+              className="admin-team-card"
+              key={team.id}
+              type="button"
+              style={{ "--admin-list-item-index": index } as CSSProperties}
+              onClick={() => onSelect(team.id)}
+            >
               <TeamAvatar team={team} color={color} />
               <div>
                 <strong>{team.name}</strong>

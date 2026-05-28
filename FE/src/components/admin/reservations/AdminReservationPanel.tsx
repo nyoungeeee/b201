@@ -404,10 +404,11 @@ const AdminReservationPanel = ({
             </div>
           ) : filteredReservations.length > 0 ? (
             <>
-              {filteredReservations.map((reservation) => (
+              {filteredReservations.map((reservation, index) => (
                 <AdminReservationCard
                   key={reservation.id}
                   reservation={reservation}
+                  index={index}
                   onSelect={setSelectedReservation}
                   onApprove={handleApprove}
                 />

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -160,11 +160,17 @@ const AdminLogPanel = ({ logs, isLoading = false }: AdminLogPanelProps) => {
               <p>기록 데이터를 불러오고 있어요</p>
             </div>
           ) : filteredLogs.length > 0 ? (
-            filteredLogs.map((log) => {
+            filteredLogs.map((log, index) => {
               const LogIcon = getLogIcon(log.category);
 
               return (
-                <button className="admin-log-card" key={log.id} type="button" onClick={() => setSelectedLog(log)}>
+                <button
+                  className="admin-log-card"
+                  key={log.id}
+                  type="button"
+                  style={{ "--admin-list-item-index": index } as CSSProperties}
+                  onClick={() => setSelectedLog(log)}
+                >
                   <LogIcon />
                   <div>
                     <span>{log.category}</span>

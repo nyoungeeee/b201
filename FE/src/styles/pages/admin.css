@@ -534,6 +534,18 @@
   }
 }
 
+@keyframes adminReservationCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .admin-reservation-card {
   position: relative;
   overflow: hidden;
@@ -544,6 +556,18 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
   cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminReservationCardEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-reservation-card-index, 0) * 28ms), 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-reservation-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-reservation-card--repeat {
@@ -2001,6 +2025,31 @@
   color: #f7f8fb;
   background: rgba(255, 255, 255, 0.07);
   text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminListItemEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-list-item-index, 0) * 28ms), 180ms);
+}
+
+@keyframes adminListItemEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-user-card,
+  .admin-team-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-user-avatar,
@@ -2832,6 +2881,18 @@
   color: #f7f8fb;
   background: rgba(255, 255, 255, 0.07);
   text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminListItemEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-list-item-index, 0) * 28ms), 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-log-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-log-card > svg:first-child {
