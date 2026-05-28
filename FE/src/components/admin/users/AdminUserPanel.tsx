@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -111,11 +111,36 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   const [userStatusFilter, setUserStatusFilter] = useState<"all" | AdminManagedUser["status"]>("all");
   const [teamQuery, setTeamQuery] = useState("");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    adminApi.getUsers().then(setUsers).catch(console.error);
-    adminApi.getTeams().then(setTeams).catch(console.error);
-    adminApi.getTeamColors().then(setColors).catch(console.error);
+    let isActive = true;
+
+    Promise.allSettled([
+      adminApi.getUsers().then((nextUsers) => {
+        if (isActive) setUsers(nextUsers);
+      }),
+      adminApi.getTeams().then((nextTeams) => {
+        if (isActive) setTeams(nextTeams);
+      }),
+      adminApi.getTeamColors().then((nextColors) => {
+        if (isActive) setColors(nextColors);
+      }),
+    ])
+      .then((results) => {
+        results.forEach((result) => {
+          if (result.status === "rejected") {
+            console.error(result.reason);
+          }
+        });
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -453,7 +478,12 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       </div>
 
       <div className="admin-panel-scroll">
-        {activeTab === "users" ? (
+        {isLoading ? (
+          <div className="admin-user-loading" role="status" aria-live="polite">
+            <div className="admin-user-loading__spinner" aria-hidden="true" />
+            <p>사용자 데이터를 불러오고 있어요</p>
+          </div>
+        ) : activeTab === "users" ? (
           <UserList
             users={filteredUsers}
             teams={teams}
@@ -561,15 +591,20 @@ const UserList = ({
 
       <h2 className="admin-users__section-title">등록된 사용자</h2>
       <div className="admin-user-card-list">
-        {users.map((user) => (
-          <UserCard
-            key={user.id}
-            user={user}
-            teams={teams}
-            colors={colors}
-            onClick={() => onSelect(user.id)}
-          />
-        ))}
+        {users.length > 0 ? (
+          users.map((user, index) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              index={index}
+              teams={teams}
+              colors={colors}
+              onClick={() => onSelect(user.id)}
+            />
+          ))
+        ) : (
+          <p className="admin-reservation__empty">조건에 맞는 사용자가 없습니다.</p>
+        )}
       </div>
     </>
   );
@@ -577,11 +612,13 @@ const UserList = ({
 
 const UserCard = ({
   user,
+  index = 0,
   teams,
   colors,
   onClick,
 }: {
   user: AdminManagedUser;
+  index?: number;
   teams: AdminManagedTeam[];
   colors: AdminTeamColor[];
   onClick: () => void;
@@ -593,7 +630,12 @@ const UserCard = ({
   const hiddenTeamCount = Math.max(userTeams.length - visibleTeams.length, 0);
 
   return (
-    <button className="admin-user-card" type="button" onClick={onClick}>
+    <button
+      className="admin-user-card"
+      type="button"
+      style={{ "--admin-list-item-index": index } as CSSProperties}
+      onClick={onClick}
+    >
       <div className="admin-user-card__body">
         <strong>{user.nickname}</strong>
         <span>{user.email}</span>
@@ -682,23 +724,33 @@ const TeamList = ({
     </div>
     <h2 className="admin-users__section-title">등록된 팀</h2>
     <div className="admin-team-list">
-      {teams.map((team) => {
-        const leaderName = getLeaderName(team.leaderId, users);
-        const color = colors.find((teamColor) => teamColor.id === team.colorId);
+      {teams.length > 0 ? (
+        teams.map((team, index) => {
+          const leaderName = getLeaderName(team.leaderId, users);
+          const color = colors.find((teamColor) => teamColor.id === team.colorId);
 
-        return (
-          <button className="admin-team-card" key={team.id} type="button" onClick={() => onSelect(team.id)}>
-            <TeamAvatar team={team} color={color} />
-            <div>
-              <strong>{team.name}</strong>
-              <span>
-                리더 {leaderName} · 멤버 {team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
-              </span>
-            </div>
-            <AdminChevronRightIcon />
-          </button>
-        );
-      })}
+          return (
+            <button
+              className="admin-team-card"
+              key={team.id}
+              type="button"
+              style={{ "--admin-list-item-index": index } as CSSProperties}
+              onClick={() => onSelect(team.id)}
+            >
+              <TeamAvatar team={team} color={color} />
+              <div>
+                <strong>{team.name}</strong>
+                <span>
+                  리더 {leaderName} · 멤버 {team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
+                </span>
+              </div>
+              <AdminChevronRightIcon />
+            </button>
+          );
+        })
+      ) : (
+        <p className="admin-reservation__empty">조건에 맞는 팀이 없습니다.</p>
+      )}
     </div>
   </>
 );

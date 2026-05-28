@@ -95,6 +95,8 @@ type AdminReservationListResult = {
     reservations: AdminReservation[];
     pendingTotalCount: number;
     approvedTotalCount: number;
+    pendingHasNext: boolean;
+    approvedHasNext: boolean;
 };
 
 let cachedRooms: AdminPracticeRoom[] = [];
@@ -286,18 +288,24 @@ type AdminReservationListFilters = {
     dateRange?: string;
     teamFilter?: AdminTeamFilter;
     roomFilter?: AdminRoomFilter;
+    pendingPage?: number;
+    approvedPage?: number;
+    pageSize?: number;
 };
 
 export const getReservations = async ({
     dateRange = '7',
     teamFilter = 'all',
     roomFilter = 'all',
+    pendingPage = 1,
+    approvedPage = 1,
+    pageSize = 10,
 }: AdminReservationListFilters = {}): Promise<AdminReservationListResult> => {
     const roomId =
         roomFilter === 'all' ? undefined : await getRoomIdByName(roomFilter);
     const baseParams = {
         team_type: teamFilter,
-        page_size: '100',
+        page_size: String(pageSize),
         ...(roomId != null ? { room_id: String(roomId) } : {}),
     };
     const [pendingResult, approvedResult] = await Promise.all([
@@ -306,6 +314,7 @@ export const getReservations = async ({
             { method: 'GET' },
             new URLSearchParams({
                 status: 'pending',
+                page: String(pendingPage),
                 ...baseParams,
             }),
         ),
@@ -315,6 +324,7 @@ export const getReservations = async ({
             new URLSearchParams({
                 status: 'approved',
                 date_range: dateRange,
+                page: String(approvedPage),
                 ...baseParams,
             }),
         ),
@@ -339,6 +349,10 @@ export const getReservations = async ({
         reservations,
         pendingTotalCount: pendingResult.pagination?.total_count ?? 0,
         approvedTotalCount: approvedResult.pagination?.total_count ?? 0,
+        pendingHasNext:
+            pendingPage < (pendingResult.pagination?.total_pages ?? 0),
+        approvedHasNext:
+            approvedPage < (approvedResult.pagination?.total_pages ?? 0),
     };
 };
 

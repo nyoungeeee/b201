@@ -45,6 +45,37 @@
   padding-bottom: 8px;
 }
 
+.admin-loading-state {
+  min-height: 100%;
+  padding: 32px 20px 96px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-loading-state__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-loading-state p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
 .admin-toast {
   position: absolute;
   left: 22px;
@@ -96,9 +127,9 @@
   height: 86px;
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: stretch;
-  padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(9, 12, 17, 0.96);
   box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.28);
@@ -117,14 +148,14 @@
 
 .admin-bottom-nav__item svg {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
 }
 
 .admin-bottom-nav__item span {
   max-width: 100%;
   overflow: hidden;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--weight-medium);
   line-height: 1.2;
   text-align: center;
@@ -232,6 +263,22 @@
   gap: 8px;
 }
 
+.admin-reservation-filters .admin-select-chip {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-reservation-filters .admin-custom-select__button {
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 6px;
+  padding: 0 9px;
+}
+
+.admin-reservation-filters .admin-custom-select__button > svg {
+  width: 18px;
+  height: 18px;
+}
+
 .admin-select-chip {
   position: relative;
   min-width: 0;
@@ -337,6 +384,16 @@
   color: #151922;
 }
 
+@media (max-width: 420px) {
+  .admin-reservation-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-reservation-filters .admin-custom-select:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
 .admin-create-button {
   align-self: flex-end;
   height: 48px;
@@ -398,6 +455,65 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.admin-reservation-list-loading {
+  min-height: 132px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.admin-reservation-list-loading--compact {
+  min-height: 88px;
+  padding: 16px;
+}
+
+.admin-reservation-list-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-reservation-list-loading--compact .admin-reservation-list-loading__spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.admin-reservation-list-loading p {
+  margin: 0;
+  color: rgba(247, 248, 251, 0.68);
+  font-family: var(--font-title);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+}
+
+.admin-list-end {
+  margin: 12px 0 4px;
+  color: rgba(247, 248, 251, 0.42);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-list-end::before,
+.admin-list-end::after {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  margin: 0 10px 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 @keyframes adminReservationRefreshSpin {
   from {
     transform: rotate(0deg);
@@ -405,6 +521,28 @@
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes adminLoadingSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes adminReservationCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -418,6 +556,18 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
   cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminReservationCardEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-reservation-card-index, 0) * 28ms), 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-reservation-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-reservation-card--repeat {
@@ -1671,6 +1821,37 @@
   background: #2f8cff;
 }
 
+.admin-user-loading {
+  min-height: 280px;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-user-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-user-loading p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
 .admin-user-stats,
 .admin-team-stats {
   display: grid;
@@ -1724,13 +1905,17 @@
 
 .admin-user-filter-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 22px;
 }
 
 .admin-user-filter-row--team {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-user-filter-row:not(.admin-user-filter-row--team) .admin-user-search {
+  grid-column: 1 / -1;
 }
 
 .admin-user-filter-row > button,
@@ -1751,6 +1936,17 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   font-size: 14px;
   font-weight: var(--weight-bold);
+}
+
+.admin-user-filter-row .admin-custom-select__button {
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.admin-user-filter-row .admin-custom-select__button > svg {
+  width: 18px;
+  height: 18px;
 }
 
 .admin-user-select-filter select {
@@ -1783,6 +1979,23 @@
   margin-bottom: 14px;
 }
 
+@media (max-width: 420px) {
+  .admin-user-filter-row {
+    gap: 8px;
+  }
+
+  .admin-user-search,
+  .admin-user-select-filter {
+    height: 46px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .admin-user-search input {
+    font-size: 13px;
+  }
+}
+
 .admin-users__section-title {
   margin: 18px 0 12px;
   color: #ffffff;
@@ -1812,6 +2025,31 @@
   color: #f7f8fb;
   background: rgba(255, 255, 255, 0.07);
   text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminListItemEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-list-item-index, 0) * 28ms), 180ms);
+}
+
+@keyframes adminListItemEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-user-card,
+  .admin-team-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-user-avatar,
@@ -2599,6 +2837,37 @@
   margin-top: 16px;
 }
 
+.admin-log-loading {
+  min-height: 280px;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.admin-log-loading__spinner {
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-circle);
+  border: var(--spinner-border);
+  border-top-color: #2f8cff;
+  box-sizing: border-box;
+  animation: adminLoadingSpin 0.7s linear infinite;
+}
+
+.admin-log-loading p {
+  margin: 10px 0 0;
+  color: rgba(247, 248, 251, 0.86);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  text-align: center;
+}
+
 .admin-log-card {
   width: 100%;
   min-height: 96px;
@@ -2612,6 +2881,18 @@
   color: #f7f8fb;
   background: rgba(255, 255, 255, 0.07);
   text-align: left;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: adminListItemEnter 260ms ease-out forwards;
+  animation-delay: min(calc(var(--admin-list-item-index, 0) * 28ms), 180ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-log-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .admin-log-card > svg:first-child {

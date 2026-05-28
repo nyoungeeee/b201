@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -26,6 +26,7 @@ export type AdminLogEntry = {
 
 type AdminLogPanelProps = {
   logs: AdminLogEntry[];
+  isLoading?: boolean;
 };
 
 type AdminLogPeriodFilter = "0" | "7" | "30" | "90" | "all";
@@ -64,7 +65,7 @@ const getLogIcon = (category: AdminLogCategory) => {
   }
 };
 
-const AdminLogPanel = ({ logs }: AdminLogPanelProps) => {
+const AdminLogPanel = ({ logs, isLoading = false }: AdminLogPanelProps) => {
   const [periodFilter, setPeriodFilter] = useState<AdminLogPeriodFilter>("0");
   const [categoryFilter, setCategoryFilter] = useState<"all" | AdminLogCategory>("all");
   const [selectedLog, setSelectedLog] = useState<AdminLogEntry | null>(null);
@@ -153,12 +154,23 @@ const AdminLogPanel = ({ logs }: AdminLogPanelProps) => {
         </div>
 
         <div className="admin-log-list">
-          {filteredLogs.length > 0 ? (
-            filteredLogs.map((log) => {
+          {isLoading ? (
+            <div className="admin-log-loading" role="status" aria-live="polite">
+              <div className="admin-log-loading__spinner" aria-hidden="true" />
+              <p>기록 데이터를 불러오고 있어요</p>
+            </div>
+          ) : filteredLogs.length > 0 ? (
+            filteredLogs.map((log, index) => {
               const LogIcon = getLogIcon(log.category);
 
               return (
-                <button className="admin-log-card" key={log.id} type="button" onClick={() => setSelectedLog(log)}>
+                <button
+                  className="admin-log-card"
+                  key={log.id}
+                  type="button"
+                  style={{ "--admin-list-item-index": index } as CSSProperties}
+                  onClick={() => setSelectedLog(log)}
+                >
                   <LogIcon />
                   <div>
                     <span>{log.category}</span>

@@ -3,6 +3,7 @@ export { default as AdminCalendarIcon } from "./AdminCalendarIcon";
 export { default as AdminChevronDownIcon } from "./AdminChevronDownIcon";
 export { default as AdminChevronRightIcon } from "./AdminChevronRightIcon";
 export { default as AdminClockIcon } from "./AdminClockIcon";
+export { default as AdminExitIcon } from "./AdminExitIcon";
 export { default as AdminMemoIcon } from "./AdminMemoIcon";
 export { default as AdminPersonIcon } from "./AdminPersonIcon";
 export { default as AdminPlusIcon } from "./AdminPlusIcon";

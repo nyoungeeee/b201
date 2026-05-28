@@ -69,6 +69,13 @@ const formatLogTime = () => {
   return `${year}.${month}.${day} ${hour}:${minute}`;
 };
 
+const AdminLoadingState = () => (
+  <div className="admin-loading-state" role="status" aria-live="polite">
+    <div className="admin-loading-state__spinner" aria-hidden="true" />
+    <p>관리자 데이터를 불러오고 있어요</p>
+  </div>
+);
+
 const AdminPage = () => {
   const [externalUserView, setExternalUserView] = useState<AdminUserView | null>(null);
   const [externalReservationId, setExternalReservationId] = useState<number | null>(null);
@@ -77,6 +84,7 @@ const AdminPage = () => {
   const [rooms, setRooms] = useState<AdminPracticeRoom[]>([]);
   const [ownerTeamOptions, setOwnerTeamOptions] = useState<{ id: number; name: string }[]>([]);
   const [logs, setLogs] = useState<AdminLogEntry[]>(initialAdminLogs);
+  const [isLoadingAdminData, setIsLoadingAdminData] = useState(true);
   const userPanelKey = externalUserView
     ? `${externalUserView.name}-${"userId" in externalUserView ? externalUserView.userId : ""}${"teamId" in externalUserView ? externalUserView.teamId : ""}`
     : `default-${navResetKey}`;
@@ -103,11 +111,35 @@ const AdminPage = () => {
   };
 
   useEffect(() => {
-    adminApi.getRooms().then(setRooms).catch(console.error);
-    adminApi.getTeams().then((teams) => {
-      setOwnerTeamOptions(teams.map((team) => ({ id: team.id, name: team.name })));
-    }).catch(console.error);
-    adminApi.getLogs().then(setLogs).catch(console.error);
+    let isActive = true;
+
+    Promise.allSettled([
+      adminApi.getRooms().then((nextRooms) => {
+        if (isActive) setRooms(nextRooms);
+      }),
+      adminApi.getTeams().then((teams) => {
+        if (isActive) {
+          setOwnerTeamOptions(teams.map((team) => ({ id: team.id, name: team.name })));
+        }
+      }),
+      adminApi.getLogs().then((nextLogs) => {
+        if (isActive) setLogs(nextLogs);
+      }),
+    ])
+      .then((results) => {
+        results.forEach((result) => {
+          if (result.status === "rejected") {
+            console.error(result.reason);
+          }
+        });
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingAdminData(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -132,53 +164,60 @@ const AdminPage = () => {
       {(activeNavId, setActiveNavId) => {
         return (
           <>
-            <div className="admin-panel-slot" hidden={activeNavId !== "reservation"}>
-              <AdminReservationPanel
-                key={reservationPanelKey}
-                initialReservationId={externalReservationId}
-                rooms={activeRoomNames}
-                ownerTeamOptions={ownerTeamOptions}
-                onInitialBack={() => {
-                  setExternalReservationId(null);
-                  setActiveNavId("room");
-                }}
-                onOpenUser={(userId) => {
-                  setExternalUserView({ name: "user-detail", userId });
-                  setActiveNavId("user");
-                }}
-                onOpenTeam={(teamId) => {
-                  setExternalUserView({ name: "team-detail", teamId });
-                  setActiveNavId("user");
-                }}
-                onToast={showToast}
-              />
-            </div>
-            <div className="admin-panel-slot" hidden={activeNavId !== "user"}>
-              <AdminUserPanel
-                key={userPanelKey}
-                initialView={externalUserView}
-                onToast={showToast}
-                onInitialBack={() => {
-                  setExternalUserView(null);
-                  setActiveNavId("reservation");
-                }}
-              />
-            </div>
-            <div className="admin-panel-slot" hidden={activeNavId !== "room"}>
-              <AdminRoomPanel
-                key={roomPanelKey}
-                rooms={rooms}
-                onRoomsChange={setRooms}
-                onOpenReservation={(reservationId) => {
-                  setExternalReservationId(reservationId);
-                  setActiveNavId("reservation");
-                }}
-                onToast={showToast}
-              />
-            </div>
-            <div className="admin-panel-slot" hidden={activeNavId !== "log"}>
-              <AdminLogPanel logs={logs} />
-            </div>
+            {isLoadingAdminData ? (
+              <AdminLoadingState />
+            ) : (
+              <>
+                <div className="admin-panel-slot" hidden={activeNavId !== "reservation"}>
+                  <AdminReservationPanel
+                    key={reservationPanelKey}
+                    initialReservationId={externalReservationId}
+                    rooms={activeRoomNames}
+                    ownerTeamOptions={ownerTeamOptions}
+                    isActive={activeNavId === "reservation"}
+                    onInitialBack={() => {
+                      setExternalReservationId(null);
+                      setActiveNavId("room");
+                    }}
+                    onOpenUser={(userId) => {
+                      setExternalUserView({ name: "user-detail", userId });
+                      setActiveNavId("user");
+                    }}
+                    onOpenTeam={(teamId) => {
+                      setExternalUserView({ name: "team-detail", teamId });
+                      setActiveNavId("user");
+                    }}
+                    onToast={showToast}
+                  />
+                </div>
+                <div className="admin-panel-slot" hidden={activeNavId !== "user"}>
+                  <AdminUserPanel
+                    key={userPanelKey}
+                    initialView={externalUserView}
+                    onToast={showToast}
+                    onInitialBack={() => {
+                      setExternalUserView(null);
+                      setActiveNavId("reservation");
+                    }}
+                  />
+                </div>
+                <div className="admin-panel-slot" hidden={activeNavId !== "room"}>
+                  <AdminRoomPanel
+                    key={roomPanelKey}
+                    rooms={rooms}
+                    onRoomsChange={setRooms}
+                    onOpenReservation={(reservationId) => {
+                      setExternalReservationId(reservationId);
+                      setActiveNavId("reservation");
+                    }}
+                    onToast={showToast}
+                  />
+                </div>
+                <div className="admin-panel-slot" hidden={activeNavId !== "log"}>
+                  <AdminLogPanel logs={logs} isLoading={isLoadingAdminData} />
+                </div>
+              </>
+            )}
           </>
         );
       }}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminPlusIcon } from "../icons";
 import RefreshIcon from "../../common/icons/RefreshIcon";
@@ -25,17 +25,60 @@ type AdminReservationPanelProps = {
   initialReservationId?: number | null;
   rooms?: string[];
   ownerTeamOptions?: AdminReservationTeamOption[];
+  isActive?: boolean;
   onInitialBack?: () => void;
   onOpenUser?: (userId: number) => void;
   onOpenTeam?: (teamId: number) => void;
   onToast?: (message: string) => void;
 };
 
+const RESERVATION_PAGE_SIZE = 10;
+
+const INITIAL_PAGE_STATE: Record<AdminReservationStatus, number> = {
+  pending: 1,
+  approved: 1,
+};
+
+const INITIAL_HAS_NEXT_STATE: Record<AdminReservationStatus, boolean> = {
+  pending: false,
+  approved: false,
+};
+
+const sortReservations = (items: AdminReservation[]) => (
+  [...items].sort((leftReservation, rightReservation) => {
+    if (leftReservation.dayOffset !== rightReservation.dayOffset) {
+      return leftReservation.dayOffset - rightReservation.dayOffset;
+    }
+
+    return leftReservation.timeLabel.localeCompare(rightReservation.timeLabel);
+  })
+);
+
+const mergeReservations = (
+  currentReservations: AdminReservation[],
+  nextReservations: AdminReservation[],
+  replace = false,
+) => {
+  const reservationMap = new Map<number, AdminReservation>();
+
+  if (!replace) {
+    currentReservations.forEach((reservation) => {
+      reservationMap.set(reservation.id, reservation);
+    });
+  }
+
+  nextReservations.forEach((reservation) => {
+    reservationMap.set(reservation.id, reservation);
+  });
+
+  return sortReservations(Array.from(reservationMap.values()));
+};
 
 const AdminReservationPanel = ({
   initialReservationId = null,
   rooms = [],
   ownerTeamOptions = [],
+  isActive = true,
   onInitialBack,
   onOpenUser,
   onOpenTeam,
@@ -45,36 +88,134 @@ const AdminReservationPanel = ({
   const [pendingTotalCount, setPendingTotalCount] = useState(0);
   const [approvedTotalCount, setApprovedTotalCount] = useState(0);
   const [activeStatus, setActiveStatus] = useState<AdminReservationStatus>("pending");
-  const [dateRange, setDateRange] = useState("7");
+  const [dateRange, setDateRange] = useState("0");
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(true);
+  const [isLoadingMoreReservations, setIsLoadingMoreReservations] = useState(false);
+  const [loadedPages, setLoadedPages] =
+    useState<Record<AdminReservationStatus, number>>(INITIAL_PAGE_STATE);
+  const [hasNextPage, setHasNextPage] =
+    useState<Record<AdminReservationStatus, boolean>>(INITIAL_HAS_NEXT_STATE);
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const refreshReservations = useCallback(async () => {
-    const data = await adminApi.getReservations({
-      dateRange,
-      teamFilter,
-      roomFilter,
-    });
+  const refreshReservations = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsLoadingReservations(true);
+    }
 
-    setReservations(data.reservations);
-    setPendingTotalCount(data.pendingTotalCount);
-    setApprovedTotalCount(data.approvedTotalCount);
-    if (initialReservationId !== null) {
-      setSelectedReservation(data.reservations.find((r) => r.id === initialReservationId) ?? null);
+    try {
+      const data = await adminApi.getReservations({
+        dateRange,
+        teamFilter,
+        roomFilter,
+        pendingPage: 1,
+        approvedPage: 1,
+        pageSize: RESERVATION_PAGE_SIZE,
+      });
+
+      setReservations(mergeReservations([], data.reservations, true));
+      setPendingTotalCount(data.pendingTotalCount);
+      setApprovedTotalCount(data.approvedTotalCount);
+      setLoadedPages(INITIAL_PAGE_STATE);
+      setHasNextPage({
+        pending: data.pendingHasNext,
+        approved: data.approvedHasNext,
+      });
+      if (initialReservationId !== null) {
+        setSelectedReservation(data.reservations.find((r) => r.id === initialReservationId) ?? null);
+      }
+    } finally {
+      if (!options?.silent) {
+        setIsLoadingReservations(false);
+      }
     }
   }, [dateRange, initialReservationId, roomFilter, teamFilter]);
 
   useEffect(() => {
-    refreshReservations().catch(console.error);
+    refreshReservations().catch((error) => {
+      console.error(error);
+      setIsLoadingReservations(false);
+    });
+  }, [refreshReservations]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
-      refreshReservations().catch(console.error);
+      const scrollTop = scrollContainerRef.current?.scrollTop ?? 0;
+      const canAutoRefresh =
+        isActive &&
+        loadedPages[activeStatus] === 1 &&
+        scrollTop < 80 &&
+        !isLoadingReservations &&
+        !isLoadingMoreReservations &&
+        !selectedReservation;
+
+      if (canAutoRefresh) {
+        refreshReservations({ silent: true }).catch(console.error);
+      }
     }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [refreshReservations]);
+  }, [
+    activeStatus,
+    isActive,
+    isLoadingMoreReservations,
+    isLoadingReservations,
+    loadedPages,
+    refreshReservations,
+    selectedReservation,
+  ]);
+
+  const loadMoreReservations = useCallback(async () => {
+    if (isLoadingReservations || isLoadingMoreReservations || !hasNextPage[activeStatus]) {
+      return;
+    }
+
+    const nextPages = {
+      ...loadedPages,
+      [activeStatus]: loadedPages[activeStatus] + 1,
+    };
+
+    setIsLoadingMoreReservations(true);
+
+    try {
+      const data = await adminApi.getReservations({
+        dateRange,
+        teamFilter,
+        roomFilter,
+        pendingPage: nextPages.pending,
+        approvedPage: nextPages.approved,
+        pageSize: RESERVATION_PAGE_SIZE,
+      });
+
+      setReservations((currentReservations) =>
+        mergeReservations(currentReservations, data.reservations),
+      );
+      setPendingTotalCount(data.pendingTotalCount);
+      setApprovedTotalCount(data.approvedTotalCount);
+      setLoadedPages(nextPages);
+      setHasNextPage({
+        pending: data.pendingHasNext,
+        approved: data.approvedHasNext,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingMoreReservations(false);
+    }
+  }, [
+    activeStatus,
+    dateRange,
+    hasNextPage,
+    isLoadingMoreReservations,
+    isLoadingReservations,
+    loadedPages,
+    roomFilter,
+    teamFilter,
+  ]);
 
   const handleRefresh = async () => {
     setIsManualRefreshing(true);
@@ -97,6 +238,26 @@ const AdminReservationPanel = ({
       return true;
     });
   }, [activeStatus, reservations]);
+  const shouldShowListEnd =
+    filteredReservations.length > 0 &&
+    !hasNextPage[activeStatus] &&
+    !isLoadingReservations &&
+    !isLoadingMoreReservations;
+
+  const handleReservationScroll = () => {
+    const scrollContainer = scrollContainerRef.current;
+
+    if (!scrollContainer) return;
+
+    const distanceToBottom =
+      scrollContainer.scrollHeight -
+      scrollContainer.scrollTop -
+      scrollContainer.clientHeight;
+
+    if (distanceToBottom < 120) {
+      void loadMoreReservations();
+    }
+  };
 
   const handleApprove = (id: number) => {
     adminApi.approveReservation(id).catch(console.error);
@@ -208,7 +369,11 @@ const AdminReservationPanel = ({
         onChange={setActiveStatus}
       />
 
-      <div className="admin-panel-scroll">
+      <div
+        className="admin-panel-scroll"
+        ref={scrollContainerRef}
+        onScroll={handleReservationScroll}
+      >
         <div className="admin-reservation__toolbar">
           <AdminReservationFilters
             dateRange={dateRange}
@@ -232,15 +397,32 @@ const AdminReservationPanel = ({
         </div>
 
         <div className="admin-reservation__list">
-          {filteredReservations.length > 0 ? (
-            filteredReservations.map((reservation) => (
-              <AdminReservationCard
-                key={reservation.id}
-                reservation={reservation}
-                onSelect={setSelectedReservation}
-                onApprove={handleApprove}
-              />
-            ))
+          {isLoadingReservations ? (
+            <div className="admin-reservation-list-loading" role="status" aria-live="polite">
+              <div className="admin-reservation-list-loading__spinner" aria-hidden="true" />
+              <p>예약 목록을 불러오고 있어요</p>
+            </div>
+          ) : filteredReservations.length > 0 ? (
+            <>
+              {filteredReservations.map((reservation, index) => (
+                <AdminReservationCard
+                  key={reservation.id}
+                  reservation={reservation}
+                  index={index}
+                  onSelect={setSelectedReservation}
+                  onApprove={handleApprove}
+                />
+              ))}
+              {isLoadingMoreReservations && (
+                <div className="admin-reservation-list-loading admin-reservation-list-loading--compact" role="status" aria-live="polite">
+                  <div className="admin-reservation-list-loading__spinner" aria-hidden="true" />
+                  <p>예약 목록을 더 불러오고 있어요</p>
+                </div>
+              )}
+              {shouldShowListEnd && (
+                <p className="admin-list-end">모든 목록을 조회했습니다.</p>
+              )}
+            </>
           ) : (
             <p className="admin-reservation__empty">조건에 맞는 예약이 없습니다.</p>
           )}

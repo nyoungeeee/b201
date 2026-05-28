@@ -357,29 +357,33 @@ const RoomList = ({
 }) => (
   <>
     <div className="admin-room-list">
-      {rooms.map((room) => (
-        <button
-          className="admin-room-card"
-          key={room.id}
-          type="button"
-          onClick={() => onSelect(room.id)}
-        >
-          <header>
-            <AdminRoomIcon />
-            <h2>{room.name}</h2>
-          </header>
-          <p className="admin-room-hours">
-            <span>운영시간</span>
-            <strong>
-              {room.openTime}~{room.closeTime}
-            </strong>
-            <em>24시간 운영</em>
-            <i className={room.isOpenAllDay ? "is-open" : "is-closed"}>
-              {room.isOpenAllDay ? "O" : "X"}
-            </i>
-          </p>
-        </button>
-      ))}
+      {rooms.length > 0 ? (
+        rooms.map((room) => (
+          <button
+            className="admin-room-card"
+            key={room.id}
+            type="button"
+            onClick={() => onSelect(room.id)}
+          >
+            <header>
+              <AdminRoomIcon />
+              <h2>{room.name}</h2>
+            </header>
+            <p className="admin-room-hours">
+              <span>운영시간</span>
+              <strong>
+                {room.openTime}~{room.closeTime}
+              </strong>
+              <em>24시간 운영</em>
+              <i className={room.isOpenAllDay ? "is-open" : "is-closed"}>
+                {room.isOpenAllDay ? "O" : "X"}
+              </i>
+            </p>
+          </button>
+        ))
+      ) : (
+        <p className="admin-reservation__empty">등록된 합주실이 없습니다.</p>
+      )}
     </div>
     <button className="admin-room-add-card" type="button" onClick={onCreate}>
       <AdminPlusIcon />
@@ -435,33 +439,37 @@ const DayOffList = ({
       </div>
 
       <div className="admin-room-dayoff-list">
-        {daysOff.map((dayOff) => (
-          <article className="admin-dayoff-card" key={dayOff.id}>
-            <header>
-              <h2>{dayOff.roomName}</h2>
-              <span className={`admin-dayoff-badge is-${dayOff.type}`}>
-                {dayOff.type}
-              </span>
-            </header>
-            <div className="admin-dayoff-grid">
-              <p>
-                <span>날짜</span>
-                <strong>{dayOff.dateLabel}</strong>
-              </p>
-              <p>
-                <span>시간</span>
-                <strong>{dayOff.timeLabel}</strong>
-              </p>
-            </div>
-            <section className="admin-dayoff-reason">
-              <AdminClockIcon />
-              <div>
-                <span>사유</span>
-                <strong>{dayOff.reason}</strong>
+        {daysOff.length > 0 ? (
+          daysOff.map((dayOff) => (
+            <article className="admin-dayoff-card" key={dayOff.id}>
+              <header>
+                <h2>{dayOff.roomName}</h2>
+                <span className={`admin-dayoff-badge is-${dayOff.type}`}>
+                  {dayOff.type}
+                </span>
+              </header>
+              <div className="admin-dayoff-grid">
+                <p>
+                  <span>날짜</span>
+                  <strong>{dayOff.dateLabel}</strong>
+                </p>
+                <p>
+                  <span>시간</span>
+                  <strong>{dayOff.timeLabel}</strong>
+                </p>
               </div>
-            </section>
-          </article>
-        ))}
+              <section className="admin-dayoff-reason">
+                <AdminClockIcon />
+                <div>
+                  <span>사유</span>
+                  <strong>{dayOff.reason}</strong>
+                </div>
+              </section>
+            </article>
+          ))
+        ) : (
+          <p className="admin-reservation__empty">등록된 쉬는날이 없습니다.</p>
+        )}
       </div>
     </>
   );
