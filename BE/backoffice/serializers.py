@@ -599,8 +599,8 @@ class AdminReservationListQuerySerializer(serializers.Serializer):
     date_range = serializers.IntegerField(
         required=False,
         min_value=0,
-        default=7,
-        help_text="승인 예약 조회 시 오늘부터 몇 일 범위를 조회할지 지정합니다.",
+        default=0,
+        help_text="오늘부터 몇 일 범위를 조회할지 지정합니다. 0이면 전체를 조회합니다.",
     )
     team_type = serializers.ChoiceField(
         required=False,
