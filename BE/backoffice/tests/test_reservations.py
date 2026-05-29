@@ -406,6 +406,35 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             response.data["data"][0]["id"], in_range_booking.reservation_number
         )
 
+    def test_pending_reservation_list_defaults_to_all_dates(self):
+        near_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=6),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+        far_booking = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today + timedelta(days=30),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get("/api/v1/admin/reservations?status=pending")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 2)
+        self.assertEqual(
+            [item["id"] for item in response.data["data"]],
+            [near_booking.reservation_number, far_booking.reservation_number],
+        )
+
     def test_staff_can_cancel_reservation(self):
         booking = Booking.objects.create(
             room=self.room,
