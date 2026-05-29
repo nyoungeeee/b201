@@ -14,6 +14,7 @@ import MyTeamDetailPage from '../pages/MyTeamDetailPage';
 import KakaoCallbackPage from '../pages/KakaoCallbackPage';
 import MyTeamPage from '../pages/MyTeamPage';
 import NicknameEditPage from '../pages/NicknameEditPage';
+import NotFoundPage from '../pages/NotFoundPage';
 import PolicyPage from '../pages/PolicyPage';
 import ReservationApplyPage from '../pages/ReservationApplyPage';
 import ReservationStatusPage from '../pages/ReservationStatusPage';
@@ -69,6 +70,8 @@ const AppRouter = () => {
                         </AdminRoute>
                     }
                 />
+                <Route path="/404" element={<NotFoundPage />} />
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </BrowserRouter>
     );
