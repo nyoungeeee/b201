@@ -28,6 +28,8 @@ type AdminRoomView =
   | { name: "room-edit"; roomId: number }
   | { name: "room-delete"; roomId: number }
   | { name: "room-create" }
+  | { name: "dayoff-detail"; dayOffId: number }
+  | { name: "dayoff-delete"; dayOffId: number }
   | { name: "dayoff-create" }
   | {
       name: "dayoff-impact";
@@ -170,6 +172,16 @@ const AdminRoomPanel = ({
     });
   };
 
+  const handleDeleteDayOff = async (dayOff: AdminRoomDayOff) => {
+    await adminApi.deleteDayOff(dayOff.id);
+    setDaysOff((currentDaysOff) =>
+      currentDaysOff.filter((currentDayOff) => currentDayOff.id !== dayOff.id),
+    );
+    setActiveTab("daysOff");
+    resetView();
+    onToast?.("쉬는날을 삭제했습니다.");
+  };
+
   if (view.name === "room-detail") {
     const room = rooms.find((currentRoom) => currentRoom.id === view.roomId);
 
@@ -264,6 +276,44 @@ const AdminRoomPanel = ({
     );
   }
 
+  if (view.name === "dayoff-detail") {
+    const dayOff = daysOff.find(
+      (currentDayOff) => currentDayOff.id === view.dayOffId,
+    );
+
+    if (!dayOff) {
+      return null;
+    }
+
+    return (
+      <DayOffDetailScreen
+        dayOff={dayOff}
+        onBack={goBack}
+        onDelete={() =>
+          navigate({ name: "dayoff-delete", dayOffId: dayOff.id })
+        }
+      />
+    );
+  }
+
+  if (view.name === "dayoff-delete") {
+    const dayOff = daysOff.find(
+      (currentDayOff) => currentDayOff.id === view.dayOffId,
+    );
+
+    if (!dayOff) {
+      return null;
+    }
+
+    return (
+      <DayOffDeleteScreen
+        dayOff={dayOff}
+        onBack={goBack}
+        onConfirm={() => handleDeleteDayOff(dayOff).catch(console.error)}
+      />
+    );
+  }
+
   if (view.name === "dayoff-impact") {
     return (
       <DayOffImpactScreen
@@ -324,7 +374,11 @@ const AdminRoomPanel = ({
             onSelect={(roomId) => navigate({ name: "room-detail", roomId })}
           />
         ) : (
-          <DayOffList daysOff={daysOff} rooms={activeRooms} />
+          <DayOffList
+            daysOff={daysOff}
+            rooms={activeRooms}
+            onSelect={(dayOffId) => navigate({ name: "dayoff-detail", dayOffId })}
+          />
         )}
       </div>
     </section>
@@ -395,9 +449,11 @@ const RoomList = ({
 const DayOffList = ({
   daysOff,
   rooms,
+  onSelect,
 }: {
   daysOff: AdminRoomDayOff[];
   rooms: AdminPracticeRoom[];
+  onSelect: (dayOffId: number) => void;
 }) => {
   const [dateFilter, setDateFilter] = useState("all");
   const [roomFilter, setRoomFilter] = useState("all");
@@ -441,7 +497,12 @@ const DayOffList = ({
       <div className="admin-room-dayoff-list">
         {daysOff.length > 0 ? (
           daysOff.map((dayOff) => (
-            <article className="admin-dayoff-card" key={dayOff.id}>
+            <button
+              className="admin-dayoff-card"
+              key={dayOff.id}
+              type="button"
+              onClick={() => onSelect(dayOff.id)}
+            >
               <header>
                 <h2>{dayOff.roomName}</h2>
                 <span className={`admin-dayoff-badge is-${dayOff.type}`}>
@@ -465,13 +526,181 @@ const DayOffList = ({
                   <strong>{dayOff.reason}</strong>
                 </div>
               </section>
-            </article>
+            </button>
           ))
         ) : (
           <p className="admin-reservation__empty">등록된 쉬는날이 없습니다.</p>
         )}
       </div>
     </>
+  );
+};
+
+const DayOffDetailScreen = ({
+  dayOff,
+  onBack,
+  onDelete,
+}: {
+  dayOff: AdminRoomDayOff;
+  onBack: () => void;
+  onDelete: () => void;
+}) => (
+  <section className="admin-sub-screen">
+    <ScreenHeader title="쉬는날 상세" onBack={onBack} />
+    <div className="admin-sub-screen__content">
+      <div className="admin-room-detail-hero">
+        <div>
+          <span className={`admin-dayoff-badge is-${dayOff.type}`}>
+            {dayOff.type}
+          </span>
+        </div>
+        <section>
+          <AdminCalendarIcon />
+          <div>
+            <h3>{dayOff.roomName}</h3>
+            <p>{dayOff.dateLabel}</p>
+          </div>
+        </section>
+      </div>
+
+      <section className="admin-room-info-card">
+        <h3>기본 정보</h3>
+        {[
+          ["대상", dayOff.roomName],
+          ["유형", dayOff.type],
+          ["날짜", dayOff.dateLabel],
+          ["시간", dayOff.timeLabel],
+          ["사유", dayOff.reason || "-"],
+        ].map(([label, value]) => (
+          <p key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </p>
+        ))}
+      </section>
+
+      <div className="admin-info-box">
+        <AdminMemoIcon />
+        <p>
+          쉬는날을 삭제하면 해당 날짜와 시간대가 다시 예약 가능 상태로
+          반영됩니다.
+        </p>
+      </div>
+    </div>
+    <footer className="admin-sub-actions">
+      <button type="button" onClick={onBack}>
+        목록으로
+      </button>
+      <button className="is-outline-danger" type="button" onClick={onDelete}>
+        삭제하기
+      </button>
+    </footer>
+  </section>
+);
+
+const DayOffDeleteScreen = ({
+  dayOff,
+  onBack,
+  onConfirm,
+}: {
+  dayOff: AdminRoomDayOff;
+  onBack: () => void;
+  onConfirm: () => void;
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const requiredText = `${dayOff.roomName} 쉬는날 삭제한다`;
+  const canDelete = confirmText.trim() === requiredText;
+
+  return (
+    <section className="admin-sub-screen">
+      <ScreenHeader title="쉬는날 삭제" onBack={onBack} />
+      <div className="admin-sub-screen__content">
+        <section className="admin-room-delete-danger">
+          <AdminWarningIcon />
+          <div>
+            <h3>쉬는날을 삭제하시겠어요?</h3>
+            <p>
+              삭제 후 {dayOff.roomName}의 해당 날짜와 시간대는 다시 예약 가능
+              상태로 반영됩니다.
+            </p>
+          </div>
+        </section>
+
+        <section className="admin-room-delete-card">
+          <h3>삭제 전 반드시 확인</h3>
+          <ul>
+            <li>삭제한 쉬는날은 목록과 상세 화면에서 즉시 사라집니다.</li>
+            <li>이미 취소된 예약은 쉬는날 삭제만으로 자동 복구되지 않습니다.</li>
+            <li>같은 시간대 예약 가능 여부는 사용자 예약 화면에 반영됩니다.</li>
+          </ul>
+        </section>
+
+        <section className="admin-room-delete-room">
+          <span>삭제 대상</span>
+          <strong>{dayOff.roomName}</strong>
+          <p>
+            {dayOff.dateLabel} / {dayOff.timeLabel} / {dayOff.type}
+          </p>
+        </section>
+      </div>
+      <footer className="admin-sub-actions">
+        <button type="button" onClick={onBack}>
+          취소
+        </button>
+        <button
+          className="is-danger"
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+        >
+          최종 삭제
+        </button>
+      </footer>
+
+      {isModalOpen ? (
+        <div
+          className="admin-room-delete-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="쉬는날 삭제 최종 확인"
+        >
+          <div className="admin-room-delete-modal__panel">
+            <AdminWarningIcon />
+            <h3>삭제 확인 문구를 입력해주세요</h3>
+            <p>
+              아래 입력창에 <strong>{requiredText}</strong>를 정확히 입력해야
+              삭제할 수 있습니다.
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              placeholder={requiredText}
+              onChange={(event) => setConfirmText(event.target.value)}
+              autoFocus
+            />
+            <div className="admin-room-delete-modal__actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setConfirmText("");
+                }}
+              >
+                취소
+              </button>
+              <button
+                className="is-danger"
+                type="button"
+                disabled={!canDelete}
+                onClick={onConfirm}
+              >
+                삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 };
 
