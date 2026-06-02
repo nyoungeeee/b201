@@ -162,7 +162,9 @@ const ReservationTeamPicker = ({
                             role="option"
                             aria-selected={isSelected}
                         >
-                            {option.label}
+                            <span className="reservation-team-option__label">
+                                {option.label}
+                            </span>
                         </button>
                     );
                 })}

@@ -38,10 +38,10 @@ const MobilePageLayout = ({
     const navigate = useNavigate();
 
     const [toastMessage, setToastMessage] = useState<string | null>(null);
-    const [pullDistance, setPullDistance] = useState(0);
     const [isPullRefreshing, setIsPullRefreshing] = useState(false);
     const contentRef = useRef<HTMLDivElement | null>(null);
     const touchStartYRef = useRef<number | null>(null);
+    const pullDistanceRef = useRef(0);
     const isPullingRef = useRef(false);
     const canPullToRefresh = !!onRefresh;
     const refreshInProgress = isRefreshing || isPullRefreshing;
@@ -73,8 +73,8 @@ const MobilePageLayout = ({
 
     const resetPullState = () => {
         touchStartYRef.current = null;
+        pullDistanceRef.current = 0;
         isPullingRef.current = false;
-        setPullDistance(0);
     };
 
     const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
@@ -104,13 +104,15 @@ const MobilePageLayout = ({
 
         const distance = currentY - startY;
         if (distance <= 0) {
-            setPullDistance(0);
+            pullDistanceRef.current = 0;
             return;
         }
 
         isPullingRef.current = true;
-        event.preventDefault();
-        setPullDistance(Math.min(distance * 0.55, PULL_REFRESH_MAX_DISTANCE));
+        pullDistanceRef.current = Math.min(
+            distance * 0.55,
+            PULL_REFRESH_MAX_DISTANCE,
+        );
     };
 
     const handleTouchEnd = () => {
@@ -120,7 +122,8 @@ const MobilePageLayout = ({
         }
 
         const shouldRefresh =
-            isPullingRef.current && pullDistance >= PULL_REFRESH_THRESHOLD;
+            isPullingRef.current
+            && pullDistanceRef.current >= PULL_REFRESH_THRESHOLD;
 
         resetPullState();
 
@@ -149,24 +152,6 @@ const MobilePageLayout = ({
                         onTouchEnd={handleTouchEnd}
                         onTouchCancel={resetPullState}
                     >
-                        {canPullToRefresh && (
-                            <div
-                                className={[
-                                    'pull-to-refresh',
-                                    refreshInProgress ? 'is-refreshing' : '',
-                                    pullDistance >= PULL_REFRESH_THRESHOLD
-                                        ? 'is-ready'
-                                        : '',
-                                ].filter(Boolean).join(' ')}
-                                style={{
-                                    transform: `translateY(${refreshInProgress ? 0 : pullDistance - PULL_REFRESH_MAX_DISTANCE}px)`,
-                                }}
-                                aria-hidden="true"
-                            >
-                                <span className="pull-to-refresh__spinner" />
-                            </div>
-                        )}
-
                         {children}
 
                         {toastMessage && (
