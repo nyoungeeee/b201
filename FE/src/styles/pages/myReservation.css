@@ -362,12 +362,16 @@
 }
 
 .my-reservation-card__title-row h2 {
+  flex: 1 1 auto;
   min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--text-primary);
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   line-height: var(--lh-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .my-reservation-card__repeat,
