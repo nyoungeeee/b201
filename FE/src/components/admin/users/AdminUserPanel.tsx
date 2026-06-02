@@ -229,7 +229,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     adminApi.getTeamLeaderOptions(teams, users).then(setTeamLeaderOptions).catch(console.error);
   }, [teams, users]);
 
-  const view = viewStack[viewStack.length - 1] ?? { name: "list" };
+  const view = useMemo(() => viewStack[viewStack.length - 1] ?? { name: "list" }, [viewStack]);
   const navigate = (nextView: AdminUserView) => setViewStack((currentStack) => [...currentStack, nextView]);
   const replaceView = (nextView: AdminUserView) => setViewStack([nextView]);
   const goBack = () => {
@@ -592,8 +592,9 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       currentUsers.map((user) => ({ ...user, teams: user.teams.filter((id) => id !== teamId) })),
     );
     setTeamMemberCache((currentCache) => {
-      const { [teamId]: _deletedTeamMembers, ...nextCache } = currentCache;
+      const nextCache = { ...currentCache };
 
+      delete nextCache[teamId];
       return nextCache;
     });
     setActiveTab("teams");
