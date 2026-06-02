@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 
 from rest_framework import status
 
@@ -87,6 +87,49 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.data["slot"][0]["start_time"], "09:00:00")
         self.assertEqual(response.data["slot"][0]["end_time"], "22:00:00")
 
+    def test_day_booking_view_marks_global_holiday_as_inactive(self):
+        RoomClosure.objects.create(
+            room=None,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="전체 휴무",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], StudioRoomStatus.INACTIVE)
+        self.assertEqual(response.data["slot"][0]["name"], "전체 휴무")
+
+    def test_day_booking_view_marks_range_holiday_as_inactive(self):
+        target_date = self.today + timedelta(days=1)
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=target_date,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="연휴",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/day/?date={target_date.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], StudioRoomStatus.INACTIVE)
+        self.assertEqual(response.data["slot"][0]["name"], "연휴")
+
     def test_day_booking_view_marks_all_day_maintenance(self):
         RoomClosure.objects.create(
             room=self.room,
@@ -105,7 +148,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], ClosureType.MAINTENANCE)
+        self.assertEqual(response.data["status"], StudioRoomStatus.INACTIVE)
         self.assertEqual(response.data["slot"][0]["start_time"], "09:00:00")
         self.assertEqual(response.data["slot"][0]["end_time"], "22:00:00")
 

@@ -3172,7 +3172,9 @@
 }
 
 .admin-dayoff-card {
+  width: 100%;
   padding: 18px;
+  text-align: left;
 }
 
 .admin-dayoff-badge {

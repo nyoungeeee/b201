@@ -129,6 +129,61 @@ class PrivateReservationCreateAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
 
+    def test_create_private_reservation_rejects_global_holiday_closure(self):
+        RoomClosure.objects.create(
+            room=None,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=self.today,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="전체 휴무",
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}",
+            {
+                "type": "private",
+                "start_date": self.today.isoformat(),
+                "start_time": "10:00:00",
+                "end_time": "11:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
+
+    def test_create_private_reservation_rejects_range_holiday_closure(self):
+        target_date = self.today + timedelta(days=1)
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=self.today,
+            start_date=self.today,
+            end_date=target_date,
+            start_time=None,
+            end_time=None,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="연휴",
+        )
+
+        response = self.client.post(
+            f"/api/v1/reservations/{self.room.id}",
+            {
+                "type": "private",
+                "start_date": target_date.isoformat(),
+                "start_time": "10:00:00",
+                "end_time": "11:00:00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "DUPLICATED_RESERVATION")
+
     # 개인 예약 생성 시 예약 시간은 30분 단위만 허용되는지 검증한다.
     def test_create_private_reservation_rejects_non_half_hour_time(self):
         response = self.client.post(
