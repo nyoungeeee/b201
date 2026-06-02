@@ -25,8 +25,6 @@ type AdminReservationTeamOption = {
 
 type AdminReservationPanelProps = {
   initialReservationId?: number | null;
-  rooms?: AdminPracticeRoom[];
-  ownerTeamOptions?: AdminReservationTeamOption[];
   isActive?: boolean;
   onInitialBack?: () => void;
   onOpenUser?: (userId: number) => void;
@@ -35,6 +33,7 @@ type AdminReservationPanelProps = {
 };
 
 const RESERVATION_PAGE_SIZE = 10;
+const CREATE_TEAM_OPTION_PAGE_SIZE = 10;
 
 const INITIAL_PAGE_STATE: Record<AdminReservationStatus, number> = {
   pending: 1,
@@ -76,10 +75,25 @@ const mergeReservations = (
   return sortReservations(Array.from(reservationMap.values()));
 };
 
+const mergeTeamOptions = (
+  currentTeams: AdminReservationTeamOption[],
+  nextTeams: AdminReservationTeamOption[],
+) => {
+  const teamMap = new Map(currentTeams.map((team) => [team.id, team]));
+
+  nextTeams.forEach((team) => teamMap.set(team.id, team));
+
+  return Array.from(teamMap.values());
+};
+
+const toActiveRooms = (rooms: AdminPracticeRoom[]) => (
+  rooms
+    .filter((room) => room.isActive)
+    .sort((leftRoom, rightRoom) => leftRoom.sortOrder - rightRoom.sortOrder)
+);
+
 const AdminReservationPanel = ({
   initialReservationId = null,
-  rooms = [],
-  ownerTeamOptions = [],
   isActive = true,
   onInitialBack,
   onOpenUser,
@@ -94,6 +108,12 @@ const AdminReservationPanel = ({
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [rooms, setRooms] = useState<AdminPracticeRoom[]>([]);
+  const [ownerTeamOptions, setOwnerTeamOptions] = useState<AdminReservationTeamOption[]>([]);
+  const [ownerTeamPage, setOwnerTeamPage] = useState(1);
+  const [hasNextOwnerTeams, setHasNextOwnerTeams] = useState(false);
+  const [isLoadingCreateOptions, setIsLoadingCreateOptions] = useState(false);
+  const [isLoadingMoreOwnerTeams, setIsLoadingMoreOwnerTeams] = useState(false);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [isLoadingReservations, setIsLoadingReservations] = useState(true);
   const [isLoadingMoreReservations, setIsLoadingMoreReservations] = useState(false);
@@ -111,6 +131,22 @@ const AdminReservationPanel = ({
     () => rooms.map((room) => ({ name: room.name, openTime: room.openTime })),
     [rooms],
   );
+
+  useEffect(() => {
+    let isActive = true;
+
+    adminApi.getRooms()
+      .then((nextRooms) => {
+        if (!isActive) return;
+
+        setRooms(toActiveRooms(nextRooms));
+      })
+      .catch(console.error);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const refreshReservations = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -348,6 +384,69 @@ const AdminReservationPanel = ({
     );
   };
 
+  const handleOpenCreate = async () => {
+    if (ownerTeamOptions.length > 0) {
+      setIsCreateOpen(true);
+      return;
+    }
+
+    setIsLoadingCreateOptions(true);
+
+    try {
+      const [teams, nextRooms] = await Promise.all([
+        ownerTeamOptions.length > 0
+          ? Promise.resolve(null)
+          : adminApi.getTeamsPage({ page: 1, pageSize: CREATE_TEAM_OPTION_PAGE_SIZE }),
+        rooms.length > 0 ? Promise.resolve(null) : adminApi.getRooms(),
+      ]);
+
+      if (teams) {
+        setOwnerTeamOptions(teams.teams.map((team) => ({ id: team.id, name: team.name })));
+        setOwnerTeamPage(1);
+        setHasNextOwnerTeams(teams.hasNext);
+      }
+
+      if (nextRooms) {
+        setRooms(toActiveRooms(nextRooms));
+      }
+
+      setIsCreateOpen(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingCreateOptions(false);
+    }
+  };
+
+  const handleLoadMoreOwnerTeams = async () => {
+    if (isLoadingMoreOwnerTeams || !hasNextOwnerTeams) {
+      return;
+    }
+
+    const nextPage = ownerTeamPage + 1;
+    setIsLoadingMoreOwnerTeams(true);
+
+    try {
+      const result = await adminApi.getTeamsPage({
+        page: nextPage,
+        pageSize: CREATE_TEAM_OPTION_PAGE_SIZE,
+      });
+
+      setOwnerTeamOptions((currentTeams) =>
+        mergeTeamOptions(
+          currentTeams,
+          result.teams.map((team) => ({ id: team.id, name: team.name })),
+        ),
+      );
+      setOwnerTeamPage(nextPage);
+      setHasNextOwnerTeams(result.hasNext);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingMoreOwnerTeams(false);
+    }
+  };
+
   const handleCloseDetail = () => {
     setSelectedReservation(null);
 
@@ -400,9 +499,9 @@ const AdminReservationPanel = ({
           <h2 className="admin-reservation__section-title">
             {activeStatus === "pending" ? "승인 대기 예약" : "승인 완료 예약"}
           </h2>
-          <button className="admin-create-button admin-create-button--inline" type="button" onClick={() => setIsCreateOpen(true)}>
+          <button className="admin-create-button admin-create-button--inline" type="button" onClick={() => void handleOpenCreate()} disabled={isLoadingCreateOptions}>
             <AdminPlusIcon />
-            예약 생성
+            {isLoadingCreateOptions ? "불러오는 중" : "예약 생성"}
           </button>
         </div>
 
@@ -445,6 +544,9 @@ const AdminReservationPanel = ({
           onCreate={handleCreate}
           rooms={createRoomOptions}
           teamOptions={ownerTeamOptions}
+          hasMoreTeamOptions={hasNextOwnerTeams}
+          isLoadingTeamOptions={isLoadingMoreOwnerTeams}
+          onLoadMoreTeamOptions={handleLoadMoreOwnerTeams}
         />
       )}
 

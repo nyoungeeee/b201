@@ -21,6 +21,8 @@ export type AdminManagedTeam = {
   name: string;
   colorId: string;
   leaderId: number;
+  leaderName?: string;
+  memberCount?: number;
   memberIds: number[];
   updatedAt: string;
 };

@@ -223,6 +223,8 @@ export const toTeam = (team: ApiTeam): AdminManagedTeam => ({
     name: team.name,
     colorId: team.color_id == null ? '' : String(team.color_id),
     leaderId: team.leader_id,
+    leaderName: team.leader_nickname ?? undefined,
+    memberCount: team.member_count,
     memberIds: team.member_ids ?? [],
     updatedAt: formatDateDots(team.updated_at),
 });

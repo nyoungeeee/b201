@@ -99,6 +99,33 @@ type AdminReservationListResult = {
     approvedHasNext: boolean;
 };
 
+type AdminUserListFilters = {
+    page?: number;
+    pageSize?: number;
+    query?: string;
+    teamId?: string;
+    status?: 'all' | AdminManagedUser['status'];
+};
+
+type AdminTeamListFilters = {
+    page?: number;
+    pageSize?: number;
+    query?: string;
+    leaderId?: string;
+};
+
+type AdminUserListResult = {
+    users: AdminManagedUser[];
+    totalCount: number;
+    hasNext: boolean;
+};
+
+type AdminTeamListResult = {
+    teams: AdminManagedTeam[];
+    totalCount: number;
+    hasNext: boolean;
+};
+
 let cachedRooms: AdminPracticeRoom[] = [];
 
 const trimSlashes = (value: string): string => value.replace(/^\/+|\/+$/g, '');
@@ -434,6 +461,48 @@ export const getUsers = async (): Promise<AdminManagedUser[]> => {
     return users.map((user) => toUser(user, adminUserId));
 };
 
+export const getUsersPage = async ({
+    page = 1,
+    pageSize = 10,
+    query = '',
+    teamId = 'all',
+    status = 'all',
+}: AdminUserListFilters = {}): Promise<AdminUserListResult> => {
+    const searchParams = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        status,
+    });
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery) {
+        searchParams.set('q', trimmedQuery);
+    }
+
+    if (teamId !== 'all') {
+        searchParams.set('team_id', teamId);
+    }
+
+    const result = await requestJsonWithPagination<ApiUser[]>(
+        'users',
+        { method: 'GET' },
+        searchParams,
+    );
+    const adminUserId = getAdminUserId();
+
+    return {
+        users: result.data.map((user) => toUser(user, adminUserId)),
+        totalCount: result.pagination?.total_count ?? result.data.length,
+        hasNext: page < (result.pagination?.total_pages ?? 0),
+    };
+};
+
+export const getUser = async (id: number): Promise<AdminManagedUser> => {
+    const user = await requestJson<ApiUser>(`users/${id}`, { method: 'GET' });
+
+    return toUser(user, getAdminUserId());
+};
+
 export const blockUser = async (id: number): Promise<void> => {
     await requestVoid(`users/${id}/block`, { method: 'PATCH' });
 };
@@ -448,15 +517,46 @@ export const getTeams = async (): Promise<AdminManagedTeam[]> => {
         { method: 'GET' },
         new URLSearchParams({ page_size: '100' }),
     );
-    const teamDetails = await Promise.all(
-        teams.map((team) =>
-            requestJson<ApiTeam>(`teams/${team.id}`, { method: 'GET' }).catch(
-                () => team,
-            ),
-        ),
-    );
 
-    return teamDetails.map(toTeam);
+    return teams.map(toTeam);
+};
+
+export const getTeamsPage = async ({
+    page = 1,
+    pageSize = 10,
+    query = '',
+    leaderId = 'all',
+}: AdminTeamListFilters = {}): Promise<AdminTeamListResult> => {
+    const searchParams = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+    });
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery) {
+        searchParams.set('q', trimmedQuery);
+    }
+
+    if (leaderId !== 'all') {
+        searchParams.set('leader_id', leaderId);
+    }
+
+    const result = await requestJsonWithPagination<ApiTeam[]>(
+        'teams',
+        { method: 'GET' },
+        searchParams,
+    );
+    return {
+        teams: result.data.map(toTeam),
+        totalCount: result.pagination?.total_count ?? result.data.length,
+        hasNext: page < (result.pagination?.total_pages ?? 0),
+    };
+};
+
+export const getTeam = async (id: number): Promise<AdminManagedTeam> => {
+    const team = await requestJson<ApiTeam>(`teams/${id}`, { method: 'GET' });
+
+    return toTeam(team);
 };
 
 export const getTeamColors = async (
@@ -493,10 +593,13 @@ export const getTeamLeaderOptions = async (
             if (id === 0) return { id: 0, nickname: '사장님' };
 
             const user = users.find((currentUser) => currentUser.id === id);
+            const team = teams.find((currentTeam) => currentTeam.leaderId === id);
 
             return user
                 ? { id: user.id, nickname: user.nickname }
-                : null;
+                : team?.leaderName
+                  ? { id, nickname: team.leaderName }
+                  : null;
         })
         .filter(
             (
