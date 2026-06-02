@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 
 from rest_framework import status
 
@@ -103,6 +103,56 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
         self.assertTrue(holiday_day["disabled"])
         self.assertTrue(holiday_day["is_holiday"])
+
+    def test_month_booking_view_marks_global_holiday_as_disabled(self):
+        target_date = self.today.replace(day=5)
+        RoomClosure.objects.create(
+            room=None,
+            closure_date=target_date,
+            start_date=target_date,
+            end_date=target_date,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="전체 휴무",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        holiday_day = next(
+            item for item in response.data["days"] if item["date"].endswith("-05")
+        )
+        self.assertTrue(holiday_day["disabled"])
+        self.assertTrue(holiday_day["is_holiday"])
+
+    def test_month_booking_view_marks_range_holiday_as_disabled(self):
+        start_date = self.today.replace(day=6)
+        end_date = start_date + timedelta(days=1)
+        RoomClosure.objects.create(
+            room=self.room,
+            closure_date=start_date,
+            start_date=start_date,
+            end_date=end_date,
+            is_all_day=True,
+            closure_type=ClosureType.HOLIDAY,
+            reason="연휴",
+        )
+
+        response = self.client.get(
+            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        holiday_days = [
+            item
+            for item in response.data["days"]
+            if item["date"].endswith("-06") or item["date"].endswith("-07")
+        ]
+        self.assertEqual(len(holiday_days), 2)
+        self.assertTrue(all(item["disabled"] for item in holiday_days))
+        self.assertTrue(all(item["is_holiday"] for item in holiday_days))
 
     # 비활성 룸의 월별 조회는 모든 날짜를 예약 불가로 반환하는지 검증한다.
     def test_month_booking_view_marks_all_days_disabled_for_inactive_room(self):

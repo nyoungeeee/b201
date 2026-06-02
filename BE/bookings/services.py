@@ -30,7 +30,7 @@ from bookings.models import (
     ReservationRepeatOccurrence,
     ReservationRepeatOccurrenceStatus,
 )
-from studios.models import ClosureType, StudioRoom, StudioRoomStatus
+from studios.models import ClosureType, RoomClosure, StudioRoom, StudioRoomStatus
 from teams.models import Team, TeamMemberStatus, TeamStatus
 
 
@@ -258,7 +258,10 @@ class BookingCheckService:
                 )
             )
 
-        closures = room.closures.filter(closure_date=target_date)
+        closures = BookingCheckService._get_effective_closures(
+            room=room,
+            target_date=target_date,
+        )
         room_status = room.status
         for closure in closures:
             slots.append(
@@ -272,11 +275,7 @@ class BookingCheckService:
                 )
             )
             if closure.is_all_day:
-                room_status = (
-                    ClosureType.MAINTENANCE
-                    if closure.closure_type == ClosureType.MAINTENANCE
-                    else StudioRoomStatus.INACTIVE
-                )
+                room_status = StudioRoomStatus.INACTIVE
 
         slots.sort(
             key=lambda x: BookingCheckService._build_slot_sort_key(
@@ -319,34 +318,45 @@ class BookingCheckService:
             .select_related("user", "team", "team__team_color")
             .order_by("reservation_date", "start_time")
         )
-        closures = room.closures.filter(
-            closure_date__year=target_date.year,
-            closure_date__month=target_date.month,
+        month_last_day = calendar.monthrange(target_date.year, target_date.month)[1]
+        month_end_date = date(
+            year=target_date.year,
+            month=target_date.month,
+            day=month_last_day,
+        )
+        closures = BookingCheckService._get_effective_closures_for_range(
+            room=room,
+            start_date=target_date,
+            end_date=month_end_date,
         )
 
         booking_map: dict[str, list[str]] = defaultdict(list)
         disabled_dates: set[str] = set()
         holiday_dates: set[str] = set()
         for closure in closures:
-            closure_date = closure.closure_date.isoformat()
+            closure_start_date = closure.start_date or closure.closure_date
+            closure_end_date = closure.end_date or closure.closure_date
             closure_start_time = closure.start_time or room.open_time
             closure_end_time = closure.end_time or room.close_time
-            is_full_day_closure = (
-                closure.is_all_day
-                or BookingCheckService._covers_full_operating_window(
-                    room=room,
-                    target_date=closure.closure_date,
-                    start_time=closure_start_time,
-                    end_time=closure_end_time,
+            current_date = max(closure_start_date, target_date)
+            last_date = min(closure_end_date, month_end_date)
+            while current_date <= last_date:
+                is_full_day_closure = (
+                    closure.is_all_day
+                    or BookingCheckService._covers_full_operating_window(
+                        room=room,
+                        target_date=current_date,
+                        start_time=closure_start_time,
+                        end_time=closure_end_time,
+                    )
                 )
-            )
 
-            if not is_full_day_closure:
-                continue
-
-            disabled_dates.add(closure_date)
-            if closure.closure_type == ClosureType.HOLIDAY:
-                holiday_dates.add(closure_date)
+                if is_full_day_closure:
+                    closure_date = current_date.isoformat()
+                    disabled_dates.add(closure_date)
+                    if closure.closure_type == ClosureType.HOLIDAY:
+                        holiday_dates.add(closure_date)
+                current_date += timedelta(days=1)
 
         for booking in bookings:
             booking_date = booking.reservation_date.isoformat()
@@ -354,8 +364,6 @@ class BookingCheckService:
                 booking_map[booking_date].append("#DADADA")
             else:
                 booking_map[booking_date].append(booking.team.color)
-
-        month_last_day = calendar.monthrange(target_date.year, target_date.month)[1]
 
         days: list[MonthDateColor] = []
         for day in range(1, month_last_day + 1):
@@ -387,6 +395,28 @@ class BookingCheckService:
             return StudioRoom.objects.get(id=room_id)
         except StudioRoom.DoesNotExist:
             raise NotFoundStudioRoomError()
+
+    @staticmethod
+    def _get_effective_closures(room: StudioRoom, target_date: date):
+        return RoomClosure.objects.filter(
+            Q(room=room) | Q(room__isnull=True),
+        ).filter(
+            Q(start_date__lte=target_date, end_date__gte=target_date)
+            | Q(closure_date=target_date)
+        )
+
+    @staticmethod
+    def _get_effective_closures_for_range(
+        room: StudioRoom,
+        start_date: date,
+        end_date: date,
+    ):
+        return RoomClosure.objects.filter(
+            Q(room=room) | Q(room__isnull=True),
+        ).filter(
+            Q(start_date__lte=end_date, end_date__gte=start_date)
+            | Q(closure_date__gte=start_date, closure_date__lte=end_date)
+        )
 
     @staticmethod
     def _build_slot_sort_key(room: StudioRoom, target_date: date, start_time: time):
@@ -1593,7 +1623,10 @@ class ReservationCommandService:
         start_at,
         end_at,
     ) -> None:
-        for closure in room.closures.filter(closure_date=target_date):
+        for closure in BookingCheckService._get_effective_closures(
+            room=room,
+            target_date=target_date,
+        ):
             closure_start_time = closure.start_time or room.open_time
             closure_end_time = closure.end_time or room.close_time
             closure_start_at = ReservationCommandService._normalize_time(
