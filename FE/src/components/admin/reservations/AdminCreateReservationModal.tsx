@@ -27,6 +27,9 @@ type AdminCreateReservationModalProps = {
   onCreate: (reservation: NewAdminReservation, canceledConflictIds?: number[]) => void;
   rooms: AdminReservationRoomOption[];
   teamOptions: AdminReservationTeamOption[];
+  hasMoreTeamOptions: boolean;
+  isLoadingTeamOptions: boolean;
+  onLoadMoreTeamOptions: () => void;
 };
 
 const getTodayDateDot = () => {
@@ -77,6 +80,9 @@ const AdminCreateReservationModal = ({
   onCreate,
   rooms,
   teamOptions,
+  hasMoreTeamOptions,
+  isLoadingTeamOptions,
+  onLoadMoreTeamOptions,
 }: AdminCreateReservationModalProps) => {
   const initialStartTime = normalizeTimeValue(rooms[0]?.openTime, "19:00");
   const [date, setDate] = useState(getTodayDateDot());
@@ -270,12 +276,24 @@ const AdminCreateReservationModal = ({
             </label>
           </div>
           {reservationOwnerType === "team" && (
-            <AdminSelect
-              className="admin-create-team-select"
-              value={selectedTeamId}
-              options={teamOptions.map((team) => ({ value: String(team.id), label: team.name }))}
-              onChange={setSelectedTeamId}
-            />
+            <div className="admin-create-team-select-group">
+              <AdminSelect
+                className="admin-create-team-select"
+                value={selectedTeamId}
+                options={teamOptions.map((team) => ({ value: String(team.id), label: team.name }))}
+                onChange={setSelectedTeamId}
+              />
+              {hasMoreTeamOptions && (
+                <button
+                  className="admin-create-team-load-more"
+                  type="button"
+                  disabled={isLoadingTeamOptions}
+                  onClick={onLoadMoreTeamOptions}
+                >
+                  {isLoadingTeamOptions ? "팀을 불러오는 중" : "팀 더 불러오기"}
+                </button>
+              )}
+            </div>
           )}
         </fieldset>
 

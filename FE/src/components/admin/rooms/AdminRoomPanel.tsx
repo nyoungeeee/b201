@@ -38,12 +38,6 @@ type AdminRoomView =
     };
 
 type AdminRoomPanelProps = {
-  rooms: AdminPracticeRoom[];
-  onRoomsChange: (
-    rooms:
-      | AdminPracticeRoom[]
-      | ((currentRooms: AdminPracticeRoom[]) => AdminPracticeRoom[]),
-  ) => void;
   onOpenReservation?: (reservationId: number) => void;
   onToast?: (message: string) => void;
 };
@@ -92,8 +86,6 @@ const defaultDayOffDraft: AdminRoomDayOffDraft = {
 };
 
 const AdminRoomPanel = ({
-  rooms,
-  onRoomsChange,
   onOpenReservation,
   onToast,
 }: AdminRoomPanelProps) => {
@@ -101,10 +93,35 @@ const AdminRoomPanel = ({
   const [viewStack, setViewStack] = useState<AdminRoomView[]>([
     { name: "list" },
   ]);
+  const [rooms, setRooms] = useState<AdminPracticeRoom[]>([]);
   const [daysOff, setDaysOff] = useState<AdminRoomDayOff[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    adminApi.getDayOffs().then(setDaysOff).catch(console.error);
+    let isActive = true;
+
+    Promise.allSettled([
+      adminApi.getRooms().then((nextRooms) => {
+        if (isActive) setRooms(nextRooms);
+      }),
+      adminApi.getDayOffs().then((nextDaysOff) => {
+        if (isActive) setDaysOff(nextDaysOff);
+      }),
+    ])
+      .then((results) => {
+        results.forEach((result) => {
+          if (result.status === "rejected") {
+            console.error(result.reason);
+          }
+        });
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
   const activeRooms = rooms.filter((room) => room.isActive);
   const view = viewStack[viewStack.length - 1] ?? { name: "list" };
@@ -122,7 +139,7 @@ const AdminRoomPanel = ({
 
   const handleSaveRoom = (nextRoom: AdminPracticeRoom) => {
     adminApi.updateRoom(nextRoom.id, nextRoom).catch(console.error);
-    onRoomsChange((currentRooms) =>
+    setRooms((currentRooms) =>
       currentRooms.map((room) =>
         room.id === nextRoom.id
           ? { ...nextRoom, updatedAt: "2026.05.14" }
@@ -140,7 +157,7 @@ const AdminRoomPanel = ({
     draft: Omit<AdminPracticeRoom, "id" | "updatedAt">,
   ) => {
     const created = await adminApi.createRoom(draft);
-    onRoomsChange((currentRooms) => [...currentRooms, created]);
+    setRooms((currentRooms) => [...currentRooms, created]);
     setActiveTab("rooms");
     setViewStack([
       { name: "list" },
@@ -223,7 +240,7 @@ const AdminRoomPanel = ({
         onBack={goBack}
         onConfirm={() => {
           adminApi.deleteRoom(room.id).catch(console.error);
-          onRoomsChange((currentRooms) =>
+          setRooms((currentRooms) =>
             currentRooms.map((currentRoom) =>
               currentRoom.id === room.id
                 ? { ...currentRoom, isActive: false }
@@ -367,7 +384,12 @@ const AdminRoomPanel = ({
       </div>
 
       <div className="admin-panel-scroll">
-        {activeTab === "rooms" ? (
+        {isLoading ? (
+          <div className="admin-user-loading" role="status" aria-live="polite">
+            <div className="admin-user-loading__spinner" aria-hidden="true" />
+            <p>합주실 데이터를 불러오고 있어요.</p>
+          </div>
+        ) : activeTab === "rooms" ? (
           <RoomList
             rooms={activeRooms}
             onCreate={() => navigate({ name: "room-create" })}

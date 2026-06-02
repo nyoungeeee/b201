@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
   AdminArrowLeftIcon,
@@ -39,6 +39,9 @@ type AdminUserPanelProps = {
   onToast?: (message: string) => void;
 };
 
+const USER_PANEL_PAGE_SIZE = 10;
+const USER_SEARCH_DEBOUNCE_MS = 400;
+
 const getInitial = (name: string) => name.slice(0, 1);
 
 const statusLabel = (status: AdminManagedUser["status"]) => (status === "blocked" ? "블락됨" : "일반");
@@ -50,12 +53,12 @@ const OWNER_LEADER = {
   email: "사장님 계정",
 };
 
-const getLeaderName = (leaderId: number, users: AdminManagedUser[]) => {
+const getLeaderName = (leaderId: number, users: AdminManagedUser[], fallbackName?: string) => {
   if (leaderId === OWNER_LEADER_ID) {
     return OWNER_LEADER.nickname;
   }
 
-  return users.find((user) => user.id === leaderId)?.nickname ?? "-";
+  return users.find((user) => user.id === leaderId)?.nickname ?? fallbackName ?? "-";
 };
 
 const getLeaderEmail = (leaderId: number, users: AdminManagedUser[]) => {
@@ -106,37 +109,38 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   const [activeTab, setActiveTab] = useState<"users" | "teams">("users");
   const [viewStack, setViewStack] = useState<AdminUserView[]>([initialView ?? { name: "list" }]);
   const [teamLeaderOptions, setTeamLeaderOptions] = useState<AdminTeamLeaderFilterOption[]>([]);
+  const [userSearchInput, setUserSearchInput] = useState("");
   const [userQuery, setUserQuery] = useState("");
   const [userTeamFilter, setUserTeamFilter] = useState("all");
   const [userStatusFilter, setUserStatusFilter] = useState<"all" | AdminManagedUser["status"]>("all");
   const [teamQuery, setTeamQuery] = useState("");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
+  const [userPage, setUserPage] = useState(1);
+  const [teamPage, setTeamPage] = useState(1);
+  const [normalUserTotalCount, setNormalUserTotalCount] = useState(0);
+  const [teamTotalCount, setTeamTotalCount] = useState(0);
+  const [hasNextUsers, setHasNextUsers] = useState(false);
+  const [hasNextTeams, setHasNextTeams] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+  const [isLoadingColors, setIsLoadingColors] = useState(true);
+  const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
+  const [isLoadingMoreTeams, setIsLoadingMoreTeams] = useState(false);
+  const [teamMemberCache, setTeamMemberCache] = useState<Record<number, AdminTeamMemberEditUser[]>>({});
+  const [loadingTeamMemberIds, setLoadingTeamMemberIds] = useState<number[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let isActive = true;
 
-    Promise.allSettled([
-      adminApi.getUsers().then((nextUsers) => {
-        if (isActive) setUsers(nextUsers);
-      }),
-      adminApi.getTeams().then((nextTeams) => {
-        if (isActive) setTeams(nextTeams);
-      }),
-      adminApi.getTeamColors().then((nextColors) => {
+    adminApi.getTeamColors()
+      .then((nextColors) => {
         if (isActive) setColors(nextColors);
-      }),
-    ])
-      .then((results) => {
-        results.forEach((result) => {
-          if (result.status === "rejected") {
-            console.error(result.reason);
-          }
-        });
       })
+      .catch(console.error)
       .finally(() => {
-        if (isActive) setIsLoading(false);
-      });
+        if (isActive) setIsLoadingColors(false);
+      })
 
     return () => {
       isActive = false;
@@ -144,10 +148,88 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   }, []);
 
   useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setUserQuery(userSearchInput);
+    }, USER_SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [userSearchInput]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    adminApi.getUsersPage({
+      page: 1,
+      pageSize: 1,
+      status: "normal",
+    })
+      .then((result) => {
+        if (isActive) setNormalUserTotalCount(result.totalCount);
+      })
+      .catch(console.error);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const refreshUsers = useCallback(async () => {
+    setIsLoadingUsers(true);
+
+    try {
+      const result = await adminApi.getUsersPage({
+        page: 1,
+        pageSize: USER_PANEL_PAGE_SIZE,
+        query: userQuery,
+        teamId: userTeamFilter,
+        status: userStatusFilter,
+      });
+
+      setUsers(result.users);
+      setUserPage(1);
+      setHasNextUsers(result.hasNext);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [userQuery, userStatusFilter, userTeamFilter]);
+
+  const refreshTeams = useCallback(async () => {
+    setIsLoadingTeams(true);
+
+    try {
+      const result = await adminApi.getTeamsPage({
+        page: 1,
+        pageSize: USER_PANEL_PAGE_SIZE,
+        query: teamQuery,
+        leaderId: teamLeaderFilter,
+      });
+
+      setTeams(result.teams);
+      setTeamPage(1);
+      setTeamTotalCount(result.totalCount);
+      setHasNextTeams(result.hasNext);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  }, [teamLeaderFilter, teamQuery]);
+
+  useEffect(() => {
+    void refreshUsers();
+  }, [refreshUsers]);
+
+  useEffect(() => {
+    void refreshTeams();
+  }, [refreshTeams]);
+
+  useEffect(() => {
     adminApi.getTeamLeaderOptions(teams, users).then(setTeamLeaderOptions).catch(console.error);
   }, [teams, users]);
 
-  const view = viewStack[viewStack.length - 1] ?? { name: "list" };
+  const view = useMemo(() => viewStack[viewStack.length - 1] ?? { name: "list" }, [viewStack]);
   const navigate = (nextView: AdminUserView) => setViewStack((currentStack) => [...currentStack, nextView]);
   const replaceView = (nextView: AdminUserView) => setViewStack([nextView]);
   const goBack = () => {
@@ -172,44 +254,225 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       ? teamLeaderFilter
       : "all";
 
-  const filteredUsers = users.filter((user) => {
-    const keyword = userQuery.trim().toLowerCase();
-
-    if (keyword && !user.nickname.toLowerCase().includes(keyword) && !user.email.toLowerCase().includes(keyword)) {
-      return false;
+  useEffect(() => {
+    if ((view.name !== "user-detail" && view.name !== "block-user") || userById.has(view.userId)) {
+      return;
     }
 
-    if (userTeamFilter !== "all" && !user.teams.includes(Number(userTeamFilter))) {
-      return false;
+    let isActive = true;
+
+    adminApi.getUser(view.userId)
+      .then((user) => {
+        if (!isActive) return;
+
+        setUsers((currentUsers) => (
+          currentUsers.some((currentUser) => currentUser.id === user.id)
+            ? currentUsers
+            : [...currentUsers, user]
+        ));
+      })
+      .catch(console.error);
+
+    return () => {
+      isActive = false;
+    };
+  }, [userById, view]);
+
+  useEffect(() => {
+    const currentTeam =
+      "teamId" in view ? teamById.get(view.teamId) : undefined;
+
+    if (
+      (view.name !== "team-detail" &&
+        view.name !== "team-settings" &&
+        view.name !== "add-members" &&
+        view.name !== "change-leader" &&
+        view.name !== "delete-team") ||
+      currentTeam
+    ) {
+      return;
     }
 
-    if (userStatusFilter !== "all" && user.status !== userStatusFilter) {
-      return false;
+    let isActive = true;
+
+    adminApi.getTeam(view.teamId)
+      .then((team) => {
+        if (!isActive) return;
+
+        setTeams((currentTeams) => {
+          const hasTeam = currentTeams.some((currentTeam) => currentTeam.id === team.id);
+
+          return hasTeam
+            ? currentTeams.map((currentTeam) => (
+              currentTeam.id === team.id ? { ...currentTeam, ...team } : currentTeam
+            ))
+            : [...currentTeams, team];
+        });
+      })
+      .catch(console.error);
+
+    return () => {
+      isActive = false;
+    };
+  }, [teamById, view]);
+
+  useEffect(() => {
+    if (
+      view.name !== "team-detail" &&
+      view.name !== "change-leader" &&
+      view.name !== "delete-team"
+    ) {
+      return;
     }
 
-    return true;
-  });
+    const teamId = view.teamId;
 
-  const filteredTeams = teams.filter((team) => {
-    const keyword = teamQuery.trim().toLowerCase();
-    const leader = userById.get(team.leaderId);
-
-    if (selectedTeamLeaderFilter !== "all" && team.leaderId !== Number(selectedTeamLeaderFilter)) {
-      return false;
+    if (teamMemberCache[teamId] || loadingTeamMemberIds.includes(teamId)) {
+      return;
     }
 
-    if (!keyword) {
-      return true;
+    let isActive = true;
+
+    setLoadingTeamMemberIds((currentIds) => [...currentIds, teamId]);
+    adminApi.getTeamMemberEditList(teamId)
+      .then((data) => {
+        if (!isActive) return;
+
+        setTeamMemberCache((currentCache) => ({
+          ...currentCache,
+          [teamId]: data.members,
+        }));
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (isActive) {
+          setLoadingTeamMemberIds((currentIds) => currentIds.filter((id) => id !== teamId));
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [loadingTeamMemberIds, teamMemberCache, view]);
+
+  const loadMoreUsers = useCallback(async () => {
+    if (isLoadingUsers || isLoadingMoreUsers || !hasNextUsers) {
+      return;
     }
 
-    return team.name.toLowerCase().includes(keyword) || leader?.nickname.toLowerCase().includes(keyword);
-  });
+    const nextPage = userPage + 1;
+    setIsLoadingMoreUsers(true);
+
+    try {
+      const result = await adminApi.getUsersPage({
+        page: nextPage,
+        pageSize: USER_PANEL_PAGE_SIZE,
+        query: userQuery,
+        teamId: userTeamFilter,
+        status: userStatusFilter,
+      });
+
+      setUsers((currentUsers) => {
+        const userMap = new Map(currentUsers.map((user) => [user.id, user]));
+
+        result.users.forEach((user) => userMap.set(user.id, user));
+
+        return Array.from(userMap.values());
+      });
+      setUserPage(nextPage);
+      setHasNextUsers(result.hasNext);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingMoreUsers(false);
+    }
+  }, [
+    hasNextUsers,
+    isLoadingMoreUsers,
+    isLoadingUsers,
+    userPage,
+    userQuery,
+    userStatusFilter,
+    userTeamFilter,
+  ]);
+
+  const loadMoreTeams = useCallback(async () => {
+    if (isLoadingTeams || isLoadingMoreTeams || !hasNextTeams) {
+      return;
+    }
+
+    const nextPage = teamPage + 1;
+    setIsLoadingMoreTeams(true);
+
+    try {
+      const result = await adminApi.getTeamsPage({
+        page: nextPage,
+        pageSize: USER_PANEL_PAGE_SIZE,
+        query: teamQuery,
+        leaderId: selectedTeamLeaderFilter,
+      });
+
+      setTeams((currentTeams) => {
+        const teamMap = new Map(currentTeams.map((team) => [team.id, team]));
+
+        result.teams.forEach((team) => teamMap.set(team.id, team));
+
+        return Array.from(teamMap.values());
+      });
+      setTeamPage(nextPage);
+      setTeamTotalCount(result.totalCount);
+      setHasNextTeams(result.hasNext);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingMoreTeams(false);
+    }
+  }, [
+    hasNextTeams,
+    isLoadingMoreTeams,
+    isLoadingTeams,
+    selectedTeamLeaderFilter,
+    teamPage,
+    teamQuery,
+  ]);
+
+  const handlePanelScroll = () => {
+    const scrollContainer = scrollContainerRef.current;
+
+    if (!scrollContainer) return;
+
+    const distanceToBottom =
+      scrollContainer.scrollHeight -
+      scrollContainer.scrollTop -
+      scrollContainer.clientHeight;
+
+    if (distanceToBottom >= 120) {
+      return;
+    }
+
+    if (activeTab === "users") {
+      void loadMoreUsers();
+      return;
+    }
+
+    void loadMoreTeams();
+  };
+
+  const isCurrentTabLoading =
+    isLoadingColors || (activeTab === "users" ? isLoadingUsers : isLoadingTeams);
+  const isCurrentTabLoadingMore =
+    activeTab === "users" ? isLoadingMoreUsers : isLoadingMoreTeams;
+  const shouldShowListEnd =
+    activeTab === "users"
+      ? users.length > 0 && !hasNextUsers && !isLoadingUsers && !isLoadingMoreUsers
+      : teams.length > 0 && !hasNextTeams && !isLoadingTeams && !isLoadingMoreTeams;
 
   const handleBlockUser = (userId: number) => {
     adminApi.blockUser(userId).catch(console.error);
     setUsers((currentUsers) =>
       currentUsers.map((user) => (user.id === userId ? { ...user, status: "blocked" } : user)),
     );
+    setNormalUserTotalCount((currentCount) => Math.max(currentCount - 1, 0));
     replaceView({ name: "user-detail", userId });
     onToast?.("사용자를 블락했습니다.");
   };
@@ -219,6 +482,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     setUsers((currentUsers) =>
       currentUsers.map((user) => (user.id === userId ? { ...user, status: "normal" } : user)),
     );
+    setNormalUserTotalCount((currentCount) => currentCount + 1);
     onToast?.("사용자 블락을 해제했습니다.");
   };
 
@@ -258,7 +522,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     setTeams((currentTeams) =>
       currentTeams.map((team) =>
         team.id === teamId
-          ? { ...team, memberIds: updatedMemberIds, updatedAt: "2026.05.14" }
+          ? { ...team, memberIds: updatedMemberIds, memberCount: updatedMemberIds.length, updatedAt: "2026.05.14" }
           : team,
       ),
     );
@@ -270,6 +534,10 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
           : user.teams.filter((id) => id !== teamId),
       })),
     );
+    setTeamMemberCache((currentCache) => ({
+      ...currentCache,
+      [teamId]: updatedMembers.members,
+    }));
     goBack();
     onToast?.("팀 멤버를 수정했습니다.");
   };
@@ -302,6 +570,17 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
         ),
       );
     }
+    setTeamMemberCache((currentCache) => (
+      currentCache[teamId]
+        ? {
+            ...currentCache,
+            [teamId]: currentCache[teamId].map((member) => ({
+              ...member,
+              isLeader: member.id === leaderId,
+            })),
+          }
+        : currentCache
+    ));
     goBack();
     onToast?.("리더를 변경했습니다.");
   };
@@ -312,6 +591,12 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     setUsers((currentUsers) =>
       currentUsers.map((user) => ({ ...user, teams: user.teams.filter((id) => id !== teamId) })),
     );
+    setTeamMemberCache((currentCache) => {
+      const nextCache = { ...currentCache };
+
+      delete nextCache[teamId];
+      return nextCache;
+    });
     setActiveTab("teams");
     replaceView({ name: "list" });
     onToast?.("팀을 삭제했습니다.");
@@ -361,10 +646,14 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       return null;
     }
 
+    const teamMembers = teamMemberCache[team.id] ?? [];
+
     return (
       <TeamDetailScreen
         team={team}
         users={users}
+        members={teamMembers}
+        isLoadingMembers={loadingTeamMemberIds.includes(team.id)}
         color={colorById.get(team.colorId)}
         onBack={goBack}
         onSettings={() => navigate({ name: "team-settings", teamId: team.id })}
@@ -418,10 +707,14 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       return null;
     }
 
+    const teamMembers = teamMemberCache[team.id] ?? [];
+
     return (
       <ChangeLeaderScreen
         team={team}
         users={users}
+        members={teamMembers}
+        isLoadingMembers={loadingTeamMemberIds.includes(team.id)}
         color={colorById.get(team.colorId)}
         onBack={goBack}
         onChange={(leaderId) => handleChangeLeader(team.id, leaderId)}
@@ -447,10 +740,14 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       return null;
     }
 
+    const teamMembers = teamMemberCache[team.id] ?? [];
+
     return (
       <DeleteTeamScreen
         team={team}
         users={users}
+        members={teamMembers}
+        isLoadingMembers={loadingTeamMemberIds.includes(team.id)}
         color={colorById.get(team.colorId)}
         onBack={goBack}
         onDelete={() => handleDeleteTeam(team.id)}
@@ -477,38 +774,63 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
         </button>
       </div>
 
-      <div className="admin-panel-scroll">
-        {isLoading ? (
+      <div className="admin-panel-scroll" ref={scrollContainerRef} onScroll={handlePanelScroll}>
+        {activeTab === "users" ? (
+          <>
+            <UserList
+              users={users}
+              teams={teams}
+              colors={colors}
+              query={userSearchInput}
+              selectedTeamId={userTeamFilter}
+              selectedStatus={userStatusFilter}
+              normalTotalCount={normalUserTotalCount}
+              isLoading={isLoadingUsers || isLoadingColors}
+              onQueryChange={setUserSearchInput}
+              onTeamFilterChange={setUserTeamFilter}
+              onStatusFilterChange={setUserStatusFilter}
+              onSelect={(userId) => navigate({ name: "user-detail", userId })}
+            />
+            {isCurrentTabLoadingMore && (
+              <div className="admin-reservation-list-loading admin-reservation-list-loading--compact" role="status" aria-live="polite">
+                <div className="admin-reservation-list-loading__spinner" aria-hidden="true" />
+                <p>다음 목록을 불러오고 있어요.</p>
+              </div>
+            )}
+            {shouldShowListEnd && (
+              <p className="admin-list-end">모든 목록을 조회했습니다.</p>
+            )}
+          </>
+        ) : isCurrentTabLoading ? (
           <div className="admin-user-loading" role="status" aria-live="polite">
             <div className="admin-user-loading__spinner" aria-hidden="true" />
-            <p>사용자 데이터를 불러오고 있어요</p>
+            <p>팀 데이터를 불러오고 있어요</p>
           </div>
-        ) : activeTab === "users" ? (
-          <UserList
-            users={filteredUsers}
-            teams={teams}
-            colors={colors}
-            query={userQuery}
-            selectedTeamId={userTeamFilter}
-            selectedStatus={userStatusFilter}
-            onQueryChange={setUserQuery}
-            onTeamFilterChange={setUserTeamFilter}
-            onStatusFilterChange={setUserStatusFilter}
-            onSelect={(userId) => navigate({ name: "user-detail", userId })}
-          />
         ) : (
-          <TeamList
-            teams={filteredTeams}
-            users={users}
-            colors={colors}
-            leaderOptions={teamLeaderOptions}
-            query={teamQuery}
-            selectedLeaderId={selectedTeamLeaderFilter}
-            onQueryChange={setTeamQuery}
-            onLeaderFilterChange={setTeamLeaderFilter}
-            onCreate={() => navigate({ name: "create-team" })}
-            onSelect={(teamId) => navigate({ name: "team-detail", teamId })}
-          />
+          <>
+            <TeamList
+              teams={teams}
+              users={users}
+              colors={colors}
+              leaderOptions={teamLeaderOptions}
+              query={teamQuery}
+              selectedLeaderId={selectedTeamLeaderFilter}
+              totalCount={teamTotalCount}
+              onQueryChange={setTeamQuery}
+              onLeaderFilterChange={setTeamLeaderFilter}
+              onCreate={() => navigate({ name: "create-team" })}
+              onSelect={(teamId) => navigate({ name: "team-detail", teamId })}
+            />
+            {isCurrentTabLoadingMore && (
+              <div className="admin-reservation-list-loading admin-reservation-list-loading--compact" role="status" aria-live="polite">
+                <div className="admin-reservation-list-loading__spinner" aria-hidden="true" />
+                <p>다음 목록을 불러오고 있어요.</p>
+              </div>
+            )}
+            {shouldShowListEnd && (
+              <p className="admin-list-end">모든 목록을 조회했습니다.</p>
+            )}
+          </>
         )}
       </div>
     </section>
@@ -522,6 +844,8 @@ const UserList = ({
   query,
   selectedTeamId,
   selectedStatus,
+  normalTotalCount,
+  isLoading,
   onQueryChange,
   onTeamFilterChange,
   onStatusFilterChange,
@@ -533,12 +857,13 @@ const UserList = ({
   query: string;
   selectedTeamId: string;
   selectedStatus: "all" | AdminManagedUser["status"];
+  normalTotalCount: number;
+  isLoading: boolean;
   onQueryChange: (value: string) => void;
   onTeamFilterChange: (value: string) => void;
   onStatusFilterChange: (value: "all" | AdminManagedUser["status"]) => void;
   onSelect: (userId: number) => void;
 }) => {
-  const normalCount = users.filter((user) => user.status === "normal").length;
   const blockedCount = users.filter((user) => user.status === "blocked").length;
 
   return (
@@ -547,11 +872,11 @@ const UserList = ({
         <div>
           <AdminUserIcon />
           <span>일반</span>
-          <strong>{normalCount}</strong>
+          <strong>{normalTotalCount}</strong>
         </div>
         <div>
           <AdminWarningIcon />
-          <span>블락됨</span>
+          <span>현재 블락</span>
           <strong className="is-danger">{blockedCount}</strong>
         </div>
       </div>
@@ -591,7 +916,12 @@ const UserList = ({
 
       <h2 className="admin-users__section-title">등록된 사용자</h2>
       <div className="admin-user-card-list">
-        {users.length > 0 ? (
+        {isLoading ? (
+          <div className="admin-user-loading" role="status" aria-live="polite">
+            <div className="admin-user-loading__spinner" aria-hidden="true" />
+            <p>사용자 데이터를 불러오고 있어요</p>
+          </div>
+        ) : users.length > 0 ? (
           users.map((user, index) => (
             <UserCard
               key={user.id}
@@ -666,6 +996,7 @@ const TeamList = ({
   leaderOptions,
   query,
   selectedLeaderId,
+  totalCount,
   onQueryChange,
   onLeaderFilterChange,
   onCreate,
@@ -677,6 +1008,7 @@ const TeamList = ({
   leaderOptions: AdminTeamLeaderFilterOption[];
   query: string;
   selectedLeaderId: string;
+  totalCount: number;
   onQueryChange: (value: string) => void;
   onLeaderFilterChange: (value: string) => void;
   onCreate: () => void;
@@ -692,7 +1024,7 @@ const TeamList = ({
         <div>
           <AdminTeamIcon />
           <span>활성 팀</span>
-          <strong>{teams.length}</strong>
+          <strong>{totalCount}</strong>
         </div>
         <div>
           <AdminUserIcon />
@@ -723,10 +1055,11 @@ const TeamList = ({
       />
     </div>
     <h2 className="admin-users__section-title">등록된 팀</h2>
+    <p className="admin-subtitle">총 {totalCount}팀 중 {teams.length}팀을 조회했습니다.</p>
     <div className="admin-team-list">
       {teams.length > 0 ? (
         teams.map((team, index) => {
-          const leaderName = getLeaderName(team.leaderId, users);
+          const leaderName = getLeaderName(team.leaderId, users, team.leaderName);
           const color = colors.find((teamColor) => teamColor.id === team.colorId);
 
           return (
@@ -741,7 +1074,7 @@ const TeamList = ({
               <div>
                 <strong>{team.name}</strong>
                 <span>
-                  리더 {leaderName} · 멤버 {team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
+                  리더 {leaderName} · 멤버 {team.memberCount ?? team.memberIds.length}명 · 최근 수정일 {team.updatedAt}
                 </span>
               </div>
               <AdminChevronRightIcon />
@@ -903,6 +1236,8 @@ const InfoCard = ({ rows }: { rows: [string, string][] }) => (
 const TeamDetailScreen = ({
   team,
   users,
+  members,
+  isLoadingMembers,
   color,
   onBack,
   onSettings,
@@ -913,6 +1248,8 @@ const TeamDetailScreen = ({
 }: {
   team: AdminManagedTeam;
   users: AdminManagedUser[];
+  members: AdminTeamMemberEditUser[];
+  isLoadingMembers: boolean;
   color?: AdminTeamColor;
   onBack: () => void;
   onSettings: () => void;
@@ -921,10 +1258,8 @@ const TeamDetailScreen = ({
   onDelete: () => void;
   onUserSelect: (userId: number) => void;
 }) => {
-  const leaderName = getLeaderName(team.leaderId, users);
-  const members = team.memberIds
-    .map((id) => users.find((user) => user.id === id))
-    .filter((user): user is AdminManagedUser => Boolean(user));
+  const leaderName = getLeaderName(team.leaderId, users, team.leaderName);
+  const memberCount = team.memberCount ?? members.length;
 
   return (
     <section className="admin-sub-screen">
@@ -942,13 +1277,15 @@ const TeamDetailScreen = ({
             ["팀 이름", team.name],
             ["팀 컬러", `${color?.value ?? "-"}`],
             ["리더", leaderName],
-            ["멤버 수", `${members.length}명`],
+            ["멤버 수", `${memberCount}명`],
             ["최근 수정일", team.updatedAt],
           ]}
         />
         <h3 className="admin-users__section-title">멤버 목록</h3>
         <section className="admin-member-list">
-          {members.map((member) => (
+          {isLoadingMembers ? (
+            <p className="admin-member-list__empty">멤버 목록을 불러오는 중입니다.</p>
+          ) : members.map((member) => (
             <button className="admin-member-list__user" key={member.id} type="button" onClick={() => onUserSelect(member.id)}>
               <strong>{member.nickname}</strong>
               <span>{member.email}</span>
@@ -990,7 +1327,7 @@ const TeamSettingsScreen = ({
   const [teamName, setTeamName] = useState(team.name);
   const [colorId, setColorId] = useState(team.colorId);
   const selectedColor = colors.find((color) => color.id === colorId);
-  const leaderName = getLeaderName(team.leaderId, users);
+  const leaderName = getLeaderName(team.leaderId, users, team.leaderName);
   const leaderEmail = getLeaderEmail(team.leaderId, users);
 
   return (
@@ -1316,12 +1653,16 @@ const AddMembersScreen = ({
 const ChangeLeaderScreen = ({
   team,
   users,
+  members,
+  isLoadingMembers,
   color,
   onBack,
   onChange,
 }: {
   team: AdminManagedTeam;
   users: AdminManagedUser[];
+  members: AdminTeamMemberEditUser[];
+  isLoadingMembers: boolean;
   color?: AdminTeamColor;
   onBack: () => void;
   onChange: (leaderId: number) => void;
@@ -1330,11 +1671,8 @@ const ChangeLeaderScreen = ({
   const [leaderQuery, setLeaderQuery] = useState("");
   const currentUserId = getCurrentUserId();
   const isOwnerLeader = leaderId === OWNER_LEADER_ID;
-  const members = team.memberIds
-    .map((id) => users.find((user) => user.id === id))
-    .filter((user): user is AdminManagedUser => Boolean(user))
-    .filter((user) => user.id !== currentUserId);
-  const filteredMembers = members.filter((user) => {
+  const selectableMembers = members.filter((user) => user.id !== currentUserId);
+  const filteredMembers = selectableMembers.filter((user) => {
     const keyword = leaderQuery.trim().toLowerCase();
 
     if (!keyword) {
@@ -1343,9 +1681,12 @@ const ChangeLeaderScreen = ({
 
     return user.nickname.toLowerCase().includes(keyword) || user.email.toLowerCase().includes(keyword);
   });
-  const selectedLeader = isOwnerLeader ? OWNER_LEADER : users.find((user) => user.id === leaderId);
-  const currentLeaderName = getLeaderName(team.leaderId, users);
-  const fallbackMemberId = members[0]?.id ?? OWNER_LEADER_ID;
+  const selectedLeader = isOwnerLeader
+    ? OWNER_LEADER
+    : members.find((user) => user.id === leaderId) ?? users.find((user) => user.id === leaderId);
+  const currentLeaderName = getLeaderName(team.leaderId, users, team.leaderName);
+  const fallbackMemberId = selectableMembers[0]?.id ?? OWNER_LEADER_ID;
+  const memberCount = team.memberCount ?? members.length;
 
   return (
     <section className="admin-sub-screen">
@@ -1354,7 +1695,7 @@ const ChangeLeaderScreen = ({
         <div className="admin-team-current-leader">
           <TeamAvatar team={team} color={color} />
           <div><span>현재 리더</span><strong>{currentLeaderName}</strong></div>
-          <strong>{team.memberIds.length}명</strong>
+          <strong>{memberCount}명</strong>
         </div>
         <h3 className="admin-users__section-title">리더로 변경할 사용자 선택</h3>
         <label className="admin-user-search admin-user-search--wide">
@@ -1366,7 +1707,9 @@ const ChangeLeaderScreen = ({
           />
         </label>
         <div className="admin-member-list">
-          {filteredMembers.map((user) => (
+          {isLoadingMembers ? (
+            <p className="admin-member-list__empty">멤버 목록을 불러오는 중입니다.</p>
+          ) : filteredMembers.map((user) => (
             <label className="admin-selectable-user admin-selectable-user--no-avatar" key={user.id}>
               <strong>{user.nickname}</strong>
               <span>{user.email}</span>
@@ -1408,20 +1751,22 @@ const ChangeLeaderScreen = ({
 const DeleteTeamScreen = ({
   team,
   users,
+  members,
+  isLoadingMembers,
   color,
   onBack,
   onDelete,
 }: {
   team: AdminManagedTeam;
   users: AdminManagedUser[];
+  members: AdminTeamMemberEditUser[];
+  isLoadingMembers: boolean;
   color?: AdminTeamColor;
   onBack: () => void;
   onDelete: () => void;
 }) => {
-  const members = team.memberIds
-    .map((id) => users.find((user) => user.id === id))
-    .filter((user): user is AdminManagedUser => Boolean(user));
   const leader = users.find((user) => user.id === team.leaderId);
+  const memberCount = team.memberCount ?? members.length;
 
   return (
     <section className="admin-sub-screen">
@@ -1435,7 +1780,7 @@ const DeleteTeamScreen = ({
           <TeamAvatar team={team} color={color} size="lg" />
           <div>
             <h3>{team.name}</h3>
-            <p>리더 {leader?.nickname} · 멤버 수 {members.length}명</p>
+            <p>리더 {leader?.nickname ?? team.leaderName ?? "-"} · 멤버 수 {memberCount}명</p>
           </div>
         </div>
         <div className="admin-danger-guide">
@@ -1444,9 +1789,11 @@ const DeleteTeamScreen = ({
           <p>팀에 속한 멤버는 미소속 상태가 될 수 있습니다.</p>
           <p>팀의 기록은 유지될 수 있습니다.</p>
         </div>
-        <h3 className="admin-users__section-title">영향을 받는 멤버 ({members.length}명)</h3>
+        <h3 className="admin-users__section-title">영향을 받는 멤버 ({memberCount}명)</h3>
         <section className="admin-member-list">
-          {members.map((member) => (
+          {isLoadingMembers ? (
+            <p className="admin-member-list__empty">멤버 목록을 불러오는 중입니다.</p>
+          ) : members.map((member) => (
             <div className="admin-member-list__row--no-avatar" key={member.id}>
               <strong>{member.nickname}</strong>
               <span>{member.email}</span>
