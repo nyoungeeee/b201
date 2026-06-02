@@ -57,46 +57,6 @@
   display: none;
 }
 
-.pull-to-refresh {
-  position: absolute;
-  top: var(--space-12);
-  left: 0;
-  right: 0;
-  z-index: var(--z-sticky);
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0.75;
-  transition:
-    transform 160ms ease,
-    opacity 160ms ease;
-}
-
-.pull-to-refresh.is-ready,
-.pull-to-refresh.is-refreshing {
-  opacity: 1;
-}
-
-.pull-to-refresh__spinner {
-  width: var(--space-28);
-  height: var(--space-28);
-  border-radius: var(--radius-circle);
-  border: var(--space-2) solid var(--border-primary);
-  border-top-color: var(--accent-primary);
-  background-color: var(--bg-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.pull-to-refresh.is-refreshing .pull-to-refresh__spinner {
-  animation: pullRefreshSpin 0.8s linear infinite;
-}
-
-@keyframes pullRefreshSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* 공통 패딩 */
 .section-padding {
   padding-left: var(--page-horizontal-padding);
