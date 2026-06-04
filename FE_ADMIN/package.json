@@ -7,8 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && node node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types scripts/adminAccess.test.ts && node --experimental-strip-types scripts/adminApiAuth.test.ts && node --experimental-strip-types scripts/adminApiMapper.test.ts && node --experimental-strip-types scripts/authRequest.test.ts",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/adminAccess.test.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/adminApiAuth.test.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/adminApiMapper.test.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/authRequest.test.ts",
     "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.96.2",
