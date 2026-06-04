@@ -1,0 +1,5 @@
+:root {
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.28);
+  --shadow-button: 0 6px 16px rgba(255, 106, 42, 0.35);
+}

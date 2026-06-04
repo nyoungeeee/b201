@@ -33,7 +33,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         )
 
     def test_staff_can_get_active_room_list(self):
-        response = self.client.get("/api/v1/admin/rooms")
+        response = self.client.get("/v1/admin/rooms")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
@@ -44,13 +44,13 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertTrue(response.data["data"][0]["is_active"])
 
     def test_room_list_can_include_inactive_rooms(self):
-        response = self.client.get("/api/v1/admin/rooms?include_inactive=true")
+        response = self.client.get("/v1/admin/rooms?include_inactive=true")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["data"]), 2)
 
     def test_staff_can_get_room_detail(self):
-        response = self.client.get(f"/api/v1/admin/rooms/{self.room.id}")
+        response = self.client.get(f"/v1/admin/rooms/{self.room.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["data"]["id"], self.room.id)
@@ -61,7 +61,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
     def test_staff_can_create_room_with_next_sort_order(self):
         room_name = f"B203-{self._suffix()}"
         response = self.client.post(
-            "/api/v1/admin/rooms",
+            "/v1/admin/rooms",
             {
                 "name": room_name,
                 "description": "신규 합주실",
@@ -80,7 +80,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
 
     def test_create_room_returns_business_error_for_duplicate_name(self):
         response = self.client.post(
-            "/api/v1/admin/rooms",
+            "/v1/admin/rooms",
             {
                 "name": self.room_name,
                 "description": "중복",
@@ -97,7 +97,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
     def test_staff_can_update_room(self):
         updated_name = f"B201-new-{self._suffix()}"
         response = self.client.put(
-            f"/api/v1/admin/rooms/{self.room.id}",
+            f"/v1/admin/rooms/{self.room.id}",
             {
                 "name": updated_name,
                 "description": "수정된 설명",
@@ -125,7 +125,7 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.delete(f"/api/v1/admin/rooms/{self.room.id}")
+        response = self.client.delete(f"/v1/admin/rooms/{self.room.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"ok": True})

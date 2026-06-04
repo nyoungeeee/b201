@@ -16,7 +16,7 @@ class AuthTokenRefreshAPITestCase(BaseAuthTokenAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/auth/token/refresh",
+            "/v1/auth/token/refresh",
             {"refresh": refresh_str},
             format="json",
         )

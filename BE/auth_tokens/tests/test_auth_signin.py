@@ -1,15 +1,87 @@
 from unittest.mock import patch
 
 import requests
+from django.test import SimpleTestCase, override_settings
 from rest_framework import status
 
 from auth_tokens.models import RefreshToken
 from auth_tokens.exceptions import KakaoAPIError
+from auth_tokens.serializers import SigninRequestSerializer
 from auth_tokens.services import KakaoAuthService, KakaoUserInfo
 from .base import BaseAuthTokenAPITestCase, User
 
 
+class KakaoRedirectURITestCase(SimpleTestCase):
+    @override_settings(
+        KAKAO_REDIRECT_URIS=[
+            "https://b201.kr/auth/kakao/callback",
+            "https://admin.b201.kr/auth/kakao/callback",
+        ]
+    )
+    @patch("auth_tokens.services.requests.post")
+    def test_kakao_token_exchange_uses_allowed_request_redirect_uri(self, mock_post):
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            "access_token": "kakao-access-token"
+        }
+
+        KakaoAuthService._get_access_token(
+            "code-123",
+            "https://admin.b201.kr/auth/kakao/callback",
+        )
+
+        self.assertEqual(
+            mock_post.call_args.kwargs["data"]["redirect_uri"],
+            "https://admin.b201.kr/auth/kakao/callback",
+        )
+
+    @override_settings(
+        KAKAO_REDIRECT_URIS=[
+            "https://b201.kr/auth/kakao/callback",
+            "https://admin.b201.kr/auth/kakao/callback",
+        ]
+    )
+    def test_signin_serializer_rejects_redirect_uri_outside_allowlist(self):
+        serializer = SigninRequestSerializer(
+            data={
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "https://evil.example/auth/kakao/callback",
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("redirect_uri", serializer.errors)
+
+    @override_settings(
+        KAKAO_REDIRECT_URIS=[
+            "https://b201.kr/auth/kakao/callback",
+            "https://admin.b201.kr/auth/kakao/callback",
+        ]
+    )
+    def test_signin_serializer_accepts_redirect_uri_in_allowlist(self):
+        serializer = SigninRequestSerializer(
+            data={
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "https://admin.b201.kr/auth/kakao/callback",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+
 class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
+    def test_signin_rejects_redirect_uri_outside_allowlist(self):
+        response = self.client.post(
+            "/v1/auth/signin",
+            {
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "https://evil.example/auth/kakao/callback",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
     @patch("auth_tokens.services.KakaoAuthService._get_access_token")
     # 카카오 응답을 mock 해서 신규 사용자의 로그인/회원 생성 흐름을 검증한다.
@@ -27,8 +99,11 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/auth/signin",
-            {"kakao_auth_code": "code-123"},
+            "/v1/auth/signin",
+            {
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "http://localhost/test-callback",
+            },
             format="json",
         )
 
@@ -59,8 +134,11 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/auth/signin",
-            {"kakao_auth_code": "code-123"},
+            "/v1/auth/signin",
+            {
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "http://localhost/test-callback",
+            },
             format="json",
         )
 
@@ -79,8 +157,11 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         mock_post.side_effect = requests.RequestException("network issue")
 
         response = self.client.post(
-            "/api/v1/auth/signin",
-            {"kakao_auth_code": "code-123"},
+            "/v1/auth/signin",
+            {
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "http://localhost/test-callback",
+            },
             format="json",
         )
 
@@ -104,8 +185,11 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/auth/signin",
-            {"kakao_auth_code": "code-123"},
+            "/v1/auth/signin",
+            {
+                "kakao_auth_code": "code-123",
+                "redirect_uri": "http://localhost/test-callback",
+            },
             format="json",
         )
 

@@ -5,12 +5,12 @@ on:
     branches: ["main", "dev"]
     paths:
       - "FE/**"
-      - ".github/workflows/fe-ci.yml"
+      - ".github/workflows/fe_ci.yaml"
   push:
-    branches: ["main", "develop"]
+    branches: ["main", "dev"]
     paths:
       - "FE/**"
-      - ".github/workflows/fe-ci.yml"
+      - ".github/workflows/fe_ci.yaml"
 
 jobs:
   fe-ci:
@@ -37,4 +37,10 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
 

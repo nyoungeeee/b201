@@ -102,9 +102,15 @@ class KakaoAuthService:
 
     @staticmethod
     @transaction.atomic
-    def get_user_from_kakao_auth_code(kakao_auth_code: str) -> tuple[User, bool]:
+    def get_user_from_kakao_auth_code(
+        kakao_auth_code: str,
+        redirect_uri: str,
+    ) -> tuple[User, bool]:
         new_user_created = False
-        access_token = KakaoAuthService._get_access_token(kakao_auth_code)
+        access_token = KakaoAuthService._get_access_token(
+            kakao_auth_code,
+            redirect_uri,
+        )
         kakao_user_info = KakaoAuthService._get_kakao_user_info(access_token)
 
         try:
@@ -127,7 +133,7 @@ class KakaoAuthService:
         return user, new_user_created
 
     @staticmethod
-    def _get_access_token(kakao_auth_code: str) -> str:
+    def _get_access_token(kakao_auth_code: str, redirect_uri: str) -> str:
         try:
             response = requests.post(
                 KakaoAuthService.TOKEN_URL,
@@ -137,7 +143,7 @@ class KakaoAuthService:
                 data={
                     "grant_type": "authorization_code",
                     "client_id": settings.KAKAO_REST_API_KEY,
-                    "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                    "redirect_uri": redirect_uri,
                     "code": kakao_auth_code,
                     "client_secret": settings.KAKAO_CLIENT_SECRET,
                 },
@@ -187,9 +193,13 @@ class KakaoAuthService:
 
 class AuthService:
     @staticmethod
-    def signin(kakao_auth_code: str) -> tuple[SigninResponse, bool]:
+    def signin(
+        kakao_auth_code: str,
+        redirect_uri: str,
+    ) -> tuple[SigninResponse, bool]:
         user, new_user_created = KakaoAuthService.get_user_from_kakao_auth_code(
-            kakao_auth_code
+            kakao_auth_code,
+            redirect_uri,
         )
 
         if user.status == UserStatus.BLOCKED:

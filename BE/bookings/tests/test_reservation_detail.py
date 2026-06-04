@@ -28,7 +28,7 @@ class ReservationDetailAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/reservations/number/{booking.reservation_number}"
+            f"/v1/reservations/number/{booking.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -66,7 +66,7 @@ class ReservationDetailAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/reservations/number/{booking.reservation_number}"
+            f"/v1/reservations/number/{booking.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -102,7 +102,7 @@ class ReservationDetailAPITestCase(BaseBookingAPITestCase):
         first_reservation = reservation_list.reservations[0]
 
         response = self.client.get(
-            f"/api/v1/reservations/number/{first_reservation.reservation_number}"
+            f"/v1/reservations/number/{first_reservation.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

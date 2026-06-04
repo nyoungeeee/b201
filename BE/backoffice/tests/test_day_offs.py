@@ -32,7 +32,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
             reason="임시 휴무",
         )
 
-        response = self.client.get("/api/v1/admin/rooms/day-offs")
+        response = self.client.get("/v1/admin/rooms/day-offs")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
@@ -54,7 +54,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/admin/rooms/day-offs/conflict-check",
+            "/v1/admin/rooms/day-offs/conflict-check",
             {
                 "room_id": None,
                 "type": "점검",
@@ -84,7 +84,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/admin/rooms/day-offs",
+            "/v1/admin/rooms/day-offs",
             {
                 "room_id": self.room.id,
                 "type": "점검",
@@ -114,7 +114,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/admin/rooms/day-offs",
+            "/v1/admin/rooms/day-offs",
             {
                 "room_id": self.room.id,
                 "type": "점검",
@@ -138,7 +138,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
 
     def test_create_holiday_forces_all_day(self):
         response = self.client.post(
-            "/api/v1/admin/rooms/day-offs",
+            "/v1/admin/rooms/day-offs",
             {
                 "room_id": self.room.id,
                 "type": "휴무",
@@ -175,7 +175,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.post(
-            "/api/v1/admin/rooms/day-offs/conflict-check",
+            "/v1/admin/rooms/day-offs/conflict-check",
             {
                 "room_id": self.room.id,
                 "type": "휴무",
@@ -204,7 +204,7 @@ class BackofficeDayOffAPITestCase(BaseBackofficeAPITestCase):
             reason="전기 점검",
         )
 
-        response = self.client.delete(f"/api/v1/admin/rooms/day-offs/{closure.id}")
+        response = self.client.delete(f"/v1/admin/rooms/day-offs/{closure.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"ok": True})

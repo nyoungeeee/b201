@@ -10,7 +10,7 @@ from .base import BaseBookingAPITestCase
 class RoomDayAPITestCase(BaseBookingAPITestCase):
     # 존재하지 않는 룸의 일별 조회는 404를 반환하는지 검증한다.
     def test_day_booking_view_returns_404_for_missing_room(self):
-        response = self.client.get("/api/v1/rooms/999999/day/")
+        response = self.client.get("/v1/rooms/999999/day/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "NOT_FOUND_STUDIO_ROOM")
@@ -35,7 +35,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -58,7 +58,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -79,7 +79,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -101,7 +101,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -123,7 +123,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={target_date.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={target_date.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -144,7 +144,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -174,7 +174,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.overnight_room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.overnight_room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

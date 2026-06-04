@@ -9,12 +9,12 @@ from .base import BaseBookingAPITestCase
 class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
     def test_legacy_split_reservation_create_urls_are_removed(self):
         legacy_paths = [
-            f"/api/v1/reservations/{self.room.id}/private",
-            f"/api/v1/reservations/{self.room.id}/private/repeat",
-            f"/api/v1/reservations/{self.room.id}/private/repeat-check",
-            f"/api/v1/reservations/{self.room.id}/team",
-            f"/api/v1/reservations/{self.room.id}/team/repeat",
-            f"/api/v1/reservations/{self.room.id}/team/repeat-check",
+            f"/v1/reservations/{self.room.id}/private",
+            f"/v1/reservations/{self.room.id}/private/repeat",
+            f"/v1/reservations/{self.room.id}/private/repeat-check",
+            f"/v1/reservations/{self.room.id}/team",
+            f"/v1/reservations/{self.room.id}/team/repeat",
+            f"/v1/reservations/{self.room.id}/team/repeat-check",
         ]
 
         for path in legacy_paths:
@@ -25,7 +25,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
 
     def test_create_reservation_creates_private_booking(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "private",
                 "start_date": self.today.isoformat(),
@@ -48,7 +48,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
 
     def test_create_reservation_creates_team_booking(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "team",
                 "team_id": self.team.id,
@@ -72,7 +72,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
 
     def test_create_reservation_requires_team_id_for_team_booking(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "team",
                 "start_date": self.today.isoformat(),
@@ -97,7 +97,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "private",
                 "start_date": self.today.isoformat(),
@@ -126,7 +126,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/repeat-check",
+            f"/v1/reservations/{self.room.id}/repeat-check",
             {
                 "type": "private",
                 "start_date": self.today.isoformat(),
@@ -155,7 +155,7 @@ class UnifiedReservationCreateAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}/repeat-check",
+            f"/v1/reservations/{self.room.id}/repeat-check",
             {
                 "type": "team",
                 "team_id": self.team.id,

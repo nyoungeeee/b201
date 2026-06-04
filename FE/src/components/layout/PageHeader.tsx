@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react';
 
-import { checkAdminAccess } from '../../apis/adminApi';
+import { checkAdminAccess } from '../../apis/adminAccessApi';
 import logo from '../../assets/B201_header_logo.png';
 import { roomDayQueryKeys } from '../../hooks/queries/useRoomDay';
 import { roomMonthQueryKeys } from '../../hooks/queries/useRoomMonth';
@@ -13,7 +13,7 @@ import SideNavModal from '../navigation/SideNavModal';
 const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
     const [hasAdminAccess, setHasAdminAccess] = useState(false);
-    const { isLoggedIn, user } = useAuthSession();
+    const { accessToken, isLoggedIn, user } = useAuthSession();
 
     const shouldCheckAdminAccess = isLoggedIn && isSideNavOpen;
     const canShowAdminAccess = shouldCheckAdminAccess && hasAdminAccess;
@@ -54,7 +54,7 @@ const PageHeader = () => {
 
         let isMounted = true;
 
-        checkAdminAccess()
+        checkAdminAccess(accessToken!)
             .then((isAllowed) => {
                 if (isMounted) {
                     setHasAdminAccess(isAllowed);
@@ -69,7 +69,7 @@ const PageHeader = () => {
         return () => {
             isMounted = false;
         };
-    }, [shouldCheckAdminAccess]);
+    }, [accessToken, shouldCheckAdminAccess]);
 
     return (
         <>

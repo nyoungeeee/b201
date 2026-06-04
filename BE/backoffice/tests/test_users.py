@@ -6,7 +6,7 @@ from .base import BaseBackofficeAPITestCase, User
 
 class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
     def test_staff_can_get_user_list(self):
-        response = self.client.get("/api/v1/admin/users")
+        response = self.client.get("/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
@@ -16,7 +16,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(users[self.admin_user.id]["team_ids"], [])
 
     def test_user_list_includes_request_user(self):
-        response = self.client.get("/api/v1/admin/users")
+        response = self.client.get("/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_ids = [item["id"] for item in response.data["data"]]
@@ -29,7 +29,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
             nickname="service",
         )
 
-        response = self.client.get("/api/v1/admin/users")
+        response = self.client.get("/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 2)
@@ -39,12 +39,12 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
     def test_non_staff_cannot_get_user_list(self):
         self._authenticate(self.member_user)
 
-        response = self.client.get("/api/v1/admin/users")
+        response = self.client.get("/v1/admin/users")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_staff_can_get_user_detail(self):
-        response = self.client.get(f"/api/v1/admin/users/{self.member_user.id}")
+        response = self.client.get(f"/v1/admin/users/{self.member_user.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -63,7 +63,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         )
 
     def test_staff_can_block_user(self):
-        response = self.client.patch(f"/api/v1/admin/users/{self.member_user.id}/block")
+        response = self.client.patch(f"/v1/admin/users/{self.member_user.id}/block")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"ok": True})
@@ -74,7 +74,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         self.member_user.status = UserStatus.BLOCKED
         self.member_user.save(update_fields=["status"])
 
-        response = self.client.patch(f"/api/v1/admin/users/{self.member_user.id}/block")
+        response = self.client.patch(f"/v1/admin/users/{self.member_user.id}/block")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -90,9 +90,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         self.member_user.status = UserStatus.BLOCKED
         self.member_user.save(update_fields=["status"])
 
-        response = self.client.patch(
-            f"/api/v1/admin/users/{self.member_user.id}/unblock"
-        )
+        response = self.client.patch(f"/v1/admin/users/{self.member_user.id}/unblock")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"ok": True})
@@ -100,9 +98,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(self.member_user.status, UserStatus.ACTIVE)
 
     def test_unblock_user_returns_business_error_when_not_blocked(self):
-        response = self.client.patch(
-            f"/api/v1/admin/users/{self.member_user.id}/unblock"
-        )
+        response = self.client.patch(f"/v1/admin/users/{self.member_user.id}/unblock")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -115,7 +111,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         )
 
     def test_get_user_detail_returns_404_when_missing(self):
-        response = self.client.get("/api/v1/admin/users/999999")
+        response = self.client.get("/v1/admin/users/999999")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -130,7 +126,7 @@ class BackofficeUserAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/admin/users?q={self.member_user.nickname}&status=blocked"
+            f"/v1/admin/users?q={self.member_user.nickname}&status=blocked"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

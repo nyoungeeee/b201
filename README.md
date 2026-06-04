@@ -1,11 +1,20 @@
-# B201 실행 방법
+# B201 실행 및 배포
 
-## 개발 서버
+## 서비스 도메인
 
-개발 서버는 `BE` 폴더의 Docker Compose를 사용합니다.
-프론트엔드와 백엔드 서버는 실행하지 않고, PostgreSQL과 테스트 데이터 생성만 실행합니다.
+운영 환경은 프런트와 백엔드를 분리해서 배포합니다. 이 저장소의 루트 Docker Compose는 PostgreSQL과 Django 백엔드만 실행합니다.
 
-### 1. `BE/.env` 생성
+| 도메인 | 서비스 | 공개 경로 |
+| --- | --- | --- |
+| `b201.kr` | 사용자 React 앱 (`FE`) | 사용자 화면, 기존 `/admin`은 React 404 |
+| `admin.b201.kr` | 관리자 React 앱 (`FE_ADMIN`) | 관리자 로그인 및 관리 화면 |
+| `api.b201.kr` | Django API (`BE`) | `/v1/*`, `/docs/`, `/schema/`, `/redoc/` |
+
+DNS, TLS 인증서, 프런트 정적 파일 호스팅, 외부 Nginx 또는 로드밸런서 설정은 운영 인프라에서 별도로 적용해야 합니다.
+
+## 개발 환경
+
+PostgreSQL과 테스트 데이터는 `BE`의 Compose를 사용합니다.
 
 ```env
 SECRET_KEY=dev-secret-key
@@ -19,40 +28,53 @@ DB_HOST=localhost
 DB_PORT=5319
 
 CORS_ALLOW_ALL_ORIGINS=True
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 
 ACCESS_TOKEN_LIFETIME=30
 REFRESH_TOKEN_LIFETIME=7
-
 TIME_ZONE=Asia/Seoul
 LANGUAGE_CODE=ko-kr
-
 DJANGO_SETTINGS_MODULE=config.settings.local
 
 KAKAO_REST_API_KEY=dev-kakao-rest-api-key
-KAKAO_REDIRECT_URI=http://localhost:5173/
+KAKAO_REDIRECT_URIS=http://localhost:5173/auth/kakao/callback,http://localhost:5174/auth/kakao/callback
 KAKAO_CLIENT_SECRET=dev-kakao-client-secret
 ```
-
-### 2. 실행
 
 ```bash
 cd BE
 docker compose up
 ```
 
-실행 서비스:
+사용자 앱과 관리자 앱은 각각 실행합니다.
 
-- `db`: PostgreSQL, 외부 포트 `5319`
-- `seed_dummy_data`: 마이그레이션 및 테스트 데이터 생성 후 종료
-- `pgadmin`: pgAdmin, 외부 포트 `5050`
+```bash
+cd FE
+npm ci
+npm run dev
+```
 
-## 운영 서버
+```bash
+cd FE_ADMIN
+npm ci
+npm run dev -- --port 5174
+```
 
-운영 서버는 프로젝트 루트의 Docker Compose를 사용합니다.
-프론트엔드는 빌드 후 nginx로 배포하고, 백엔드는 migrate 후 gunicorn으로 실행합니다.
+## 운영 환경
 
-### 1. 프로젝트 루트 `.env` 생성
+프로젝트 루트의 `.env.example`을 복사한 뒤 모든 `CHANGE_ME` 값을 교체합니다.
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` 자체로 Compose 설정을 확인할 수도 있습니다.
+
+```bash
+docker compose --env-file .env.example config --quiet
+```
+
+주요 운영 환경값:
 
 ```env
 APP_ENV=prod
@@ -60,54 +82,76 @@ COMPOSE_PROFILES=prod
 
 SECRET_KEY=your-production-secret-key
 DEBUG=False
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+ALLOWED_HOSTS=api.b201.kr
 
 DB_NAME=b201
 DB_USER=b201
 DB_PASSWORD=your-production-db-password
 DB_HOST=db
 DB_PORT=5432
-DB_HOST_PORT=5432
+DB_HOST_PORT=5319
 
-FRONTEND_PORT=80
+BACKEND_PORT=8000
 
 CORS_ALLOW_ALL_ORIGINS=False
-CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
-CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+CORS_ALLOWED_ORIGINS=https://b201.kr,https://admin.b201.kr
+CSRF_TRUSTED_ORIGINS=https://b201.kr,https://admin.b201.kr,https://api.b201.kr
 
 ACCESS_TOKEN_LIFETIME=30
 REFRESH_TOKEN_LIFETIME=7
-
 TIME_ZONE=Asia/Seoul
 LANGUAGE_CODE=ko-kr
-
 DJANGO_SETTINGS_MODULE=config.settings.prod
 
 KAKAO_REST_API_KEY=your-production-kakao-rest-api-key
-KAKAO_REDIRECT_URI=https://your-domain.com/
-KAKAO_CLIENT_SECRET=your-production-kakao-client-secret
+KAKAO_REDIRECT_URIS=https://b201.kr/auth/kakao/callback,https://admin.b201.kr/auth/kakao/callback
+KAKAO_CLIENT_SECRET=your-kakao-client-secret
 
 ROOT_ADMIN_ID=your-root-admin-id
 ROOT_ADMIN_PASSWORD=your-root-admin-password
-
-VITE_API_BASE_URL=/api/v1
-VITE_KAKAO_REST_API_KEY=your-production-kakao-rest-api-key
-VITE_KAKAO_REDIRECT_URI=https://your-domain.com/
-VITE_ACCESS_TOKEN_KEY=accessToken
-VITE_REFRESH_TOKEN_KEY=refreshToken
-VITE_AUTH_USER_KEY=authUser
 ```
 
-### 2. 실행
+실행:
 
 ```bash
-docker compose up
+docker compose up -d
 ```
 
-실행 서비스:
+서비스 구성:
 
-- `db`: PostgreSQL, 외부 포트 `5432`
-- `backend`: Django migrate 후 gunicorn 실행
-- `frontend`: Vite 빌드 결과물을 nginx로 배포
+- `backend`: Django API와 Swagger
+- `db`: PostgreSQL
 
-nginx는 `/api/` 요청을 백엔드 컨테이너의 `http://backend:8000/api/`로 프록시합니다.
+루트 Compose는 프런트 이미지나 Nginx 게이트웨이를 만들지 않습니다. `FE`와 `FE_ADMIN`은 별도 프런트 배포 파이프라인에서 빌드하고, 운영 Nginx는 `api.b201.kr` 요청만 백엔드 컨테이너의 `BACKEND_PORT`로 프록시하도록 구성합니다.
+
+## 검증
+
+```bash
+python scripts/test_domain_config.py
+docker compose config --quiet
+```
+
+```bash
+cd FE
+npm test
+npm run lint
+npm run build
+```
+
+```bash
+cd FE_ADMIN
+npm test
+npm run lint
+npm run build
+```
+
+```bash
+cd BE
+python manage.py test
+```
+
+## GitHub Actions 환경변수
+
+사용자 FE 배포에는 `VITE_API_BASE_URL`, `VITE_ADMIN_BASE_URL`, `VITE_KAKAO_REST_API_KEY`, `VITE_USER_KAKAO_REDIRECT_URI`가 필요합니다.
+
+관리자 FE 배포에는 `VITE_API_BASE_URL`, `VITE_USER_BASE_URL`, `VITE_KAKAO_REST_API_KEY`, `VITE_ADMIN_KAKAO_REDIRECT_URI`가 필요합니다.
