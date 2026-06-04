@@ -50,7 +50,7 @@ services:
       LANGUAGE_CODE: ${LANGUAGE_CODE:?LANGUAGE_CODE is required}
       DJANGO_SETTINGS_MODULE: config.settings.prod
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY is required}
-      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:?KAKAO_REDIRECT_URI is required}
+      KAKAO_REDIRECT_URIS: ${KAKAO_REDIRECT_URIS:?KAKAO_REDIRECT_URIS is required}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET is required}
       ROOT_ADMIN_ID: ${ROOT_ADMIN_ID:?ROOT_ADMIN_ID is required}
       ROOT_ADMIN_PASSWORD: ${ROOT_ADMIN_PASSWORD:?ROOT_ADMIN_PASSWORD is required}
@@ -58,74 +58,12 @@ services:
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000"
-    expose:
-      - "8000"
-    volumes:
-      - staticfiles:/app/staticfiles
-    depends_on:
-      db:
-        condition: service_healthy
-
-  frontend:
-    image: b201-frontend:latest
-    pull_policy: build
-    build:
-      context: ./FE
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL is required}
-        VITE_KAKAO_REST_API_KEY: ${VITE_KAKAO_REST_API_KEY:?VITE_KAKAO_REST_API_KEY is required}
-        VITE_KAKAO_REDIRECT_URI: ${VITE_KAKAO_REDIRECT_URI:?VITE_KAKAO_REDIRECT_URI is required}
-    container_name: b201-frontend
-    profiles: ["prod"]
-    restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-80}:80"
-      - "127.0.0.1:${FRONTEND_LOCAL_ADMIN_PORT:-8081}:8081"
-    volumes:
-      - staticfiles:/usr/share/nginx/html/static:ro
-    depends_on:
-      - backend
-
-  seed_dummy_data:
-    image: b201-backend:latest
-    pull_policy: build
-    build:
-      context: ./BE
-      dockerfile: Dockerfile
-    container_name: b201-seed-dummy-data
-    profiles: ["dev"]
-    env_file:
-      - ${B201_ENV_FILE:-.env}
-    environment:
-      APP_ENV: ${APP_ENV:?APP_ENV is required}
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
-      DEBUG: "True"
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
-      DB_NAME: ${DB_NAME:?DB_NAME is required}
-      DB_USER: ${DB_USER:?DB_USER is required}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_HOST: db
-      DB_PORT: 5432
-      CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:?CORS_ALLOW_ALL_ORIGINS is required}
-      ACCESS_TOKEN_LIFETIME: ${ACCESS_TOKEN_LIFETIME:?ACCESS_TOKEN_LIFETIME is required}
-      REFRESH_TOKEN_LIFETIME: ${REFRESH_TOKEN_LIFETIME:?REFRESH_TOKEN_LIFETIME is required}
-      TIME_ZONE: ${TIME_ZONE:?TIME_ZONE is required}
-      LANGUAGE_CODE: ${LANGUAGE_CODE:?LANGUAGE_CODE is required}
-      DJANGO_SETTINGS_MODULE: config.settings.local
-      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY is required}
-      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:?KAKAO_REDIRECT_URI is required}
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET is required}
-      ROOT_ADMIN_ID: ${ROOT_ADMIN_ID:-}
-      ROOT_ADMIN_PASSWORD: ${ROOT_ADMIN_PASSWORD:-}
-    command: >
-      sh -c "PGPASSWORD=\"${DB_PASSWORD}\" psql -h \"db\" -U \"${DB_USER}\" -d \"${DB_NAME}\" -v ON_ERROR_STOP=1 -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" &&
-             python manage.py migrate &&
-             python manage.py seed_test_dummy_data"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
+
 
 volumes:
   postgres_data:
-  staticfiles:

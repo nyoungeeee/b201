@@ -3,6 +3,7 @@
 
 .env
 .env.*
+!.env.example
 *.log
 *.tmp
 *.swp
@@ -62,6 +63,20 @@ FE/.env.local
 FE/.env.development.local
 FE/.env.test.local
 FE/.env.production.local
+
+# Admin React app
+FE_ADMIN/node_modules/
+FE_ADMIN/build/
+FE_ADMIN/dist/
+FE_ADMIN/npm-debug.log*
+FE_ADMIN/yarn-debug.log*
+FE_ADMIN/yarn-error.log*
+FE_ADMIN/pnpm-debug.log*
+FE_ADMIN/.env
+FE_ADMIN/.env.local
+FE_ADMIN/.env.development.local
+FE_ADMIN/.env.test.local
+FE_ADMIN/.env.production.local
 
 ##################################################
 # Testing / Coverage

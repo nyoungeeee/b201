@@ -29,7 +29,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.RESERVED,
         )
 
-        response = self.client.get("/api/v1/reservations/?type=private&period=upcoming")
+        response = self.client.get("/v1/reservations/?type=private&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -63,7 +63,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/?type=private&period=upcoming&status=APPROVED"
+            "/v1/reservations/?type=private&period=upcoming&status=APPROVED"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -108,7 +108,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/?type=private&period=upcoming&status=CANCELED&status=PENDING"
+            "/v1/reservations/?type=private&period=upcoming&status=CANCELED&status=PENDING"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -141,7 +141,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/?type=private&period=upcoming&page=1&size=1"
+            "/v1/reservations/?type=private&period=upcoming&page=1&size=1"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -179,7 +179,7 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             end_time=time(12, 0),
         )
 
-        response = self.client.get("/api/v1/reservations/?type=private&period=upcoming")
+        response = self.client.get("/v1/reservations/?type=private&period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         kind_by_number = {

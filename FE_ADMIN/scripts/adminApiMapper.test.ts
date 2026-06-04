@@ -144,6 +144,8 @@ assert.deepEqual(
         name: 'B201 밴드',
         colorId: '3',
         leaderId: 0,
+        leaderName: undefined,
+        memberCount: 1,
         memberIds: [2],
         updatedAt: '2026.05.22',
     },

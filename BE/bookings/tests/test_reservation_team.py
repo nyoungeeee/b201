@@ -8,7 +8,7 @@ class TeamReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 팀 예약 생성 시 소속 팀 정보와 색상이 정상 반환되는지 검증한다.
     def test_create_team_reservation_succeeds(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "team",
                 "team_id": self.team.id,
@@ -36,7 +36,7 @@ class TeamReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 소속되지 않은 팀으로 팀 예약 생성 시 금지되는지 검증한다.
     def test_create_team_reservation_rejects_non_member_team(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "team",
                 "team_id": self.other_team.id,
@@ -53,7 +53,7 @@ class TeamReservationCreateAPITestCase(BaseBookingAPITestCase):
     # 팀 예약 생성 시 예약 시간은 30분 단위만 허용되는지 검증한다.
     def test_create_team_reservation_rejects_non_half_hour_time(self):
         response = self.client.post(
-            f"/api/v1/reservations/{self.room.id}",
+            f"/v1/reservations/{self.room.id}",
             {
                 "type": "team",
                 "team_id": self.team.id,

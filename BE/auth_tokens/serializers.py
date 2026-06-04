@@ -1,4 +1,5 @@
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
+from django.conf import settings
 from rest_framework import serializers
 
 
@@ -62,7 +63,10 @@ class SigninResponseSerializer(serializers.Serializer):
     examples=[
         OpenApiExample(
             "카카오 로그인 요청",
-            value={"kakao_auth_code": "kakao-authorization-code"},
+            value={
+                "kakao_auth_code": "kakao-authorization-code",
+                "redirect_uri": "https://b201.kr/auth/kakao/callback",
+            },
             request_only=True,
         )
     ]
@@ -72,6 +76,16 @@ class SigninRequestSerializer(serializers.Serializer):
         required=True,
         help_text="카카오 OAuth 인가 코드",
     )
+    redirect_uri = serializers.URLField(
+        required=True,
+        help_text="카카오 인가 요청에 사용한 callback URI",
+    )
+
+    def validate_redirect_uri(self, value):
+        if value not in settings.KAKAO_REDIRECT_URIS:
+            raise serializers.ValidationError("허용되지 않은 redirect URI입니다.")
+
+        return value
 
 
 @extend_schema_serializer(

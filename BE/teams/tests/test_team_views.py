@@ -81,14 +81,14 @@ class TeamAPITestCase(APITestCase):
         self._authenticate(self.leader)
 
     def test_get_team_members(self):
-        response = self.client.get(f"/api/v1/teams/{self.team.id}/members/")
+        response = self.client.get(f"/v1/teams/{self.team.id}/members/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["members"]), 2)
         self.assertEqual(response.data["members"][0]["role"], TeamMemberRole.LEADER)
 
     def test_get_team_detail(self):
-        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+        response = self.client.get(f"/v1/teams/{self.team.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.team.id)
@@ -104,14 +104,14 @@ class TeamAPITestCase(APITestCase):
     def test_get_team_detail_returns_member_leader_false(self):
         self._authenticate(self.member)
 
-        response = self.client.get(f"/api/v1/teams/{self.team.id}/")
+        response = self.client.get(f"/v1/teams/{self.team.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["is_leader"])
 
     def test_add_team_member(self):
         response = self.client.post(
-            f"/api/v1/teams/{self.team.id}/members/",
+            f"/v1/teams/{self.team.id}/members/",
             {"nickname": self.new_user.nickname},
             format="json",
         )
@@ -127,7 +127,7 @@ class TeamAPITestCase(APITestCase):
 
     def test_remove_team_member(self):
         response = self.client.delete(
-            f"/api/v1/teams/{self.team.id}/members/{self.member.id}/",
+            f"/v1/teams/{self.team.id}/members/{self.member.id}/",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -136,7 +136,7 @@ class TeamAPITestCase(APITestCase):
 
     def test_delegate_team_leader(self):
         response = self.client.patch(
-            f"/api/v1/teams/{self.team.id}/leader/",
+            f"/v1/teams/{self.team.id}/leader/",
             {"user_id": self.member.id},
             format="json",
         )
@@ -150,7 +150,7 @@ class TeamAPITestCase(APITestCase):
         color = TeamColor.objects.get(color="AABBCC")
 
         response = self.client.patch(
-            f"/api/v1/teams/{self.team.id}/config/",
+            f"/v1/teams/{self.team.id}/config/",
             {"name": "team-renamed", "color_id": color.id},
             format="json",
         )
@@ -162,7 +162,7 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(response.data["color_id"], color.id)
 
     def test_get_team_colors_returns_availability(self):
-        response = self.client.get("/api/v1/teams/colors/")
+        response = self.client.get("/v1/teams/colors/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         colors = {item["color"]: item["available"] for item in response.data["colors"]}
@@ -173,7 +173,7 @@ class TeamAPITestCase(APITestCase):
         self.assertEqual(ids["000000"], TeamColor.objects.get(color="000000").id)
 
     def test_get_team_colors_with_team_id_keeps_current_color_available(self):
-        response = self.client.get(f"/api/v1/teams/colors/?team_id={self.team.id}")
+        response = self.client.get(f"/v1/teams/colors/?team_id={self.team.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         colors = {item["color"]: item["available"] for item in response.data["colors"]}
@@ -184,7 +184,7 @@ class TeamAPITestCase(APITestCase):
         color = TeamColor.objects.get(color="111111")
 
         response = self.client.patch(
-            f"/api/v1/teams/{self.team.id}/config/",
+            f"/v1/teams/{self.team.id}/config/",
             {"color_id": color.id},
             format="json",
         )
@@ -194,7 +194,7 @@ class TeamAPITestCase(APITestCase):
 
     def test_update_team_config_rejects_unregistered_color(self):
         response = self.client.patch(
-            f"/api/v1/teams/{self.team.id}/config/",
+            f"/v1/teams/{self.team.id}/config/",
             {"color_id": 999999},
             format="json",
         )
@@ -206,7 +206,7 @@ class TeamAPITestCase(APITestCase):
         self._authenticate(self.member)
 
         response = self.client.post(
-            f"/api/v1/teams/{self.team.id}/members/",
+            f"/v1/teams/{self.team.id}/members/",
             {"nickname": self.new_user.nickname},
             format="json",
         )

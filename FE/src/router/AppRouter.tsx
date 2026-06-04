@@ -1,11 +1,6 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import adminFavicon from '../assets/B201-admin-favicon.ico';
-import favicon from '../assets/favicon.ico';
 import RequireAuth from '../components/auth/RequireAuth';
-import AdminPage from '../pages/AdminPage';
-import AdminRoute from './AdminRoute';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
 import MyInfoPage from '../pages/MyInfoPage';
 import MyReservationDetailPage from '../pages/MyReservationDetailPage';
@@ -22,29 +17,9 @@ import TeamColorChangePage from '../pages/TeamColorChangePage';
 import TeamLeaderChangePage from '../pages/TeamLeaderChangePage';
 import WithdrawPage from '../pages/WithdrawPage';
 
-const AppDocumentMetadata = () => {
-    const { pathname } = useLocation();
-    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
-
-    useEffect(() => {
-        document.title = isAdminRoute ? 'ADMIN - B201' : 'B201';
-
-        const faviconLink = document.querySelector<HTMLLinkElement>(
-            'link#app-favicon',
-        );
-
-        if (faviconLink) {
-            faviconLink.href = isAdminRoute ? adminFavicon : favicon;
-        }
-    }, [isAdminRoute]);
-
-    return null;
-};
-
 const AppRouter = () => {
     return (
         <BrowserRouter>
-            <AppDocumentMetadata />
             <Routes>
                 <Route path="/" element={<ReservationStatusPage />} />
                 <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
@@ -62,14 +37,6 @@ const AppRouter = () => {
                     <Route path="/team/:id/color" element={<TeamColorChangePage />} />
                     <Route path="/team/:id/change-leader" element={<TeamLeaderChangePage />} />
                 </Route>
-                <Route
-                    path="/admin"
-                    element={
-                        <AdminRoute>
-                            <AdminPage />
-                        </AdminRoute>
-                    }
-                />
                 <Route path="/404" element={<NotFoundPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

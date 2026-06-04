@@ -7,7 +7,7 @@ from .base import BaseAccountAPITestCase
 class MeGetAPITestCase(BaseAccountAPITestCase):
     # 활성 사용자의 내 정보 조회 시 팀 정보까지 함께 반환되는지 검증한다.
     def test_get_user_info_returns_profile_and_active_teams(self):
-        response = self.client.get("/api/v1/me/")
+        response = self.client.get("/v1/me/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.user.id)
@@ -28,7 +28,7 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
     def test_get_user_info_returns_empty_team_list_when_user_has_no_team(self):
         TeamMember.objects.filter(user=self.user).delete()
 
-        response = self.client.get("/api/v1/me/")
+        response = self.client.get("/v1/me/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["team"], [])
@@ -51,7 +51,7 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
             status=TeamMemberStatus.ACTIVE,
         )
 
-        response = self.client.get("/api/v1/me/")
+        response = self.client.get("/v1/me/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -75,7 +75,7 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
         self.user.status = "WITHDRAWN"
         self.user.save(update_fields=["status"])
 
-        response = self.client.get("/api/v1/me/")
+        response = self.client.get("/v1/me/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["code"], "USER_NOT_FOUND")
@@ -84,6 +84,6 @@ class MeGetAPITestCase(BaseAccountAPITestCase):
     def test_get_user_info_requires_authentication(self):
         self.client.credentials()
 
-        response = self.client.get("/api/v1/me/")
+        response = self.client.get("/v1/me/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

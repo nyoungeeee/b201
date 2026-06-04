@@ -2,6 +2,61 @@
   max-width: 600px;
 }
 
+.admin-login {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #f7f8fb;
+  background:
+    radial-gradient(circle at 20% 12%, rgba(46, 55, 74, 0.55), transparent 34%),
+    radial-gradient(circle at 82% 18%, rgba(36, 52, 74, 0.38), transparent 32%),
+    linear-gradient(180deg, #10141b 0%, #0a0d12 58%, #07090d 100%);
+}
+
+.admin-login__panel {
+  width: min(100%, 360px);
+  padding: 32px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  text-align: center;
+}
+
+.admin-login__panel h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.admin-login__panel p {
+  margin: 14px 0 26px;
+  color: rgba(247, 248, 251, 0.68);
+}
+
+.admin-login__panel button {
+  width: 100%;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  color: #191919;
+  background: #fee500;
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-login__panel button span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #191919;
+}
+
 .admin-mobile {
   position: relative;
   width: 100%;

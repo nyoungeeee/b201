@@ -5,12 +5,12 @@ on:
     branches: ["main", "dev"]
     paths:
       - "FE/**"
-      - ".github/workflows/fe-ci.yml"
+      - ".github/workflows/fe_ci.yaml"
   push:
-    branches: ["main", "develop"]
+    branches: ["main", "dev"]
     paths:
       - "FE/**"
-      - ".github/workflows/fe-ci.yml"
+      - ".github/workflows/fe_ci.yaml"
 
 jobs:
   fe-ci:
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.18.0
           cache: npm
           cache-dependency-path: FE/package-lock.json
 
@@ -37,4 +37,10 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
 

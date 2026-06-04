@@ -21,7 +21,7 @@ class BackofficeLogAPITestCase(BaseBackofficeAPITestCase):
             detail="",
         )
 
-        first_response = self.client.get("/api/v1/admin/logs?page_size=1")
+        first_response = self.client.get("/v1/admin/logs?page_size=1")
 
         self.assertEqual(first_response.status_code, status.HTTP_200_OK)
         self.assertTrue(first_response.data["ok"])
@@ -30,7 +30,7 @@ class BackofficeLogAPITestCase(BaseBackofficeAPITestCase):
         self.assertIsNotNone(first_response.data["pagination"]["next_cursor"])
 
         second_response = self.client.get(
-            "/api/v1/admin/logs",
+            "/v1/admin/logs",
             {
                 "page_size": 1,
                 "cursor": first_response.data["pagination"]["next_cursor"],
@@ -57,7 +57,7 @@ class BackofficeLogAPITestCase(BaseBackofficeAPITestCase):
             detail="",
         )
 
-        response = self.client.get("/api/v1/admin/logs?category=사용자")
+        response = self.client.get("/v1/admin/logs?category=사용자")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["page_size"], 30)
@@ -65,14 +65,14 @@ class BackofficeLogAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data["data"][0]["category"], "사용자")
 
     def test_log_list_rejects_invalid_cursor(self):
-        response = self.client.get("/api/v1/admin/logs?cursor=not-a-cursor")
+        response = self.client.get("/v1/admin/logs?cursor=not-a-cursor")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["code"], "INVALID_INPUT")
         self.assertIn("cursor", response.data["errors"])
 
     def test_admin_user_block_records_action_log(self):
-        response = self.client.patch(f"/api/v1/admin/users/{self.member_user.id}/block")
+        response = self.client.patch(f"/v1/admin/users/{self.member_user.id}/block")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         log = AdminActionLog.objects.get(category="사용자")

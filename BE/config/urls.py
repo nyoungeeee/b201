@@ -15,7 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
 from django.urls import path, include
 
 from drf_spectacular.views import (
@@ -23,8 +22,6 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
 from django.http import HttpResponse
 
 from django.conf import settings
@@ -39,19 +36,16 @@ urlpatterns = [
     )
 ]
 
-# Admin site
-urlpatterns += [path("api/admin/", admin.site.urls)]
-
 # API schema and documentation
 urlpatterns += [
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
-        "api/docs/",
+        "docs/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
     path(
-        "api/redoc/",
+        "redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
@@ -59,14 +53,14 @@ urlpatterns += [
 
 # JWT auth
 urlpatterns += [
-    path("api/v1/auth/", include("auth_tokens.urls")),
-    path("api/v1/me/", include("accounts.urls")),
-    path("api/v1/rooms/", include("bookings.rooms_urls")),
-    path("api/v1/reservations/", include("bookings.reservations_urls")),
-    path("api/v1/teams/", include("teams.urls")),
-    path("api/v1/admin/", include("backoffice.urls")),
+    path("v1/auth/", include("auth_tokens.urls")),
+    path("v1/me/", include("accounts.urls")),
+    path("v1/rooms/", include("bookings.rooms_urls")),
+    path("v1/reservations/", include("bookings.reservations_urls")),
+    path("v1/teams/", include("teams.urls")),
+    path("v1/admin/", include("backoffice.urls")),
 ]
 
 
 if settings.DEBUG:
-    urlpatterns += [path("api/v1/test/", include("test_server.urls"))]
+    urlpatterns += [path("v1/test/", include("test_server.urls"))]

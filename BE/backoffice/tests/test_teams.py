@@ -55,7 +55,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         )
 
     def test_staff_can_get_team_colors_with_availability(self):
-        response = self.client.get(f"/api/v1/admin/teams/colors?team_id={self.team.id}")
+        response = self.client.get(f"/v1/admin/teams/colors?team_id={self.team.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
@@ -65,7 +65,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         self.assertTrue(colors[self.color_b.id]["available"])
 
     def test_staff_can_get_team_list(self):
-        response = self.client.get("/api/v1/admin/teams")
+        response = self.client.get("/v1/admin/teams")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["ok"])
@@ -75,7 +75,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(response.data["data"][0]["member_count"], 2)
 
     def test_staff_can_get_team_detail(self):
-        response = self.client.get(f"/api/v1/admin/teams/{self.team.id}")
+        response = self.client.get(f"/v1/admin/teams/{self.team.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["data"]["id"], self.team.id)
@@ -99,8 +99,8 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
             status=TeamMemberStatus.ACTIVE,
         )
 
-        list_response = self.client.get("/api/v1/admin/teams")
-        detail_response = self.client.get(f"/api/v1/admin/teams/{self.team.id}")
+        list_response = self.client.get("/v1/admin/teams")
+        detail_response = self.client.get(f"/v1/admin/teams/{self.team.id}")
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
@@ -122,7 +122,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
             nickname=f"service-edit-{suffix}",
         )
 
-        response = self.client.get(f"/api/v1/admin/teams/{self.team.id}/members")
+        response = self.client.get(f"/v1/admin/teams/{self.team.id}/members")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         member_ids = [item["id"] for item in response.data["data"]["members"]]
@@ -141,7 +141,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}/members",
+            f"/v1/admin/teams/{self.team.id}/members",
             {"user_ids": [self.leader.id, new_user.id]},
             format="json",
         )
@@ -168,7 +168,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
 
     def test_update_team_members_requires_leader(self):
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}/members",
+            f"/v1/admin/teams/{self.team.id}/members",
             {"user_ids": [self.member_user.id]},
             format="json",
         )
@@ -180,7 +180,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
     def test_staff_can_create_team_with_current_admin_as_leader_for_zero(self):
         team_name = f"team-b-{self._suffix()}"
         response = self.client.post(
-            "/api/v1/admin/teams",
+            "/v1/admin/teams",
             {"name": team_name, "color_id": self.color_b.id, "leader_id": 0},
             format="json",
         )
@@ -201,7 +201,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
 
     def test_create_team_returns_business_error_for_duplicate_name(self):
         response = self.client.post(
-            "/api/v1/admin/teams",
+            "/v1/admin/teams",
             {"name": self.team.name, "color_id": self.color_b.id, "leader_id": 0},
             format="json",
         )
@@ -212,7 +212,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
     def test_staff_can_update_team_name_and_color(self):
         team_name = f"team-renamed-{self._suffix()}"
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}",
+            f"/v1/admin/teams/{self.team.id}",
             {"name": team_name, "color_id": self.color_b.id},
             format="json",
         )
@@ -223,7 +223,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         self.assertEqual(self.team.color, self.color_b_value)
 
     def test_staff_can_delete_team(self):
-        response = self.client.delete(f"/api/v1/admin/teams/{self.team.id}")
+        response = self.client.delete(f"/v1/admin/teams/{self.team.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"ok": True})
@@ -240,7 +240,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         blocked_user.save(update_fields=["status"])
 
         response = self.client.post(
-            f"/api/v1/admin/teams/{self.team.id}/members",
+            f"/v1/admin/teams/{self.team.id}/members",
             {"user_ids": [blocked_user.id]},
             format="json",
         )
@@ -256,7 +256,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.post(
-            f"/api/v1/admin/teams/{self.team.id}/members",
+            f"/v1/admin/teams/{self.team.id}/members",
             {"user_ids": [new_user.id]},
             format="json",
         )
@@ -273,7 +273,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}/leader",
+            f"/v1/admin/teams/{self.team.id}/leader",
             {"leader_id": other_user.id},
             format="json",
         )
@@ -283,7 +283,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
 
     def test_staff_can_change_team_leader_to_member(self):
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}/leader",
+            f"/v1/admin/teams/{self.team.id}/leader",
             {"leader_id": self.member_user.id},
             format="json",
         )
@@ -295,7 +295,7 @@ class BackofficeTeamAPITestCase(BaseBackofficeAPITestCase):
 
     def test_change_team_leader_to_current_admin_adds_admin_as_leader(self):
         response = self.client.patch(
-            f"/api/v1/admin/teams/{self.team.id}/leader",
+            f"/v1/admin/teams/{self.team.id}/leader",
             {"leader_id": 0},
             format="json",
         )

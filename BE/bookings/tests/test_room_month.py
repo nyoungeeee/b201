@@ -10,7 +10,7 @@ from .base import BaseBookingAPITestCase
 class RoomMonthAPITestCase(BaseBookingAPITestCase):
     # 존재하지 않는 룸의 월별 조회는 404를 반환하는지 검증한다.
     def test_month_booking_view_returns_404_for_missing_room(self):
-        response = self.client.get("/api/v1/rooms/999999/month/")
+        response = self.client.get("/v1/rooms/999999/month/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "NOT_FOUND_STUDIO_ROOM")
@@ -28,7 +28,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -51,7 +51,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -73,7 +73,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -94,7 +94,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -117,7 +117,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -141,7 +141,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -157,7 +157,7 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
     # 비활성 룸의 월별 조회는 모든 날짜를 예약 불가로 반환하는지 검증한다.
     def test_month_booking_view_marks_all_days_disabled_for_inactive_room(self):
         response = self.client.get(
-            f"/api/v1/rooms/{self.inactive_room.id}/month/?year={self.today.year}&month={self.today.month}"
+            f"/v1/rooms/{self.inactive_room.id}/month/?year={self.today.year}&month={self.today.month}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

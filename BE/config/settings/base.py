@@ -169,10 +169,10 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "B201 API",
     "DESCRIPTION": "API documentation for B201 project",
     "VERSION": "1.0.0",
-    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SCHEMA_PATH_PREFIX": r"/v[0-9]",
     "SCHEMA_PATH_PREFIX_TRIM": True,
     "SERVERS": [
-        {"url": "/api/v1", "description": "API v1"},
+        {"url": "/v1", "description": "API v1"},
     ],
 }
 
@@ -193,5 +193,9 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Kakao Login
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_REDIRECT_URIS = [
+    value.strip()
+    for value in os.getenv("KAKAO_REDIRECT_URIS", "").split(",")
+    if value.strip()
+]
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")

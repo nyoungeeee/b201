@@ -28,7 +28,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         self._authenticate(self.member_user)
 
         response = self.client.delete(
-            f"/api/v1/reservations/number/{booking.reservation_number}"
+            f"/v1/reservations/number/{booking.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -48,9 +48,9 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
             end_time=time(20, 0),
         )
         self._authenticate(self.user)
-        self.client.delete(f"/api/v1/reservations/number/{booking.reservation_number}")
+        self.client.delete(f"/v1/reservations/number/{booking.reservation_number}")
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data["reservations"][0]
@@ -72,7 +72,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         self._authenticate(self.other_user)
 
         response = self.client.delete(
-            f"/api/v1/reservations/number/{booking.reservation_number}"
+            f"/v1/reservations/number/{booking.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -80,7 +80,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
 
     # 존재하지 않는 예약 번호 취소 시 404를 반환하는지 검증한다.
     def test_cancel_reservation_returns_404_for_missing_booking(self):
-        response = self.client.delete("/api/v1/reservations/number/999999")
+        response = self.client.delete("/v1/reservations/number/999999")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "NOT_FOUND_BOOKING")
@@ -98,7 +98,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         target_date = self.tomorrow + timedelta(days=14)
 
         response = self.client.patch(
-            f"/api/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
+            f"/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
             {"dates": [target_date.isoformat()]},
             format="json",
         )
@@ -127,7 +127,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         self.assertIsNotNone(occurrence.booking.canceled_at)
 
         detail_response = self.client.get(
-            f"/api/v1/reservations/number/{first_reservation.reservation_number}"
+            f"/v1/reservations/number/{first_reservation.reservation_number}"
         )
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["occurrences"][2]["status"], "CANCELED")
@@ -146,7 +146,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         self._authenticate(self.member_user)
 
         response = self.client.patch(
-            f"/api/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
+            f"/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
             {"dates": [self.tomorrow.isoformat()]},
             format="json",
         )
@@ -168,7 +168,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/reservations/number/{booking.reservation_number}/cancel-occurrences",
+            f"/v1/reservations/number/{booking.reservation_number}/cancel-occurrences",
             {"dates": [self.tomorrow.isoformat()]},
             format="json",
         )
@@ -189,7 +189,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         missing_date = self.tomorrow + timedelta(days=21)
 
         response = self.client.patch(
-            f"/api/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
+            f"/v1/reservations/number/{first_reservation.reservation_number}/cancel-occurrences",
             {"dates": [missing_date.isoformat()]},
             format="json",
         )

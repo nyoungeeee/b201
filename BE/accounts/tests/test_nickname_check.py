@@ -6,7 +6,7 @@ from .base import BaseAccountAPITestCase
 class NicknameCheckAPITestCase(BaseAccountAPITestCase):
     def test_check_nickname_returns_available_true_when_not_used(self):
         response = self.client.get(
-            "/api/v1/me/nickname/check/",
+            "/v1/me/nickname/check/",
             {"nickname": "newnickname"},
         )
 
@@ -15,7 +15,7 @@ class NicknameCheckAPITestCase(BaseAccountAPITestCase):
 
     def test_check_nickname_returns_available_false_when_used(self):
         response = self.client.get(
-            "/api/v1/me/nickname/check/",
+            "/v1/me/nickname/check/",
             {"nickname": self.other_user.nickname},
         )
 
@@ -24,7 +24,7 @@ class NicknameCheckAPITestCase(BaseAccountAPITestCase):
 
     def test_check_nickname_is_case_insensitive(self):
         response = self.client.get(
-            "/api/v1/me/nickname/check/",
+            "/v1/me/nickname/check/",
             {"nickname": self.other_user.nickname.upper()},
         )
 
@@ -35,7 +35,7 @@ class NicknameCheckAPITestCase(BaseAccountAPITestCase):
         self.client.credentials()
 
         response = self.client.get(
-            "/api/v1/me/nickname/check/",
+            "/v1/me/nickname/check/",
             {"nickname": "newnickname"},
         )
 

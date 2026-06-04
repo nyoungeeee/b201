@@ -69,7 +69,7 @@ docker compose up -d
 ```
 
 * API 서버: `http://localhost:8000`
-* Swagger UI: `http://localhost:8000/api/docs/`
+* Swagger UI: `http://localhost:8000/docs/`
 * PostgreSQL: `localhost:5432`
 * pgAdmin: `http://localhost:5050`
 * 시작 시 자동 실행: DB schema 초기화 → migration → `seed_test_dummy_data`
@@ -81,7 +81,7 @@ $env:BACKEND_PORT="8500"
 docker compose up -d
 ```
 
-이 경우 API 서버와 Swagger UI는 각각 `http://localhost:8500`, `http://localhost:8500/api/docs/`에서 확인합니다.
+이 경우 API 서버와 Swagger UI는 각각 `http://localhost:8500`, `http://localhost:8500/docs/`에서 확인합니다.
 
 ### 2. 로그 확인
 
@@ -230,11 +230,11 @@ python manage.py runserver
 Swagger UI:
 
 ```text
-http://localhost:8000/api/docs/
+http://localhost:8000/docs/
 ```
 
-* `/api/schema/` : OpenAPI 스키마
-* `/api/docs/` : Swagger UI
+* `/schema/` : OpenAPI 스키마
+* `/docs/` : Swagger UI
 
 ---
 
@@ -245,13 +245,13 @@ JWT 기반 인증을 사용합니다.
 ### 토큰 발급
 
 ```text
-POST /api/token/
+POST /v1/auth/signin
 ```
 
 ### 토큰 갱신
 
 ```text
-POST /api/token/refresh/
+POST /v1/auth/token/refresh
 ```
 
 ### 요청 헤더

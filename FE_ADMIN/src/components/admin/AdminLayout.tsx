@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 
+import { USER_BASE_URL } from "../../constants/env";
 import {
   AdminExitIcon,
   AdminReservationIcon,
@@ -25,7 +25,6 @@ const adminNavItems = [
 export type AdminNavId = (typeof adminNavItems)[number]["id"];
 
 const AdminLayout = ({ children, onNavChange, toastMessage }: AdminLayoutProps) => {
-  const navigate = useNavigate();
   const [activeNavId, setActiveNavId] = useState<AdminNavId>(adminNavItems[0].id);
   const activeNavItem = adminNavItems.find((item) => item.id === activeNavId) ?? adminNavItems[0];
   const handleNavChange = (navId: AdminNavId) => {
@@ -76,7 +75,7 @@ const AdminLayout = ({ children, onNavChange, toastMessage }: AdminLayoutProps) 
               type="button"
               aria-label="나가기"
               title="나가기"
-              onClick={() => navigate("/")}
+              onClick={() => window.location.assign(USER_BASE_URL)}
             >
               <AdminExitIcon />
               <span>나가기</span>

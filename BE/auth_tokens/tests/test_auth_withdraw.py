@@ -10,7 +10,7 @@ class AuthWithdrawAPITestCase(BaseAuthTokenAPITestCase):
         self._authenticate(self.user)
         RefreshToken.objects.create(user=self.user, token_hash="hash-1")
 
-        response = self.client.get("/api/v1/auth/withdraw", format="json")
+        response = self.client.get("/v1/auth/withdraw", format="json")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.user.refresh_from_db()

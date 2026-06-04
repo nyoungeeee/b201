@@ -41,7 +41,7 @@ services:
       CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:-True}
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.local}
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-test-key}
-      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:-http://localhost/test-callback}
+      KAKAO_REDIRECT_URIS: ${KAKAO_REDIRECT_URIS:-http://localhost:5173/auth/kakao/callback,http://localhost:5174/auth/kakao/callback}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-test-secret}
     volumes:
       - .:/app

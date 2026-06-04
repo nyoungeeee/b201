@@ -27,7 +27,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
 
     def test_staff_can_create_owner_private_reservation_with_title_and_memo(self):
         response = self.client.post(
-            "/api/v1/admin/reservations",
+            "/v1/admin/reservations",
             {
                 "date": self.today.isoformat(),
                 "start_time": "10:00:00",
@@ -52,7 +52,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
 
     def test_create_owner_reservation_rejects_past_date(self):
         response = self.client.post(
-            "/api/v1/admin/reservations",
+            "/v1/admin/reservations",
             {
                 "date": (self.today - timedelta(days=1)).isoformat(),
                 "start_time": "10:00:00",
@@ -86,7 +86,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -106,7 +106,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
     #         memo="앰프 점검",
     #     )
 
-    #     response = self.client.get("/api/v1/reservations/me")
+    #     response = self.client.get("/v1/reservations/me")
 
     #     self.assertEqual(response.status_code, status.HTTP_200_OK)
     #     self.assertEqual(
@@ -128,7 +128,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/reservations/{booking.reservation_number}/approve"
+            f"/v1/admin/reservations/{booking.reservation_number}/approve"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -179,11 +179,11 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         approve_response = self.client.patch(
-            f"/api/v1/admin/reservations/{first_booking.reservation_number}/approve"
+            f"/v1/admin/reservations/{first_booking.reservation_number}/approve"
         )
-        pending_response = self.client.get("/api/v1/admin/reservations?status=pending")
+        pending_response = self.client.get("/v1/admin/reservations?status=pending")
         approved_response = self.client.get(
-            "/api/v1/admin/reservations?status=approved&date_range=30"
+            "/v1/admin/reservations?status=approved&date_range=30"
         )
 
         self.assertEqual(approve_response.status_code, status.HTTP_200_OK)
@@ -210,9 +210,9 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             memo="문의 메모",
         )
 
-        list_response = self.client.get("/api/v1/admin/reservations?status=pending")
+        list_response = self.client.get("/v1/admin/reservations?status=pending")
         detail_response = self.client.get(
-            f"/api/v1/admin/reservations/{booking.reservation_number}"
+            f"/v1/admin/reservations/{booking.reservation_number}"
         )
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
@@ -267,7 +267,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/admin/reservations?status=approved&date_range=30"
+            "/v1/admin/reservations?status=approved&date_range=30"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -311,7 +311,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/admin/reservations?status=approved&date_range=30"
+            "/v1/admin/reservations?status=approved&date_range=30"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -337,7 +337,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            f"/api/v1/admin/reservations/{booking.reservation_number}"
+            f"/v1/admin/reservations/{booking.reservation_number}"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -367,7 +367,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/admin/reservations?status=approved&date_range=7"
+            "/v1/admin/reservations?status=approved&date_range=7"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -396,9 +396,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.get(
-            "/api/v1/admin/reservations?status=pending&date_range=7"
-        )
+        response = self.client.get("/v1/admin/reservations?status=pending&date_range=7")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 1)
@@ -426,7 +424,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.get("/api/v1/admin/reservations?status=pending")
+        response = self.client.get("/v1/admin/reservations?status=pending")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 2)
@@ -447,7 +445,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/reservations/{booking.reservation_number}/cancel"
+            f"/v1/admin/reservations/{booking.reservation_number}/cancel"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -468,7 +466,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/reservations/{booking.reservation_number}/approve"
+            f"/v1/admin/reservations/{booking.reservation_number}/approve"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -486,7 +484,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/admin/reservations/conflicts",
+            "/v1/admin/reservations/conflicts",
             {
                 "room_id": self.room.id,
                 "date": self.today.isoformat(),
@@ -501,7 +499,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
 
     def test_conflict_check_rejects_past_date(self):
         response = self.client.get(
-            "/api/v1/admin/reservations/conflicts",
+            "/v1/admin/reservations/conflicts",
             {
                 "room_id": self.room.id,
                 "date": (self.today - timedelta(days=1)).isoformat(),
@@ -530,7 +528,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/reservations/{booking.reservation_number}/cancel-occurrences",
+            f"/v1/admin/reservations/{booking.reservation_number}/cancel-occurrences",
             {"dates": [self.today.isoformat()]},
             format="json",
         )
@@ -558,7 +556,7 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
         )
 
         response = self.client.patch(
-            f"/api/v1/admin/reservations/{booking.reservation_number}/cancel-occurrences",
+            f"/v1/admin/reservations/{booking.reservation_number}/cancel-occurrences",
             {"dates": [self.today.isoformat()]},
             format="json",
         )

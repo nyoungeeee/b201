@@ -26,5 +26,9 @@ REST_FRAMEWORK = {
 }
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_REDIRECT_URIS = [
+    value.strip()
+    for value in os.getenv("KAKAO_REDIRECT_URIS", "").split(",")
+    if value.strip()
+]
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")

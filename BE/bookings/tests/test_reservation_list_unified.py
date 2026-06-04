@@ -11,7 +11,7 @@ from .base import BaseBookingAPITestCase
 
 class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
     def test_legacy_split_reservation_list_urls_are_removed(self):
-        for path in ["/api/v1/reservations/me", "/api/v1/reservations/team"]:
+        for path in ["/v1/reservations/me", "/v1/reservations/team"]:
             with self.subTest(path=path):
                 response = self.client.get(path)
 
@@ -48,7 +48,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["period"], "upcoming")
@@ -100,7 +100,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 2)
@@ -138,7 +138,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             reservation_number=newer_booking.reservation_number
         ).update(created_at=timezone.now())
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming&sort=latest")
+        response = self.client.get("/v1/reservations/?period=upcoming&sort=latest")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -157,7 +157,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.RESERVED,
         )
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data["reservations"][0]
@@ -231,7 +231,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/",
+            "/v1/reservations/",
             {
                 "period": "upcoming",
                 "type": "team",
@@ -276,7 +276,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
         )
 
         response = self.client.get(
-            "/api/v1/reservations/?period=upcoming&type=private&kind=repeat"
+            "/v1/reservations/?period=upcoming&type=private&kind=repeat"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -314,7 +314,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.PENDING,
         )
 
-        response = self.client.get("/api/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=upcoming")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["pagination"]["total_count"], 1)
@@ -344,7 +344,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
             status=BookingStatus.REJECTED,
         )
 
-        response = self.client.get("/api/v1/reservations/?period=past&status=REJECTED")
+        response = self.client.get("/v1/reservations/?period=past&status=REJECTED")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["period"], "past")
@@ -357,7 +357,7 @@ class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
 
     def test_get_reservations_rejects_non_member_team_filter(self):
         response = self.client.get(
-            "/api/v1/reservations/",
+            "/v1/reservations/",
             {"period": "upcoming", "team_id": self.other_team.id},
         )
 

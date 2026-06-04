@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { ChevronRightIcon } from '../common/icons';
 import logo from "../../assets/B201_logo.png";
+import { ADMIN_BASE_URL } from '../../constants/env';
 import { clearAuthSession } from '../../utils/authStorage';
+import { getAdminHomeUrl } from '../../utils/adminNavigation';
 import {
     MEMBER_NAV_MENU_ITEMS,
     MEMBER_NAV_TEXT,
@@ -79,7 +81,12 @@ const MemberNavContent = ({
                     <button
                         type="button"
                         className="side-nav-modal__menu-item"
-                        onClick={() => handleMove('/admin')}
+                        onClick={() => {
+                            onClose();
+                            window.location.assign(
+                                getAdminHomeUrl(ADMIN_BASE_URL),
+                            );
+                        }}
                     >
                         <span>{MEMBER_NAV_TEXT.adminButton}</span>
                         <span className="side-nav-modal__arrow">

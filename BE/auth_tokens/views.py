@@ -59,6 +59,7 @@ class SigninView(APIView):
         try:
             signin_response, new_user_created = AuthService.signin(
                 kakao_auth_code=serializer.validated_data["kakao_auth_code"],
+                redirect_uri=serializer.validated_data["redirect_uri"],
             )
 
         except UserNotFoundError as e:
