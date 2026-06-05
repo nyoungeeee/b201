@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { API_BASE_URL } from '../constants/env';
+import { authFetch } from './authFetch';
 
 const timeStringSchema = z
     .string()
@@ -160,9 +161,8 @@ export interface CancelReservationParams {
 const buildReservationUrl = (path: string) =>
     `${API_BASE_URL}/reservations/${path}`;
 
-const buildHeaders = (accessToken?: string | null): HeadersInit => ({
+const buildHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
 });
 
 const buildReservationBody = ({
@@ -205,7 +205,6 @@ const parseErrorMessage = (rawData: unknown, fallback: string) => {
 };
 
 export const checkRepeatReservation = async ({
-    accessToken,
     roomId,
     type,
     startDate,
@@ -214,11 +213,11 @@ export const checkRepeatReservation = async ({
     endTime,
     teamId,
 }: CheckRepeatReservationParams): Promise<RepeatCheckResponse> => {
-    const response = await fetch(
+    const response = await authFetch(
         buildReservationUrl(`${roomId}/repeat-check`),
         {
             method: 'POST',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
             body: JSON.stringify(
                 buildReservationBody({
                     type,
@@ -253,7 +252,6 @@ export const checkRepeatReservation = async ({
 };
 
 export const createReservation = async ({
-    accessToken,
     roomId,
     type,
     startDate,
@@ -262,11 +260,11 @@ export const createReservation = async ({
     endTime,
     teamId,
 }: CreateReservationParams): Promise<ReservationCreateResponse> => {
-    const response = await fetch(
+    const response = await authFetch(
         buildReservationUrl(`${roomId}`),
         {
             method: 'POST',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
             body: JSON.stringify(
                 buildReservationBody({
                     type,
@@ -300,7 +298,6 @@ export const createReservation = async ({
 };
 
 export const getReservations = async ({
-    accessToken,
     period = 'upcoming',
     sort = 'upcoming',
     kind,
@@ -322,11 +319,11 @@ export const getReservations = async ({
     if (teamId) searchParams.set('team_id', String(teamId));
     status?.forEach((value) => searchParams.append('status', value));
 
-    const response = await fetch(
+    const response = await authFetch(
         `${buildReservationUrl('')}?${searchParams.toString()}`,
         {
             method: 'GET',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
     );
     const rawData = await readJson(response);
@@ -351,14 +348,13 @@ export const getReservations = async ({
 };
 
 export const getReservationByNumber = async ({
-    accessToken,
     reservationNumber,
 }: GetReservationByNumberParams): Promise<ReservationDetailResponse> => {
-    const response = await fetch(
+    const response = await authFetch(
         buildReservationUrl(`number/${reservationNumber}`),
         {
             method: 'GET',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
     );
     const rawData = await readJson(response);
@@ -383,14 +379,13 @@ export const getReservationByNumber = async ({
 };
 
 export const cancelReservation = async ({
-    accessToken,
     reservationNumber,
 }: CancelReservationParams): Promise<void> => {
-    const response = await fetch(
+    const response = await authFetch(
         buildReservationUrl(`number/${reservationNumber}`),
         {
             method: 'DELETE',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
     );
     const rawData = await readJson(response);

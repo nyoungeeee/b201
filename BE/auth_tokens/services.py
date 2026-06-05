@@ -2,9 +2,12 @@ from dataclasses import dataclass
 from typing import Dict, List
 import hashlib
 import requests
+import secrets
 import uuid
+from urllib.parse import urlencode
 
 from django.conf import settings
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -45,6 +48,79 @@ class SigninResponse:
 class KakaoUserInfo:
     kakao_id: int
     email: str
+
+
+@dataclass
+class KakaoLoginState:
+    client: str
+    next: str
+
+
+class KakaoOAuthStateService:
+    CACHE_KEY_PREFIX = "oauth:kakao:state:"
+    TTL_SECONDS = 300
+    ALLOWED_CLIENTS = {"user", "admin"}
+
+    @classmethod
+    def create_authorize_url(cls, client: str, next_path: str) -> str:
+        state_data = cls.validate_login_params(client, next_path)
+        state = secrets.token_urlsafe(32)
+        cache.set(
+            cls._cache_key(state),
+            {"client": state_data.client, "next": state_data.next},
+            cls.TTL_SECONDS,
+        )
+
+        return "https://kauth.kakao.com/oauth/authorize?" + urlencode(
+            {
+                "client_id": settings.KAKAO_REST_API_KEY,
+                "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                "response_type": "code",
+                "state": state,
+            }
+        )
+
+    @classmethod
+    def pop_state(cls, state: str) -> KakaoLoginState | None:
+        cache_key = cls._cache_key(state)
+        value = cache.get(cache_key)
+        if value is None:
+            return None
+
+        cache.delete(cache_key)
+        client = value.get("client")
+        next_path = value.get("next")
+        if client not in cls.ALLOWED_CLIENTS or not cls.is_safe_next(next_path):
+            return None
+
+        return KakaoLoginState(client=client, next=next_path)
+
+    @classmethod
+    def validate_login_params(cls, client: str, next_path: str) -> KakaoLoginState:
+        if client not in cls.ALLOWED_CLIENTS:
+            raise ValueError("client must be user or admin")
+
+        if not cls.is_safe_next(next_path):
+            raise ValueError("next must be an internal path")
+
+        return KakaoLoginState(client=client, next=next_path)
+
+    @staticmethod
+    def is_safe_next(next_path: str | None) -> bool:
+        if not isinstance(next_path, str):
+            return False
+
+        lower_next = next_path.lower()
+        return (
+            next_path.startswith("/")
+            and not next_path.startswith("//")
+            and "://" not in next_path
+            and not lower_next.startswith("javascript:")
+        )
+
+    @classmethod
+    def _cache_key(cls, state: str) -> str:
+        return f"{cls.CACHE_KEY_PREFIX}{state}"
 
 
 class TokenRefreshService:
@@ -89,6 +165,19 @@ class TokenRefreshService:
         db_token.delete()
 
         return TokenRefreshService.generate_tokens(user)
+
+    @staticmethod
+    @transaction.atomic
+    def invalidate_refresh_token(refresh_token_str: str) -> None:
+        try:
+            JWTRefreshToken(refresh_token_str)
+        except TokenError:
+            raise InvalidOrExpiredTokenError()
+
+        token_hash = hashlib.sha256(refresh_token_str.encode()).hexdigest()
+        deleted_count, _ = RefreshToken.objects.filter(token_hash=token_hash).delete()
+        if deleted_count == 0:
+            raise InvalidOrExpiredTokenError()
 
     @staticmethod
     @transaction.atomic
@@ -192,6 +281,21 @@ class KakaoAuthService:
 
 
 class AuthService:
+    @staticmethod
+    def signin_from_kakao_callback(kakao_auth_code: str) -> tuple[TokenStatus, bool]:
+        user, new_user_created = KakaoAuthService.get_user_from_kakao_auth_code(
+            kakao_auth_code,
+            settings.KAKAO_REDIRECT_URI,
+        )
+
+        if user.status == UserStatus.BLOCKED:
+            raise UserBlockedError()
+
+        if user.status == UserStatus.WITHDRAWN or not user.is_active:
+            raise UserNotFoundError()
+
+        return TokenRefreshService.generate_tokens(user), new_user_created
+
     @staticmethod
     def signin(
         kakao_auth_code: str,

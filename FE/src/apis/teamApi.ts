@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../constants/env';
+import { authFetch } from './authFetch';
 import {
     teamColorListResponseSchema,
     teamConfigResponseSchema,
@@ -72,13 +73,8 @@ const TEAM_API_MESSAGE = {
 const buildTeamUrl = (path: string) =>
     `${API_BASE_URL}/teams/${path}`;
 
-const buildHeaders = (
-    accessToken?: string,
-): HeadersInit => ({
+const buildHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
-    ...(accessToken
-        ? { Authorization: `Bearer ${accessToken}` }
-        : {}),
 });
 
 const requestJson = async <T>(
@@ -86,7 +82,7 @@ const requestJson = async <T>(
     init: RequestInit,
     errorMessage: string,
 ): Promise<T> => {
-    const response = await fetch(input, init);
+    const response = await authFetch(input, init);
 
     if (!response.ok) {
         throw new Error(
@@ -159,7 +155,6 @@ const parseTeamDetail = (rawData: unknown): TeamDetail => {
 
 export const getTeamColors = async ({
     teamId,
-    accessToken,
 }: GetTeamColorsParams): Promise<TeamColorOption[]> => {
     const searchParams = new URLSearchParams();
 
@@ -173,7 +168,7 @@ export const getTeamColors = async ({
         `${buildTeamUrl('colors/')}${queryString ? `?${queryString}` : ''}`,
         {
             method: 'GET',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
         TEAM_API_MESSAGE.colorsFetchError,
     );
@@ -183,13 +178,12 @@ export const getTeamColors = async ({
 
 export const getTeamDetail = async ({
     teamId,
-    accessToken,
 }: GetTeamDetailParams): Promise<TeamDetail> => {
     const rawData = await requestJson<unknown>(
         buildTeamUrl(`${teamId}/`),
         {
             method: 'GET',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
         TEAM_API_MESSAGE.detailFetchError,
     );
@@ -199,13 +193,12 @@ export const getTeamDetail = async ({
 
 export const getTeamMembers = async ({
     teamId,
-    accessToken,
 }: GetTeamMembersParams): Promise<TeamMember[]> => {
     const rawData = await requestJson<unknown>(
         buildTeamUrl(`${teamId}/members/`),
         {
             method: 'GET',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
         TEAM_API_MESSAGE.membersFetchError,
     );
@@ -216,13 +209,12 @@ export const getTeamMembers = async ({
 export const addTeamMember = async ({
     teamId,
     nickname,
-    accessToken,
 }: AddTeamMemberParams): Promise<TeamMember[]> => {
     const rawData = await requestJson<unknown>(
         buildTeamUrl(`${teamId}/members/`),
         {
             method: 'POST',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
             body: JSON.stringify({ nickname }),
         },
         TEAM_API_MESSAGE.memberAddError,
@@ -234,13 +226,12 @@ export const addTeamMember = async ({
 export const removeTeamMember = async ({
     teamId,
     memberId,
-    accessToken,
 }: RemoveTeamMemberParams): Promise<TeamMember[] | undefined> => {
-    const response = await fetch(
+    const response = await authFetch(
         buildTeamUrl(`${teamId}/members/${memberId}/`),
         {
             method: 'DELETE',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
         },
     );
 
@@ -268,13 +259,12 @@ export const removeTeamMember = async ({
 export const delegateTeamLeader = async ({
     teamId,
     userId,
-    accessToken,
 }: DelegateTeamLeaderParams): Promise<TeamSummary> => {
     const rawData = await requestJson<unknown>(
         buildTeamUrl(`${teamId}/leader/`),
         {
             method: 'PATCH',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
             body: JSON.stringify({ user_id: userId }),
         },
         TEAM_API_MESSAGE.leaderDelegateError,
@@ -287,7 +277,6 @@ export const updateTeamConfig = async ({
     teamId,
     name,
     colorId,
-    accessToken,
 }: UpdateTeamConfigParams): Promise<TeamSummary> => {
     const body = {
         ...(name !== undefined ? { name } : {}),
@@ -298,7 +287,7 @@ export const updateTeamConfig = async ({
         buildTeamUrl(`${teamId}/config/`),
         {
             method: 'PATCH',
-            headers: buildHeaders(accessToken),
+            headers: buildHeaders(),
             body: JSON.stringify(body),
         },
         TEAM_API_MESSAGE.configUpdateError,

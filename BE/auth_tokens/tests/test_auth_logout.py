@@ -11,7 +11,9 @@ class AuthLogoutAPITestCase(BaseAuthTokenAPITestCase):
         RefreshToken.objects.create(user=self.user, token_hash="hash-1")
         RefreshToken.objects.create(user=self.user, token_hash="hash-2")
 
-        response = self.client.get("/v1/auth/logout", format="json")
+        response = self.client.post("/auth/logout", format="json")
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(RefreshToken.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(response.cookies["access_token"].value, "")
+        self.assertEqual(response.cookies["refresh_token"].value, "")

@@ -113,6 +113,26 @@ DATABASES = {
     }
 }
 
+DJANGO_CACHE_URL = os.getenv("DJANGO_CACHE_URL")
+
+if DJANGO_CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": DJANGO_CACHE_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "b201-local-cache",
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -155,6 +175,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Rest Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "auth_tokens.authentication.CookieJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
@@ -169,10 +190,10 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "B201 API",
     "DESCRIPTION": "API documentation for B201 project",
     "VERSION": "1.0.0",
-    "SCHEMA_PATH_PREFIX": r"/v[0-9]",
+    "SCHEMA_PATH_PREFIX": r"/v[0-9]|/auth",
     "SCHEMA_PATH_PREFIX_TRIM": True,
     "SERVERS": [
-        {"url": "/v1", "description": "API v1"},
+        {"url": "/", "description": "B201 API"},
     ],
 }
 
@@ -189,13 +210,26 @@ SIMPLE_JWT = {
 
 # Cors Headers
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "True") == "True"
 
 # Kakao Login
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_REDIRECT_URI = os.getenv(
+    "KAKAO_REDIRECT_URI",
+    "https://api.b201.kr/auth/kakao/callback",
+)
 KAKAO_REDIRECT_URIS = [
     value.strip()
     for value in os.getenv("KAKAO_REDIRECT_URIS", "").split(",")
     if value.strip()
-]
+] or [KAKAO_REDIRECT_URI]
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
+
+USER_FRONTEND_URL = os.getenv("USER_FRONTEND_URL", "https://b201.kr")
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "https://admin.b201.kr")
+
+JWT_ACCESS_COOKIE_NAME = os.getenv("JWT_ACCESS_COOKIE_NAME", "access_token")
+JWT_REFRESH_COOKIE_NAME = os.getenv("JWT_REFRESH_COOKIE_NAME", "refresh_token")
+JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "True") == "True"
+JWT_COOKIE_HTTPONLY = os.getenv("JWT_COOKIE_HTTPONLY", "True") == "True"
+JWT_COOKIE_SAMESITE = os.getenv("JWT_COOKIE_SAMESITE", "None")

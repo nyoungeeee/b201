@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../constants/env';
+import { authFetch } from './authFetch';
 import type { AuthUser } from './authApi';
 
 type CheckNicknameResponse = {
@@ -16,9 +17,8 @@ const ACCOUNT_API_MESSAGE = {
 
 const buildMeUrl = (path = '') => `${API_BASE_URL}/me/${path}`;
 
-const buildAuthHeaders = (accessToken: string): HeadersInit => ({
+const buildAuthHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${accessToken}`,
 });
 
 const isAuthUser = (value: unknown): value is AuthUser => {
@@ -46,18 +46,17 @@ const isCheckNicknameResponse = (
 
 export const checkNicknameAvailability = async ({
     nickname,
-    accessToken,
 }: {
     nickname: string;
-    accessToken: string;
+    accessToken?: string | null;
 }): Promise<boolean> => {
     const searchParams = new URLSearchParams({ nickname });
 
-    const response = await fetch(
+    const response = await authFetch(
         `${buildMeUrl('nickname/check/')}?${searchParams.toString()}`,
         {
             method: 'GET',
-            headers: buildAuthHeaders(accessToken),
+            headers: buildAuthHeaders(),
         },
     );
 
@@ -76,14 +75,14 @@ export const checkNicknameAvailability = async ({
     return data.available;
 };
 
-export const getMyInfo = async ({
-    accessToken,
-}: {
-    accessToken: string;
-}): Promise<AuthUser> => {
-    const response = await fetch(buildMeUrl(), {
+export const getMyInfo = async (_params: {
+    accessToken?: string | null;
+} = {}): Promise<AuthUser> => {
+    void _params;
+
+    const response = await authFetch(buildMeUrl(), {
         method: 'GET',
-        headers: buildAuthHeaders(accessToken),
+        headers: buildAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -103,14 +102,13 @@ export const getMyInfo = async ({
 
 export const updateMyNickname = async ({
     nickname,
-    accessToken,
 }: {
     nickname: string;
-    accessToken: string;
+    accessToken?: string | null;
 }): Promise<AuthUser> => {
-    const response = await fetch(buildMeUrl(), {
+    const response = await authFetch(buildMeUrl(), {
         method: 'PATCH',
-        headers: buildAuthHeaders(accessToken),
+        headers: buildAuthHeaders(),
         body: JSON.stringify({ nickname }),
     });
 

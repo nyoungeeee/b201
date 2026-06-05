@@ -2,30 +2,31 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuthSession } from '../../hooks/useAuthSession';
-import { buildKakaoAuthorizeUrl } from '../../utils/kakaoAuth';
+import { buildKakaoLoginUrl } from '../../utils/kakaoAuth';
 
 const RequireAuth = () => {
     const location = useLocation();
-    const { isLoggedIn } = useAuthSession();
+    const { isLoading, isLoggedIn } = useAuthSession();
     const didStartLoginRef = useRef(false);
     const [enteredWhileLoggedIn] = useState(isLoggedIn);
 
     useEffect(() => {
-        if (isLoggedIn || enteredWhileLoggedIn || didStartLoginRef.current) return;
+        if (isLoading || isLoggedIn || enteredWhileLoggedIn || didStartLoginRef.current) return;
 
         didStartLoginRef.current = true;
         const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
-        window.location.assign(buildKakaoAuthorizeUrl(returnTo));
+        window.location.assign(buildKakaoLoginUrl(returnTo));
     }, [
         enteredWhileLoggedIn,
         isLoggedIn,
+        isLoading,
         location.hash,
         location.pathname,
         location.search,
     ]);
 
-    if (!isLoggedIn && enteredWhileLoggedIn) {
+    if (!isLoading && !isLoggedIn && enteredWhileLoggedIn) {
         return <Navigate to="/" replace />;
     }
 
