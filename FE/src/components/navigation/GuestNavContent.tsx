@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import logo from "../../assets/B201_logo.png";
-import { buildKakaoAuthorizeUrl } from '../../utils/kakaoAuth';
+import { buildKakaoLoginUrl } from '../../utils/kakaoAuth';
 import {
     GUEST_NAV_MENU_ITEMS,
     GUEST_NAV_TEXT,
@@ -21,7 +21,7 @@ const GuestNavContent = ({ onClose }: Props) => {
 
     const handleKakaoLogin = () => {
         onClose();
-        window.location.assign(buildKakaoAuthorizeUrl());
+        window.location.assign(buildKakaoLoginUrl());
     };
 
     return (

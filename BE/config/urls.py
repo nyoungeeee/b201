@@ -53,7 +53,7 @@ urlpatterns += [
 
 # JWT auth
 urlpatterns += [
-    path("v1/auth/", include("auth_tokens.urls")),
+    path("auth/", include("auth_tokens.urls")),
     path("v1/me/", include("accounts.urls")),
     path("v1/rooms/", include("bookings.rooms_urls")),
     path("v1/reservations/", include("bookings.reservations_urls")),

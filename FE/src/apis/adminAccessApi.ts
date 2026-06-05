@@ -1,12 +1,10 @@
 import { API_BASE_URL } from '../constants/env';
+import { authFetch } from './authFetch';
 import { hasAdminAccess } from './adminAccessResponse';
 
-export const checkAdminAccess = async (accessToken: string): Promise<boolean> => {
-    const response = await fetch(`${API_BASE_URL}/admin/me`, {
+export const checkAdminAccess = async (): Promise<boolean> => {
+    const response = await authFetch(`${API_BASE_URL}/admin/me`, {
         method: 'GET',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
     });
 
     if (!response.ok) {

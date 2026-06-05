@@ -20,6 +20,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: b201-redis
+    restart: unless-stopped
+    profiles: ["prod"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: b201-backend:latest
     pull_policy: build
@@ -41,7 +52,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       DB_HOST: db
       DB_PORT: 5432
+      DJANGO_CACHE_URL: ${DJANGO_CACHE_URL:?DJANGO_CACHE_URL is required}
       CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:?CORS_ALLOW_ALL_ORIGINS is required}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:?CORS_ALLOW_CREDENTIALS is required}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS is required}
       ACCESS_TOKEN_LIFETIME: ${ACCESS_TOKEN_LIFETIME:?ACCESS_TOKEN_LIFETIME is required}
@@ -50,8 +63,15 @@ services:
       LANGUAGE_CODE: ${LANGUAGE_CODE:?LANGUAGE_CODE is required}
       DJANGO_SETTINGS_MODULE: config.settings.prod
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY is required}
-      KAKAO_REDIRECT_URIS: ${KAKAO_REDIRECT_URIS:?KAKAO_REDIRECT_URIS is required}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:?KAKAO_REDIRECT_URI is required}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET is required}
+      USER_FRONTEND_URL: ${USER_FRONTEND_URL:?USER_FRONTEND_URL is required}
+      ADMIN_FRONTEND_URL: ${ADMIN_FRONTEND_URL:?ADMIN_FRONTEND_URL is required}
+      JWT_ACCESS_COOKIE_NAME: ${JWT_ACCESS_COOKIE_NAME:?JWT_ACCESS_COOKIE_NAME is required}
+      JWT_REFRESH_COOKIE_NAME: ${JWT_REFRESH_COOKIE_NAME:?JWT_REFRESH_COOKIE_NAME is required}
+      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:?JWT_COOKIE_SECURE is required}
+      JWT_COOKIE_HTTPONLY: ${JWT_COOKIE_HTTPONLY:?JWT_COOKIE_HTTPONLY is required}
+      JWT_COOKIE_SAMESITE: ${JWT_COOKIE_SAMESITE:?JWT_COOKIE_SAMESITE is required}
       ROOT_ADMIN_ID: ${ROOT_ADMIN_ID:?ROOT_ADMIN_ID is required}
       ROOT_ADMIN_PASSWORD: ${ROOT_ADMIN_PASSWORD:?ROOT_ADMIN_PASSWORD is required}
     command: >
@@ -62,6 +82,8 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 

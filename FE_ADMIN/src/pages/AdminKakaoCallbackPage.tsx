@@ -1,40 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-
-import { signinWithKakao } from '../apis/authApi';
-import { saveAuthSession } from '../utils/authStorage';
-import { verifyKakaoAuthState } from '../utils/kakaoAuth';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminKakaoCallbackPage = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const handledRef = useRef(false);
 
     useEffect(() => {
-        if (handledRef.current) return;
-        handledRef.current = true;
-
-        const code = searchParams.get('code');
-        const state = searchParams.get('state');
-        const error = searchParams.get('error');
-
-        if (error || !code || !verifyKakaoAuthState(state)) {
-            navigate('/', { replace: true });
-            return;
-        }
-
-        const signin = async () => {
-            try {
-                saveAuthSession(await signinWithKakao(code));
-            } catch (signinError) {
-                console.error('Admin Kakao signin failed:', signinError);
-            } finally {
-                navigate('/', { replace: true });
-            }
-        };
-
-        void signin();
-    }, [navigate, searchParams]);
+        navigate('/', { replace: true });
+    }, [navigate]);
 
     return (
         <div className="app-shell">

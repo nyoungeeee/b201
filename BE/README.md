@@ -240,25 +240,28 @@ http://localhost:8000/docs/
 
 ## 인증 (JWT)
 
-JWT 기반 인증을 사용합니다.
+카카오 로그인은 백엔드 콜백 방식으로 처리하고, 서비스 JWT는 HttpOnly 쿠키에 저장합니다.
 
 ### 토큰 발급
 
 ```text
-POST /v1/auth/signin
+GET /auth/kakao/login?client=user&next=/
+GET /auth/kakao/callback
 ```
 
 ### 토큰 갱신
 
 ```text
-POST /v1/auth/token/refresh
+POST /auth/refresh
 ```
 
-### 요청 헤더
+### 로그아웃
 
 ```text
-Authorization: Bearer <access_token>
+POST /auth/logout
 ```
+
+프론트엔드는 쿠키를 직접 읽지 않고 API 요청에 credentials include를 사용합니다.
 
 ---
 

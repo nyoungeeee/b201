@@ -11,32 +11,32 @@ type UseRefreshAuthUserOptions = {
 export const useRefreshAuthUser = ({
     enabled = true,
 }: UseRefreshAuthUserOptions = {}) => {
-    const { accessToken } = useAuthSession();
+    const { isLoggedIn } = useAuthSession();
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const refreshAuthUser = useCallback(async () => {
-        if (!accessToken) return;
+        if (!isLoggedIn) return;
 
         setIsRefreshing(true);
 
         try {
-            const user = await getMyInfo({ accessToken });
+            const user = await getMyInfo();
             saveAuthUser(user);
         } catch (error) {
             console.error('Auth user refresh failed:', error);
         } finally {
             setIsRefreshing(false);
         }
-    }, [accessToken]);
+    }, [isLoggedIn]);
 
     useEffect(() => {
-        if (!enabled || !accessToken) return;
+        if (!enabled || !isLoggedIn) return;
 
         let isMounted = true;
 
         const refreshAuthUser = async () => {
             try {
-                const user = await getMyInfo({ accessToken });
+                const user = await getMyInfo();
 
                 if (isMounted) {
                     saveAuthUser(user);
@@ -51,7 +51,7 @@ export const useRefreshAuthUser = ({
         return () => {
             isMounted = false;
         };
-    }, [accessToken, enabled]);
+    }, [enabled, isLoggedIn]);
 
     return {
         isRefreshing,

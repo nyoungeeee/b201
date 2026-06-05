@@ -1,8 +1,5 @@
-import {
-    ACCESS_TOKEN_KEY,
-    API_BASE_URL,
-} from '../constants/env';
-import { getJwtUserId, resolveAdminAccessToken } from './adminApiAuth';
+import { API_BASE_URL } from '../constants/env';
+import { authFetch } from './authFetch';
 import type {
     AdminLogCategory,
     AdminLogEntry,
@@ -142,35 +139,18 @@ const buildAdminUrl = (
     return queryString ? `${url}?${queryString}` : url;
 };
 
-const getAuthHeaders = (): HeadersInit => {
-    const accessToken = resolveAdminAccessToken(
-        import.meta.env.VITE_ACCESS_TOKEN_KEY,
-        localStorage.getItem(ACCESS_TOKEN_KEY),
-    );
+const getAuthHeaders = (): HeadersInit => ({
+    'Content-Type': 'application/json',
+});
 
-    return {
-        'Content-Type': 'application/json',
-        ...(accessToken
-            ? { Authorization: `Bearer ${accessToken}` }
-            : {}),
-    };
-};
-
-const getAdminUserId = (): number | undefined => {
-    const accessToken = resolveAdminAccessToken(
-        import.meta.env.VITE_ACCESS_TOKEN_KEY,
-        localStorage.getItem(ACCESS_TOKEN_KEY),
-    );
-
-    return accessToken ? getJwtUserId(accessToken) : undefined;
-};
+const getAdminUserId = (): number | undefined => undefined;
 
 const requestJson = async <T>(
     path: string,
     init: RequestInit = {},
     searchParams?: URLSearchParams,
 ): Promise<T> => {
-    const response = await fetch(buildAdminUrl(path, searchParams), {
+    const response = await authFetch(buildAdminUrl(path, searchParams), {
         ...init,
         headers: {
             ...getAuthHeaders(),
@@ -194,7 +174,7 @@ const requestJsonWithPagination = async <T>(
     init: RequestInit = {},
     searchParams?: URLSearchParams,
 ): Promise<{ data: T; pagination?: AdminPagination }> => {
-    const response = await fetch(buildAdminUrl(path, searchParams), {
+    const response = await authFetch(buildAdminUrl(path, searchParams), {
         ...init,
         headers: {
             ...getAuthHeaders(),

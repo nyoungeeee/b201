@@ -13,7 +13,7 @@ import SideNavModal from '../navigation/SideNavModal';
 const PageHeader = () => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
     const [hasAdminAccess, setHasAdminAccess] = useState(false);
-    const { accessToken, isLoggedIn, user } = useAuthSession();
+    const { isLoggedIn, user } = useAuthSession();
 
     const shouldCheckAdminAccess = isLoggedIn && isSideNavOpen;
     const canShowAdminAccess = shouldCheckAdminAccess && hasAdminAccess;
@@ -54,7 +54,7 @@ const PageHeader = () => {
 
         let isMounted = true;
 
-        checkAdminAccess(accessToken!)
+        checkAdminAccess()
             .then((isAllowed) => {
                 if (isMounted) {
                     setHasAdminAccess(isAllowed);
@@ -69,7 +69,7 @@ const PageHeader = () => {
         return () => {
             isMounted = false;
         };
-    }, [accessToken, shouldCheckAdminAccess]);
+    }, [shouldCheckAdminAccess]);
 
     return (
         <>

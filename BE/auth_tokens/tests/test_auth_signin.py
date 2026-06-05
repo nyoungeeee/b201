@@ -1,25 +1,169 @@
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 
 import requests
-from django.test import SimpleTestCase, override_settings
+from django.core.cache import cache
+from django.test import override_settings
 from rest_framework import status
 
 from auth_tokens.models import RefreshToken
 from auth_tokens.exceptions import KakaoAPIError
-from auth_tokens.serializers import SigninRequestSerializer
 from auth_tokens.services import KakaoAuthService, KakaoUserInfo
 from .base import BaseAuthTokenAPITestCase, User
 
 
-class KakaoRedirectURITestCase(SimpleTestCase):
-    @override_settings(
-        KAKAO_REDIRECT_URIS=[
-            "https://b201.kr/auth/kakao/callback",
-            "https://admin.b201.kr/auth/kakao/callback",
-        ]
-    )
+@override_settings(
+    KAKAO_REST_API_KEY="test-key",
+    KAKAO_CLIENT_SECRET="test-secret",
+    KAKAO_REDIRECT_URI="https://api.b201.kr/auth/kakao/callback",
+    USER_FRONTEND_URL="https://b201.kr",
+    ADMIN_FRONTEND_URL="https://admin.b201.kr",
+    JWT_ACCESS_COOKIE_NAME="access_token",
+    JWT_REFRESH_COOKIE_NAME="refresh_token",
+    JWT_COOKIE_SECURE=True,
+    JWT_COOKIE_HTTPONLY=True,
+    JWT_COOKIE_SAMESITE="None",
+)
+class KakaoBackendCallbackAPITestCase(BaseAuthTokenAPITestCase):
+    def tearDown(self):
+        cache.clear()
+        super().tearDown()
+
+    def test_login_redirects_to_kakao_authorize_with_cached_state(self):
+        response = self.client.get("/auth/kakao/login?client=user&next=/my")
+
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        location = response["Location"]
+        parsed = urlparse(location)
+        query = parse_qs(parsed.query)
+
+        self.assertEqual(parsed.scheme, "https")
+        self.assertEqual(parsed.netloc, "kauth.kakao.com")
+        self.assertEqual(parsed.path, "/oauth/authorize")
+        self.assertEqual(query["client_id"], ["test-key"])
+        self.assertEqual(
+            query["redirect_uri"], ["https://api.b201.kr/auth/kakao/callback"]
+        )
+        self.assertEqual(query["response_type"], ["code"])
+
+        state = query["state"][0]
+        self.assertEqual(
+            cache.get(f"oauth:kakao:state:{state}"),
+            {
+                "client": "user",
+                "next": "/my",
+            },
+        )
+
+    def test_login_rejects_invalid_client(self):
+        response = self.client.get("/auth/kakao/login?client=owner&next=/")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_rejects_external_next(self):
+        for next_value in ("https://evil.test", "//evil.test", "javascript:alert(1)"):
+            with self.subTest(next=next_value):
+                response = self.client.get(
+                    "/auth/kakao/login",
+                    {"client": "user", "next": next_value},
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
+    @patch("auth_tokens.services.KakaoAuthService._get_access_token")
+    def test_callback_creates_user_sets_jwt_cookies_and_redirects_to_user_frontend(
+        self,
+        mock_get_access_token,
+        mock_get_kakao_user_info,
+    ):
+        suffix = self._suffix()
+        kakao_id = int(f"9999{suffix}")
+        cache.set("oauth:kakao:state:state-123", {"client": "user", "next": "/"}, 300)
+        mock_get_access_token.return_value = "kakao-access-token"
+        mock_get_kakao_user_info.return_value = KakaoUserInfo(
+            kakao_id=kakao_id,
+            email=f"new-{suffix}@example.com",
+        )
+
+        response = self.client.get("/auth/kakao/callback?code=code-123&state=state-123")
+
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertEqual(response["Location"], "https://b201.kr/")
+        self.assertIsNone(cache.get("oauth:kakao:state:state-123"))
+        self.assertEqual(RefreshToken.objects.count(), 1)
+        self.assertTrue(User.objects.filter(kakao_id=kakao_id).exists())
+        mock_get_access_token.assert_called_once_with(
+            "code-123",
+            "https://api.b201.kr/auth/kakao/callback",
+        )
+
+        access_cookie = response.cookies["access_token"]
+        refresh_cookie = response.cookies["refresh_token"]
+        self.assertTrue(access_cookie["httponly"])
+        self.assertTrue(refresh_cookie["httponly"])
+        self.assertTrue(access_cookie["secure"])
+        self.assertTrue(refresh_cookie["secure"])
+        self.assertEqual(access_cookie["samesite"], "None")
+        self.assertEqual(refresh_cookie["samesite"], "None")
+        self.assertEqual(access_cookie["domain"], "")
+        self.assertEqual(refresh_cookie["domain"], "")
+
+    @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
+    @patch("auth_tokens.services.KakaoAuthService._get_access_token")
+    def test_callback_redirects_admin_client_to_admin_frontend(
+        self,
+        mock_get_access_token,
+        mock_get_kakao_user_info,
+    ):
+        cache.set(
+            "oauth:kakao:state:state-admin",
+            {"client": "admin", "next": "/dashboard"},
+            300,
+        )
+        mock_get_access_token.return_value = "kakao-access-token"
+        mock_get_kakao_user_info.return_value = KakaoUserInfo(
+            kakao_id=self.user.kakao_id,
+            email=self.user.email,
+        )
+
+        response = self.client.get(
+            "/auth/kakao/callback?code=code-123&state=state-admin"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertEqual(response["Location"], "https://admin.b201.kr/dashboard")
+
+    def test_callback_rejects_missing_state(self):
+        response = self.client.get("/auth/kakao/callback?code=code-123")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_callback_rejects_expired_state(self):
+        response = self.client.get("/auth/kakao/callback?code=code-123&state=missing")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_callback_rejects_missing_code(self):
+        cache.set("oauth:kakao:state:state-123", {"client": "user", "next": "/"}, 300)
+
+        response = self.client.get("/auth/kakao/callback?state=state-123")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNone(cache.get("oauth:kakao:state:state-123"))
+
+    def test_callback_rejects_kakao_error_parameter(self):
+        cache.set("oauth:kakao:state:state-123", {"client": "user", "next": "/"}, 300)
+
+        response = self.client.get(
+            "/auth/kakao/callback?error=access_denied&state=state-123"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNone(cache.get("oauth:kakao:state:state-123"))
+
     @patch("auth_tokens.services.requests.post")
-    def test_kakao_token_exchange_uses_allowed_request_redirect_uri(self, mock_post):
+    def test_kakao_token_exchange_uses_single_backend_redirect_uri(self, mock_post):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {
             "access_token": "kakao-access-token"
@@ -27,150 +171,26 @@ class KakaoRedirectURITestCase(SimpleTestCase):
 
         KakaoAuthService._get_access_token(
             "code-123",
-            "https://admin.b201.kr/auth/kakao/callback",
+            "https://api.b201.kr/auth/kakao/callback",
         )
 
         self.assertEqual(
             mock_post.call_args.kwargs["data"]["redirect_uri"],
-            "https://admin.b201.kr/auth/kakao/callback",
+            "https://api.b201.kr/auth/kakao/callback",
         )
-
-    @override_settings(
-        KAKAO_REDIRECT_URIS=[
-            "https://b201.kr/auth/kakao/callback",
-            "https://admin.b201.kr/auth/kakao/callback",
-        ]
-    )
-    def test_signin_serializer_rejects_redirect_uri_outside_allowlist(self):
-        serializer = SigninRequestSerializer(
-            data={
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "https://evil.example/auth/kakao/callback",
-            }
-        )
-
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("redirect_uri", serializer.errors)
-
-    @override_settings(
-        KAKAO_REDIRECT_URIS=[
-            "https://b201.kr/auth/kakao/callback",
-            "https://admin.b201.kr/auth/kakao/callback",
-        ]
-    )
-    def test_signin_serializer_accepts_redirect_uri_in_allowlist(self):
-        serializer = SigninRequestSerializer(
-            data={
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "https://admin.b201.kr/auth/kakao/callback",
-            }
-        )
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-
-
-class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
-    def test_signin_rejects_redirect_uri_outside_allowlist(self):
-        response = self.client.post(
-            "/v1/auth/signin",
-            {
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "https://evil.example/auth/kakao/callback",
-            },
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
-    @patch("auth_tokens.services.KakaoAuthService._get_access_token")
-    # 카카오 응답을 mock 해서 신규 사용자의 로그인/회원 생성 흐름을 검증한다.
-    def test_signin_creates_new_user_with_mocked_kakao_api(
-        self,
-        mock_get_access_token,
-        mock_get_kakao_user_info,
-    ):
-        suffix = self._suffix()
-        kakao_id = int(f"9999{suffix}")
-        mock_get_access_token.return_value = "kakao-access-token"
-        mock_get_kakao_user_info.return_value = KakaoUserInfo(
-            kakao_id=kakao_id,
-            email=f"new-{suffix}@example.com",
-        )
-
-        response = self.client.post(
-            "/v1/auth/signin",
-            {
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "http://localhost/test-callback",
-            },
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["email"], f"new-{suffix}@example.com")
-        self.assertIsNotNone(response.data["nickname"])
-        self.assertLessEqual(len(response.data["nickname"]), 8)
-        self.assertRegex(response.data["nickname"], r"^[가-힣]+[0-9]$")
-        self.assertEqual(response.data["team"], [])
-        self.assertIn("access", response.data["token"])
-        self.assertIn("refresh", response.data["token"])
-        created_user = User.objects.get(kakao_id=kakao_id)
-        self.assertEqual(created_user.nickname, response.data["nickname"])
-        self.assertEqual(RefreshToken.objects.count(), 1)
-
-    @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
-    @patch("auth_tokens.services.KakaoAuthService._get_access_token")
-    # 기존 사용자가 로그인할 때 팀 정보와 토큰이 정상 반환되는지 검증한다.
-    def test_signin_returns_existing_user_and_active_teams(
-        self,
-        mock_get_access_token,
-        mock_get_kakao_user_info,
-    ):
-        mock_get_access_token.return_value = "kakao-access-token"
-        mock_get_kakao_user_info.return_value = KakaoUserInfo(
-            kakao_id=self.user.kakao_id,
-            email=self.user.email,
-        )
-
-        response = self.client.post(
-            "/v1/auth/signin",
-            {
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "http://localhost/test-callback",
-            },
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], self.user.id)
-        self.assertEqual(response.data["email"], self.user.email)
-        self.assertEqual(response.data["nickname"], self.user.nickname)
-        self.assertEqual(len(response.data["team"]), 1)
-        self.assertEqual(response.data["team"][0]["id"], self.team.id)
-        self.assertEqual(response.data["team"][0]["name"], self.team.name)
-        self.assertEqual(response.data["team"][0]["color"], self.team.color)
 
     @patch("auth_tokens.services.requests.post")
-    # 카카오 토큰 요청 실패 시 서버 오류 응답으로 변환되는지 검증한다.
-    def test_signin_returns_500_when_kakao_request_fails(self, mock_post):
+    def test_callback_returns_500_when_kakao_request_fails(self, mock_post):
+        cache.set("oauth:kakao:state:state-123", {"client": "user", "next": "/"}, 300)
         mock_post.side_effect = requests.RequestException("network issue")
 
-        response = self.client.post(
-            "/v1/auth/signin",
-            {
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "http://localhost/test-callback",
-            },
-            format="json",
-        )
+        response = self.client.get("/auth/kakao/callback?code=code-123&state=state-123")
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @patch("auth_tokens.services.KakaoAuthService._get_kakao_user_info")
     @patch("auth_tokens.services.KakaoAuthService._get_access_token")
-    # 탈퇴한 사용자가 같은 카카오 계정으로 다시 로그인하면 거부되는지 검증한다.
-    def test_signin_rejects_withdrawn_user_relogin(
+    def test_callback_rejects_withdrawn_user_relogin(
         self,
         mock_get_access_token,
         mock_get_kakao_user_info,
@@ -178,20 +198,14 @@ class AuthSigninAPITestCase(BaseAuthTokenAPITestCase):
         self.user.is_active = False
         self.user.status = "WITHDRAWN"
         self.user.save(update_fields=["is_active", "status"])
+        cache.set("oauth:kakao:state:state-123", {"client": "user", "next": "/"}, 300)
         mock_get_access_token.return_value = "kakao-access-token"
         mock_get_kakao_user_info.return_value = KakaoUserInfo(
             kakao_id=self.user.kakao_id,
             email=self.user.email,
         )
 
-        response = self.client.post(
-            "/v1/auth/signin",
-            {
-                "kakao_auth_code": "code-123",
-                "redirect_uri": "http://localhost/test-callback",
-            },
-            format="json",
-        )
+        response = self.client.get("/auth/kakao/callback?code=code-123&state=state-123")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["code"], "USER_NOT_FOUND")

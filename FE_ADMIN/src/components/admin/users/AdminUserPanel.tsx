@@ -12,8 +12,6 @@ import {
 } from "../icons";
 import AdminSelect from "../common/AdminSelect";
 import * as adminApi from "../../../apis/adminApi";
-import { getJwtUserId } from "../../../apis/adminApiAuth";
-import { getAccessToken } from "../../../utils/authStorage";
 import type {
   AdminManagedTeam,
   AdminManagedUser,
@@ -69,11 +67,7 @@ const getLeaderEmail = (leaderId: number, users: AdminManagedUser[]) => {
   return users.find((user) => user.id === leaderId)?.email ?? "";
 };
 
-const getCurrentUserId = () => {
-  const accessToken = getAccessToken();
-
-  return accessToken ? getJwtUserId(accessToken) : undefined;
-};
+const getCurrentUserId = () => undefined;
 
 const UserAvatar = ({
   user,

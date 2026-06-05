@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
+import { logout } from '../../apis/authApi';
 import { ChevronRightIcon } from '../common/icons';
 import logo from "../../assets/B201_logo.png";
 import { ADMIN_BASE_URL } from '../../constants/env';
@@ -29,6 +30,7 @@ const MemberNavContent = ({
     };
 
     const handleLogout = () => {
+        void logout();
         clearAuthSession();
         navigate('/', {
             state: {

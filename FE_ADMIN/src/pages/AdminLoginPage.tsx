@@ -1,8 +1,8 @@
-import { buildKakaoAuthorizeUrl } from '../utils/kakaoAuth';
+import { buildKakaoLoginUrl } from '../utils/kakaoAuth';
 
 const AdminLoginPage = () => {
     const handleLogin = () => {
-        window.location.assign(buildKakaoAuthorizeUrl('/'));
+        window.location.assign(buildKakaoLoginUrl('/'));
     };
 
     return (

@@ -26,9 +26,16 @@ REST_FRAMEWORK = {
 }
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_REDIRECT_URI = os.getenv(
+    "KAKAO_REDIRECT_URI",
+    "http://localhost:8000/auth/kakao/callback",
+)
 KAKAO_REDIRECT_URIS = [
     value.strip()
     for value in os.getenv("KAKAO_REDIRECT_URIS", "").split(",")
     if value.strip()
-]
+] or [KAKAO_REDIRECT_URI]
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
+
+USER_FRONTEND_URL = os.getenv("USER_FRONTEND_URL", "http://localhost:5173")
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:5174")

@@ -9,7 +9,7 @@ import { clearAuthSession } from '../utils/authStorage';
 import { resolveAdminAccessState } from '../utils/adminAccess';
 
 const AdminRoute = () => {
-    const { accessToken } = useAuthSession();
+    const { accessToken, isLoading } = useAuthSession();
     const [adminAccess, setAdminAccess] = useState<{
         accessToken: string;
         isAllowed: boolean;
@@ -18,7 +18,7 @@ const AdminRoute = () => {
     useEffect(() => {
         let isMounted = true;
 
-        if (!accessToken) {
+        if (isLoading || !accessToken) {
             return undefined;
         }
 
@@ -43,7 +43,7 @@ const AdminRoute = () => {
         return () => {
             isMounted = false;
         };
-    }, [accessToken]);
+    }, [accessToken, isLoading]);
 
     const isAllowed =
         adminAccess?.accessToken === accessToken
@@ -58,7 +58,7 @@ const AdminRoute = () => {
         window.location.replace(USER_BASE_URL);
     }, [accessState]);
 
-    if (accessState === 'signed-out') return <AdminLoginPage />;
+    if (!isLoading && accessState === 'signed-out') return <AdminLoginPage />;
     if (accessState === 'allowed') return <AdminPage />;
 
     return (
