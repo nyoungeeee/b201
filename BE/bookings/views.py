@@ -3,6 +3,7 @@ import logging
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -81,6 +82,14 @@ class DayBookingView(APIView):
                 location=OpenApiParameter.QUERY,
                 description="일정을 조회할 날짜 (YYYY-MM-DD 형식)",
             ),
+            OpenApiParameter(
+                name="scope",
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=["mine"],
+                location=OpenApiParameter.QUERY,
+                description="mine이면 본인 또는 소속 팀의 예약만 조회합니다.",
+            ),
         ],
         responses={
             200: OpenApiResponse(
@@ -95,11 +104,16 @@ class DayBookingView(APIView):
     def get(self, request, room_id: int):
         serializer = DayBookingQueryParamsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
+        scope = serializer.validated_data.get("scope")
+
+        if scope == "mine" and not request.user.is_authenticated:
+            raise NotAuthenticated()
 
         try:
             day_booking_check = BookingCheckService.check_day_booking(
                 room_id=room_id,
                 target_date=serializer.validated_data.get("date"),
+                user=request.user if scope == "mine" else None,
             )
         except NotFoundStudioRoomError as e:
             raise NotFoundException(message=e.message, code=e.code) from e
@@ -138,6 +152,14 @@ class MonthBookingView(APIView):
                 location=OpenApiParameter.QUERY,
                 description="일정을 조회할 연도 (YYYY 형식)",
             ),
+            OpenApiParameter(
+                name="scope",
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=["mine"],
+                location=OpenApiParameter.QUERY,
+                description="mine이면 본인 또는 소속 팀의 예약만 조회합니다.",
+            ),
         ],
         responses={
             200: OpenApiResponse(
@@ -152,12 +174,17 @@ class MonthBookingView(APIView):
     def get(self, request, room_id: int):
         serializer = MonthBookingQueryParamsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
+        scope = serializer.validated_data.get("scope")
+
+        if scope == "mine" and not request.user.is_authenticated:
+            raise NotAuthenticated()
 
         try:
             month_booking_check = BookingCheckService.check_month_booking(
                 room_id=room_id,
                 target_year=serializer.validated_data.get("year"),
                 target_month=serializer.validated_data.get("month"),
+                user=request.user if scope == "mine" else None,
             )
         except NotFoundStudioRoomError as e:
             raise NotFoundException(message=e.message, code=e.code) from e

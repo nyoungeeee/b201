@@ -5,6 +5,8 @@ import {
     type PointerEvent,
 } from 'react';
 
+import { RESERVATION_PICKER_TEXT } from '../../domains/reservation/constants';
+
 export type Meridiem = '오전' | '오후';
 
 export interface TimeWheelOption {
@@ -214,7 +216,7 @@ const ReservationStartTimePicker = ({
                     onPointerUp={(event) => handlePointerEnd(event, meridiemDragStartY)}
                     onPointerCancel={(event) => handlePointerEnd(event, meridiemDragStartY)}
                     role="listbox"
-                    aria-label="오전 오후 선택"
+                    aria-label={RESERVATION_PICKER_TEXT.meridiemSelectAriaLabel}
                     aria-activedescendant={`reservation-meridiem-${meridiem}`}
                 >
                     {meridiems.map((item) => {

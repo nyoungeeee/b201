@@ -2,7 +2,9 @@ import {
     roomDayResponseSchema,
     roomMonthResponseSchema,
 } from '../types/calendarSchemas';
+import { ROOM_API_TEXT } from '../domains/reservation/constants';
 import type {
+    CalendarScope,
     DaySchedule,
     MonthSchedule,
 } from '../types/calendarTypes';
@@ -10,36 +12,40 @@ import {
     mapRoomDayResponse,
     mapRoomMonthResponse,
 } from '../utils/calendarMapper';
+import { authFetch } from './authFetch';
 
 export interface GetRoomDayParams {
     roomId: number;
     date?: string;
+    scope?: CalendarScope;
 }
 
 export interface GetRoomMonthParams {
     roomId: number;
     year: number;
     month: number;
+    scope?: CalendarScope;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const buildRoomDayUrl = ({ roomId, date }: GetRoomDayParams): string => {
+const buildRoomDayUrl = ({ roomId, date, scope }: GetRoomDayParams): string => {
     const baseUrl = `${API_BASE_URL}/rooms/${roomId}/day/`;
+    const searchParams = new URLSearchParams();
 
-    if (!date) return baseUrl;
+    if (date) searchParams.set('date', date);
+    if (scope === 'mine') searchParams.set('scope', scope);
 
-    const searchParams = new URLSearchParams({
-        date,
-    });
+    const queryString = searchParams.toString();
 
-    return `${baseUrl}?${searchParams.toString()}`;
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 };
 
 const buildRoomMonthUrl = ({
     roomId,
     year,
     month,
+    scope,
 }: GetRoomMonthParams): string => {
     const baseUrl = `${API_BASE_URL}/rooms/${roomId}/month/`;
 
@@ -47,6 +53,7 @@ const buildRoomMonthUrl = ({
         year: String(year),
         month: String(month),
     });
+    if (scope === 'mine') searchParams.set('scope', scope);
 
     return `${baseUrl}?${searchParams.toString()}`;
 };
@@ -54,13 +61,14 @@ const buildRoomMonthUrl = ({
 export const getRoomDay = async ({
     roomId,
     date,
+    scope = 'all',
 }: GetRoomDayParams): Promise<DaySchedule> => {
-    const response = await fetch(buildRoomDayUrl({ roomId, date }), {
+    const response = await authFetch(buildRoomDayUrl({ roomId, date, scope }), {
         method: 'GET'
     });
 
     if (!response.ok) {
-        throw new Error(`일정 조회에 실패했습니다. (status: ${response.status})`);
+        throw new Error(ROOM_API_TEXT.dayFetchError(response.status));
     }
 
     const rawData: unknown = await response.json();
@@ -72,7 +80,7 @@ export const getRoomDay = async ({
             'RoomDay API validation failed:',
             parsedResult.error.format(),
         );
-        throw new Error('일정 응답 형식이 올바르지 않습니다.');
+        throw new Error(ROOM_API_TEXT.dayResponseError);
     }
 
     return mapRoomDayResponse(parsedResult.data);
@@ -82,13 +90,19 @@ export const getRoomMonth = async ({
     roomId,
     year,
     month,
+    scope = 'all',
 }: GetRoomMonthParams): Promise<MonthSchedule> => {
-    const response = await fetch(buildRoomMonthUrl({ roomId, year, month }), {
+    const response = await authFetch(buildRoomMonthUrl({
+        roomId,
+        year,
+        month,
+        scope,
+    }), {
         method: 'GET'
     });
 
     if (!response.ok) {
-        throw new Error(`월 일정 조회에 실패했습니다. (status: ${response.status})`);
+        throw new Error(ROOM_API_TEXT.monthFetchError(response.status));
     }
 
     const rawData: unknown = await response.json();
@@ -100,7 +114,7 @@ export const getRoomMonth = async ({
             'RoomMonth API validation failed:',
             parsedResult.error.format(),
         );
-        throw new Error('월 일정 응답 형식이 올바르지 않습니다.');
+        throw new Error(ROOM_API_TEXT.monthResponseError);
     }
 
     return mapRoomMonthResponse(parsedResult.data);

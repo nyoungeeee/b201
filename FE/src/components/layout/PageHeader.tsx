@@ -1,4 +1,9 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import {
+    useEffect,
+    useState,
+    type MouseEvent,
+    type ReactNode,
+} from 'react';
 
 import { checkAdminAccess } from '../../apis/adminAccessApi';
 import logo from '../../assets/B201_header_logo.png';
@@ -10,7 +15,11 @@ import { queryClient } from '../../lib/queryClient';
 import { HamburgerIcon } from '../common/icons';
 import SideNavModal from '../navigation/SideNavModal';
 
-const PageHeader = () => {
+interface PageHeaderProps {
+    rightContent?: ReactNode;
+}
+
+const PageHeader = ({ rightContent }: PageHeaderProps) => {
     const [isSideNavOpen, setIsSideNavOpen] = useState(false);
     const [hasAdminAccess, setHasAdminAccess] = useState(false);
     const { isLoggedIn, user } = useAuthSession();
@@ -92,7 +101,7 @@ const PageHeader = () => {
                     <img src={logo} alt="B201" />
                 </a>
 
-                <div className="page-header__right" />
+                <div className="page-header__right">{rightContent}</div>
             </header>
 
             <SideNavModal

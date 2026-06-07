@@ -25,6 +25,11 @@ import ReservationTeamPicker, {
 } from '../components/reservation/ReservationTeamPicker';
 import { DEFAULT_ROOM_ID, WEEK_DAYS } from '../constants/global';
 import {
+    CALENDAR_TEXT,
+    RESERVATION_APPLY_TEXT,
+    RESERVATION_COMMON_TEXT,
+} from '../domains/reservation/constants';
+import {
     getReservationEndAt,
     mapReservationListItem,
 } from '../domains/reservation/mapper';
@@ -68,14 +73,14 @@ const INITIAL_START_ABSOLUTE_SLOT = 46;
 const DEFAULT_DURATION_SLOT_COUNT = 4;
 const STEP_ORDER: ReservationStepKey[] = ['date', 'startTime', 'endTime', 'repeat', 'type'];
 const REPEAT_OPTIONS: RepeatOption[] = [
-    { label: '반복 없음', value: 0 },
+    { label: RESERVATION_APPLY_TEXT.noRepeat, value: 0 },
     ...Array.from({ length: 11 }, (_, index) => ({
         label: `${index + 2}주`,
         value: index + 2,
     })),
 ];
 const PRIVATE_TEAM_OPTION: ReservationTeamOption = {
-    label: '개인 연습',
+    label: RESERVATION_APPLY_TEXT.privatePractice,
     value: 'private',
 };
 
@@ -166,7 +171,7 @@ const formatDurationLabel = (
 };
 
 const formatRepeatLabel = (value: number) => {
-    if (value === 0) return '반복 없음';
+    if (value === 0) return RESERVATION_APPLY_TEXT.noRepeat;
 
     return `${value}주 반복`;
 };
@@ -175,11 +180,14 @@ const formatTeamLabel = (
     options: ReservationTeamOption[],
     value: string,
 ) => {
-    return options.find((option) => option.value === value)?.label ?? '개인 연습';
+    return options.find((option) => option.value === value)?.label
+        ?? RESERVATION_APPLY_TEXT.privatePractice;
 };
 
 const formatTeamStepLabel = (value: string) => {
-    return value === 'private' ? '개인연습' : '팀 연습';
+    return value === 'private'
+        ? RESERVATION_APPLY_TEXT.privatePracticeCompact
+        : RESERVATION_APPLY_TEXT.teamPractice;
 };
 
 const getSlotKey = (absoluteSlot: number) => {
@@ -762,7 +770,7 @@ const ReservationApplyPage = () => {
     const reservationSteps: ReservationStep[] = [
         {
             key: 'date',
-            label: '날짜 선택',
+            label: RESERVATION_APPLY_TEXT.dateSelect,
             value: formatStepDate(selectedDate),
             icon: 'checkCalendar',
             completed: isStepVisuallyCompleted('date'),
@@ -771,12 +779,12 @@ const ReservationApplyPage = () => {
         },
         {
             key: 'startTime',
-            label: '시작 시간',
+            label: RESERVATION_APPLY_TEXT.startTime,
             value: activeStep === 'startTime' && !isReviewMode
-                ? '시작 시간'
+                ? RESERVATION_APPLY_TEXT.startTime
                 : shouldShowConfirmedStepValue('startTime') && completedStepIndex >= 1
                     ? formatCompactTime(selectedStartAbsoluteSlot)
-                    : '시작 시간',
+                    : RESERVATION_APPLY_TEXT.startTime,
             icon: 'clock',
             completed: isStepVisuallyCompleted('startTime'),
             disabled: !canOpenStep('startTime'),
@@ -784,12 +792,12 @@ const ReservationApplyPage = () => {
         },
         {
             key: 'endTime',
-            label: '종료 시간',
+            label: RESERVATION_APPLY_TEXT.endTime,
             value: activeStep === 'endTime' && !isReviewMode
-                ? '종료 시간'
+                ? RESERVATION_APPLY_TEXT.endTime
                 : shouldShowConfirmedStepValue('endTime') && completedStepIndex >= 2
                     ? formatCompactTime(selectedEndAbsoluteSlot)
-                    : '종료 시간',
+                    : RESERVATION_APPLY_TEXT.endTime,
             icon: 'clock',
             completed: isStepVisuallyCompleted('endTime'),
             disabled: !canOpenStep('endTime'),
@@ -797,12 +805,12 @@ const ReservationApplyPage = () => {
         },
         {
             key: 'repeat',
-            label: '반복 설정',
+            label: RESERVATION_APPLY_TEXT.repeatSettings,
             value: activeStep === 'repeat' && !isReviewMode
-                ? '반복 여부'
+                ? RESERVATION_APPLY_TEXT.repeatChoice
                 : shouldShowConfirmedStepValue('repeat') && completedStepIndex >= 3
                     ? formatRepeatLabel(selectedRepeatValue)
-                    : '반복 여부',
+                    : RESERVATION_APPLY_TEXT.repeatChoice,
             icon: 'repeat',
             completed: isStepVisuallyCompleted('repeat'),
             disabled: !canOpenStep('repeat'),
@@ -810,12 +818,12 @@ const ReservationApplyPage = () => {
         },
         {
             key: 'type',
-            label: '팀 설정',
+            label: RESERVATION_APPLY_TEXT.teamSettings,
             value: activeStep === 'type' && !isReviewMode
-                ? '팀 설정'
+                ? RESERVATION_APPLY_TEXT.teamSettings
                 : shouldShowConfirmedStepValue('type') && completedStepIndex >= 4
                     ? formatTeamStepLabel(selectedTeamValue)
-                    : '팀 설정',
+                    : RESERVATION_APPLY_TEXT.teamSettings,
             icon: 'people',
             completed: isStepVisuallyCompleted('type'),
             disabled: !canOpenStep('type'),
@@ -953,12 +961,12 @@ const ReservationApplyPage = () => {
 
     const submitReservation = async (repeat: boolean) => {
         if (!isLoggedIn || !accessToken) {
-            setSubmitError('로그인이 필요한 기능입니다.');
+            setSubmitError(RESERVATION_APPLY_TEXT.loginRequired);
             return;
         }
 
         if (selectedReservationType === 'team' && !selectedTeamId) {
-            setSubmitError('예약할 팀을 선택해주세요.');
+            setSubmitError(RESERVATION_APPLY_TEXT.teamRequired);
             return;
         }
 
@@ -982,7 +990,7 @@ const ReservationApplyPage = () => {
             );
 
             if (!temporaryReservation) {
-                throw new Error('예약 신청 응답에 예약 정보가 없습니다.');
+                throw new Error(RESERVATION_APPLY_TEXT.missingReservationResponse);
             }
 
             await queryClient.invalidateQueries({
@@ -996,14 +1004,14 @@ const ReservationApplyPage = () => {
                     temporaryRepeatRounds: repeat
                         ? mapCreatedRepeatRounds(reservationResponse)
                         : undefined,
-                    toastMessage: '예약이 신청되었어요',
+                    toastMessage: RESERVATION_APPLY_TEXT.submitSuccess,
                 },
             });
         } catch (error) {
             setSubmitError(
                 error instanceof Error
                     ? error.message
-                    : '예약 신청에 실패했습니다.',
+                    : RESERVATION_APPLY_TEXT.submitError,
             );
         } finally {
             setIsSubmittingReservation(false);
@@ -1018,7 +1026,7 @@ const ReservationApplyPage = () => {
             }
 
             if (!isLoggedIn || !accessToken) {
-                setSubmitError('로그인이 필요한 기능입니다.');
+                setSubmitError(RESERVATION_APPLY_TEXT.loginRequired);
                 return;
             }
 
@@ -1049,7 +1057,7 @@ const ReservationApplyPage = () => {
                 setSubmitError(
                     error instanceof Error
                         ? error.message
-                        : '반복 예약 확인에 실패했습니다.',
+                        : RESERVATION_APPLY_TEXT.repeatCheckError,
                 );
             } finally {
                 setIsSubmittingReservation(false);
@@ -1281,16 +1289,16 @@ const ReservationApplyPage = () => {
     };
 
     const submitLabel = isReviewMode
-        ? '예약 신청하기'
+        ? RESERVATION_COMMON_TEXT.apply
         : activeStep === 'date'
-            ? '날짜 선택 완료'
+            ? RESERVATION_APPLY_TEXT.dateComplete
             : activeStep === 'startTime'
-                ? '시작 시간 선택 완료'
+                ? RESERVATION_APPLY_TEXT.startTimeComplete
                 : activeStep === 'endTime'
-                    ? '종료 시간 선택 완료'
+                    ? RESERVATION_APPLY_TEXT.endTimeComplete
                     : activeStep === 'repeat'
-                        ? '반복 여부 선택 완료'
-                        : '사용 팀 설정 완료';
+                        ? RESERVATION_APPLY_TEXT.repeatComplete
+                        : RESERVATION_APPLY_TEXT.teamComplete;
 
     const cardHasStartTime = completedStepIndex >= 1 || isFlowCompleted;
     const cardHasEndTime = completedStepIndex >= 2 || isFlowCompleted;
@@ -1301,7 +1309,7 @@ const ReservationApplyPage = () => {
         )}`
         : cardHasStartTime
             ? `${formatCompactTime(selectedStartAbsoluteSlot)} - `
-            : '시간을 선택해 주세요.';
+            : RESERVATION_APPLY_TEXT.selectTime;
     const cardDurationLabel = cardHasEndTime
         ? formatDurationLabel(selectedStartAbsoluteSlot, selectedEndAbsoluteSlot)
         : '';
@@ -1314,11 +1322,11 @@ const ReservationApplyPage = () => {
         ? draftTeamValue
         : selectedTeamValue;
     const cardName = cardTeamValue === 'private'
-        ? user?.nickname ?? '개인 연습'
+        ? user?.nickname ?? RESERVATION_APPLY_TEXT.privatePractice
         : formatTeamLabel(teamOptions, cardTeamValue);
     const repeatBadgeLabel = completedStepIndex >= 3 || isReviewMode
         ? formatRepeatLabel(selectedRepeatValue)
-        : '반복 안함';
+        : RESERVATION_APPLY_TEXT.noRepeatBadge;
 
     return (
         <MobilePageLayout
@@ -1330,7 +1338,7 @@ const ReservationApplyPage = () => {
             onRefresh={handleRefresh}
             header={(
                 <PageSubHeader
-                    title="예약 신청"
+                    title={RESERVATION_APPLY_TEXT.headerTitle}
                     onBack={() => navigate('/', {
                         state: {
                             selectedDate: statusReturnDate,
@@ -1340,7 +1348,10 @@ const ReservationApplyPage = () => {
             )}
         >
             <main className="reservation-apply-page">
-                <section className="reservation-apply-card" aria-label="예약 안내">
+                <section
+                    className="reservation-apply-card"
+                    aria-label={RESERVATION_APPLY_TEXT.guideAriaLabel}
+                >
                     <div className="reservation-apply-card__content">
                         <div className="reservation-apply-card__nickname">
                             {cardName}
@@ -1364,37 +1375,40 @@ const ReservationApplyPage = () => {
                 </section>
 
                 {isReviewMode && (
-                    <section className="reservation-review-panel" aria-label="예약 신청 안내">
+                    <section
+                        className="reservation-review-panel"
+                        aria-label={RESERVATION_APPLY_TEXT.reviewGuideAriaLabel}
+                    >
                         <ul className="reservation-review-list">
                             <li className="reservation-review-list__item reservation-review-list__item--danger">
                                 <span>
                                     <InfoCircleIcon size={18} color="var(--text-error)" />
                                 </span>
-                                <p>예약 신청 후 관리자가 승인해야만 예약이 확정돼요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.reviewNotices[0]}</p>
                             </li>
                             <li className="reservation-review-list__item">
                                 <span>
                                     <InfoCircleIcon size={18} />
                                 </span>
-                                <p>신청이 완료된 시간은 다른 사람이 신청할 수 없어요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.reviewNotices[1]}</p>
                             </li>
                             <li className="reservation-review-list__item">
                                 <span>
                                     <InfoCircleIcon size={18} />
                                 </span>
-                                <p>예약 내용은 수정할 수 없으니, 변경이 필요하면 취소 후 다시 신청해 주세요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.reviewNotices[2]}</p>
                             </li>
                             <li className="reservation-review-list__item">
                                 <span>
                                     <InfoCircleIcon size={18} />
                                 </span>
-                                <p>반복 예약 시 이미 예약된 날짜가 있다면, 해당 날짜는 제외하고 신청돼요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.reviewNotices[3]}</p>
                             </li>
                             <li className="reservation-review-list__item">
                                 <span>
                                     <InfoCircleIcon size={18} />
                                 </span>
-                                <p>팀 사용으로 신청하면 해당 팀의 모든 멤버가 내 예약 현황 메뉴에서 해당 예약을 확인할 수 있어요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.reviewNotices[4]}</p>
                             </li>
                         </ul>
                     </section>
@@ -1413,7 +1427,7 @@ const ReservationApplyPage = () => {
                             type="button"
                             className="reservation-controls-panel__expand"
                             onClick={() => setIsReviewMode(false)}
-                            aria-label="팀 설정 다시 열기"
+                            aria-label={RESERVATION_APPLY_TEXT.reopenTeamSettingsAriaLabel}
                         >
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="m6 14 6-6 6 6" />
@@ -1428,14 +1442,19 @@ const ReservationApplyPage = () => {
                     />
 
                     {!isReviewMode && activeStep === 'date' && (
-                        <section className="reservation-date-section" aria-label="날짜 선택">
-                            <h2 className="reservation-date-section__title">날짜 선택</h2>
+                        <section
+                            className="reservation-date-section"
+                            aria-label={RESERVATION_APPLY_TEXT.dateSelect}
+                        >
+                            <h2 className="reservation-date-section__title">
+                                {RESERVATION_APPLY_TEXT.dateSelect}
+                            </h2>
 
                             <div className="reservation-apply-calendar">
                                 <div className="reservation-apply-calendar__month">
                                     <button
                                         type="button"
-                                        aria-label="이전 달"
+                                        aria-label={CALENDAR_TEXT.previousMonthAriaLabel}
                                         onClick={() => handleMoveCalendarMonth(-1)}
                                     >
                                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1450,7 +1469,7 @@ const ReservationApplyPage = () => {
 
                                     <button
                                         type="button"
-                                        aria-label="다음 달"
+                                        aria-label={CALENDAR_TEXT.nextMonthAriaLabel}
                                         onClick={() => handleMoveCalendarMonth(1)}
                                     >
                                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1502,13 +1521,16 @@ const ReservationApplyPage = () => {
                                                 )}
                                                 disabled={isDisabled}
                                                 aria-label={isHoliday
-                                                    ? `${visibleCalendar.month}월 ${day.date}일, 휴무, 선택 불가`
+                                                    ? CALENDAR_TEXT.unavailableHolidayAriaLabel(
+                                                        visibleCalendar.month,
+                                                        day.date,
+                                                    )
                                                     : undefined}
                                             >
                                                 <span>{day.date}</span>
                                                 {isHoliday && (
                                                     <span className="reservation-apply-calendar__holiday">
-                                                        휴무
+                                                        {CALENDAR_TEXT.holiday}
                                                     </span>
                                                 )}
                                             </button>
@@ -1522,8 +1544,8 @@ const ReservationApplyPage = () => {
                     {!isReviewMode && activeStep === 'startTime' && (
                         <div key="start-time-picker" className="reservation-step-panel">
                             <ReservationStartTimePicker
-                                title="시작 시간"
-                                ariaLabel="시작 시간 선택"
+                                title={RESERVATION_APPLY_TEXT.startTime}
+                                ariaLabel={RESERVATION_APPLY_TEXT.startTimeSelectAriaLabel}
                                 times={visibleStartTimeOptions}
                                 selectedTimeKey={selectedStartSlot.key}
                                 meridiem={selectedStartMeridiem}
@@ -1538,8 +1560,8 @@ const ReservationApplyPage = () => {
                     {!isReviewMode && activeStep === 'endTime' && (
                         <div key="end-time-picker" className="reservation-step-panel">
                             <ReservationStartTimePicker
-                                title="종료 시간"
-                                ariaLabel="종료 시간 선택"
+                                title={RESERVATION_APPLY_TEXT.endTime}
+                                ariaLabel={RESERVATION_APPLY_TEXT.endTimeSelectAriaLabel}
                                 times={visibleEndTimeOptions}
                                 selectedTimeKey={selectedEndSlot.key}
                                 meridiem={selectedEndMeridiem}
@@ -1581,7 +1603,9 @@ const ReservationApplyPage = () => {
                         onClick={handleSubmit}
                         disabled={isSubmittingReservation}
                     >
-                        {isSubmittingReservation ? '처리 중...' : submitLabel}
+                        {isSubmittingReservation
+                            ? RESERVATION_APPLY_TEXT.processing
+                            : submitLabel}
                     </button>
                     {submitError && (
                         <p className="reservation-apply-error" role="alert">
@@ -1611,15 +1635,17 @@ const ReservationApplyPage = () => {
                                 id="reservation-repeat-notice-title"
                                 className="action-modal__title reservation-repeat-notice-modal__title"
                             >
-                                반복 예약 알림
+                                {RESERVATION_APPLY_TEXT.repeatNoticeTitle}
                             </h2>
 
                             <p className="reservation-repeat-notice-modal__description">
-                                아래의 예약은 이미 존재하는 예약이 있어 제외하고 예약이 신청됩니다.
+                                {RESERVATION_APPLY_TEXT.repeatNoticeDescription}
                             </p>
 
                             <div className="reservation-repeat-notice-modal__dates">
-                                <strong>[신청이 제외되는 날짜]</strong>
+                                <strong>
+                                    {RESERVATION_APPLY_TEXT.repeatNoticeExcludedDates}
+                                </strong>
                                 <ul
                                     className={
                                         repeatConflicts.length === 1
@@ -1644,7 +1670,7 @@ const ReservationApplyPage = () => {
                                     )}
                                 />
                                 <span aria-hidden="true" />
-                                <p>신청이 제외되는 날짜를 모두 확인했어요.</p>
+                                <p>{RESERVATION_APPLY_TEXT.repeatNoticeConfirm}</p>
                             </label>
 
                             <div className="action-modal__actions reservation-repeat-notice-modal__actions">
@@ -1653,7 +1679,7 @@ const ReservationApplyPage = () => {
                                     className="action-modal__button action-modal__button--cancel reservation-repeat-notice-modal__button"
                                     onClick={handleCloseRepeatNotice}
                                 >
-                                    취소
+                                    {RESERVATION_APPLY_TEXT.cancel}
                                 </button>
 
                                 <button
@@ -1662,7 +1688,7 @@ const ReservationApplyPage = () => {
                                     onClick={handleConfirmRepeatReservation}
                                     disabled={!isRepeatNoticeChecked}
                                 >
-                                    신청
+                                    {RESERVATION_APPLY_TEXT.submit}
                                 </button>
                             </div>
                         </section>

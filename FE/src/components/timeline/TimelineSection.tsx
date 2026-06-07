@@ -1,6 +1,11 @@
 import type { CSSProperties } from 'react';
 
+import {
+    RESERVATION_COMMON_TEXT,
+    RESERVATION_STATUS_TEXT,
+} from '../../domains/reservation/constants';
 import { useRoomDay } from '../../hooks/queries/useRoomDay';
+import type { CalendarScope } from '../../types/calendarTypes';
 import {
     formatTimelineDate,
     getSegmentsByHour,
@@ -11,6 +16,7 @@ import {
 
 interface TimelineSectionProps {
     date: string;
+    scope: CalendarScope;
 }
 
 interface TimelineBarProps {
@@ -58,16 +64,19 @@ const TimelineBar = ({ segment, isFirst, isLast }: TimelineBarProps) => {
                 </span>
 
                 {segment.isPending && (
-                    <span className="timeline-bar__badge">신청중</span>
+                    <span className="timeline-bar__badge">
+                        {RESERVATION_COMMON_TEXT.pending}
+                    </span>
                 )}
             </div>
         </div>
     );
 };
 
-const TimelineSection = ({ date }: TimelineSectionProps) => {
+const TimelineSection = ({ date, scope }: TimelineSectionProps) => {
     const { data, isLoading, isError, error } = useRoomDay({
         date,
+        scope,
     });
 
     if (isLoading) {
@@ -79,7 +88,7 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
                 />
 
                 <p className="timeline-section__loading-message">
-                    예약 현황을 불러오고 있어요...
+                    {RESERVATION_STATUS_TEXT.timelineLoading}
                 </p>
             </section>
         );
@@ -88,7 +97,7 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
     if (isError) {
         return (
             <section className="timeline-section">
-                에러가 발생했습니다: {error.message}
+                {RESERVATION_STATUS_TEXT.timelineError(error.message)}
             </section>
         );
     }
@@ -96,7 +105,7 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
     if (!data) {
         return (
             <section className="timeline-section">
-                데이터가 없습니다.
+                {RESERVATION_STATUS_TEXT.timelineNoData}
             </section>
         );
     }
@@ -112,6 +121,13 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
         data.date,
         data.openTime,
     );
+    const timelineRows = hours.map((hour) => ({
+        hour,
+        segments: getSegmentsByHour(segments, hour),
+    }));
+    const visibleTimelineRows = scope === 'mine'
+        ? timelineRows.filter((row) => row.segments.length > 0)
+        : timelineRows;
 
     return (
         <section className="timeline-section">
@@ -124,35 +140,66 @@ const TimelineSection = ({ date }: TimelineSectionProps) => {
             <div className="calendar-section-divider" />
 
             <div className="timeline-list">
-                {hours.map((hour) => {
-                    const rowSegments = getSegmentsByHour(segments, hour);
+                {scope === 'mine' && visibleTimelineRows.length === 0 && (
+                    <p className="timeline-list__empty">
+                        {RESERVATION_STATUS_TEXT.timelineMineEmpty}
+                    </p>
+                )}
+
+                {visibleTimelineRows.map((row, rowIndex) => {
+                    const previousRow = visibleTimelineRows[rowIndex - 1];
+                    const currentHourIndex = hours.findIndex(
+                        (hour) => hour.key === row.hour.key,
+                    );
+                    const previousHourIndex = previousRow
+                        ? hours.findIndex((hour) => hour.key === previousRow.hour.key)
+                        : -1;
+                    const hasOmittedHours = (
+                        scope === 'mine' &&
+                        previousHourIndex >= 0 &&
+                        currentHourIndex - previousHourIndex > 1
+                    );
 
                     return (
-                        <div key={hour.key} className="timeline-row">
-                            <div className="timeline-row__time">
-                                {hour.label}
-                            </div>
+                        <div key={row.hour.key}>
+                            {hasOmittedHours && (
+                                <div
+                                    className="timeline-gap"
+                                    aria-label={RESERVATION_STATUS_TEXT.omittedHoursAriaLabel(
+                                        currentHourIndex - previousHourIndex - 1,
+                                    )}
+                                >
+                                    <span aria-hidden="true" />
+                                </div>
+                            )}
 
-                            <div className="timeline-row__track">
-                                {rowSegments.length > 0 ? (
-                                    rowSegments.map((segment, index) => (
-                                        <TimelineBar
-                                            key={`${hour.key}-${segment.id}`}
-                                            segment={segment}
-                                            isFirst={index === 0}
-                                            isLast={
-                                                index ===
-                                                rowSegments.length - 1
-                                            }
-                                        />
-                                    ))
-                                ) : (
-                                    <div className="timeline-row__empty" />
-                                )}
+                            <div className="timeline-row">
+                                <div className="timeline-row__time">
+                                    {row.hour.label}
+                                </div>
+
+                                <div className="timeline-row__track">
+                                    {row.segments.length > 0 ? (
+                                        row.segments.map((segment, index) => (
+                                            <TimelineBar
+                                                key={`${row.hour.key}-${segment.id}`}
+                                                segment={segment}
+                                                isFirst={index === 0}
+                                                isLast={
+                                                    index ===
+                                                    row.segments.length - 1
+                                                }
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="timeline-row__empty" />
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );
                 })}
+
             </div>
         </section>
     );

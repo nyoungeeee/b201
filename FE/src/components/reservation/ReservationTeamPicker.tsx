@@ -5,6 +5,8 @@ import {
     type PointerEvent,
 } from 'react';
 
+import { RESERVATION_PICKER_TEXT } from '../../domains/reservation/constants';
+
 export interface ReservationTeamOption {
     label: string;
     value: string;
@@ -113,8 +115,13 @@ const ReservationTeamPicker = ({
     };
 
     return (
-        <section className="reservation-team-section" aria-label="팀 설정">
-            <h2 className="reservation-team-section__title">팀 설정</h2>
+        <section
+            className="reservation-team-section"
+            aria-label={RESERVATION_PICKER_TEXT.teamSettings}
+        >
+            <h2 className="reservation-team-section__title">
+                {RESERVATION_PICKER_TEXT.teamSettings}
+            </h2>
 
             <div
                 ref={wheelRef}
@@ -124,7 +131,7 @@ const ReservationTeamPicker = ({
                 onPointerUp={handlePointerEnd}
                 onPointerCancel={handlePointerEnd}
                 role="listbox"
-                aria-label="팀 설정"
+                aria-label={RESERVATION_PICKER_TEXT.teamSettings}
                 aria-activedescendant={`reservation-team-${selectedValue}`}
             >
                 <div className="reservation-team-picker__selection" aria-hidden="true" />

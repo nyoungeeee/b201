@@ -89,6 +89,11 @@ class DayBookingQueryParamsSerializer(serializers.Serializer):
         format="%Y-%m-%d",
         help_text="조회할 날짜. 생략하면 서버 기준 기본 날짜를 사용합니다. 형식: YYYY-MM-DD",
     )
+    scope = serializers.ChoiceField(
+        choices=["mine"],
+        required=False,
+        help_text="mine이면 본인 또는 소속 팀의 예약만 조회합니다.",
+    )
 
 
 @extend_schema_serializer(
@@ -164,6 +169,11 @@ class MonthBookingQueryParamsSerializer(serializers.Serializer):
         required=False,
         min_value=1,
         help_text="조회할 연도. 생략하면 서버 기준 기본 연도를 사용합니다.",
+    )
+    scope = serializers.ChoiceField(
+        choices=["mine"],
+        required=False,
+        help_text="mine이면 본인 또는 소속 팀의 예약만 조회합니다.",
     )
 
 

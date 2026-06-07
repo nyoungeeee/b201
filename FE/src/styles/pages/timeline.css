@@ -58,6 +58,29 @@
   padding-bottom: 120px;
 }
 
+.timeline-list__empty {
+  margin: var(--space-24) 0;
+  color: var(--text-muted);
+  font-family: var(--font-title);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.timeline-gap {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  min-height: 36px;
+  column-gap: var(--space-8);
+}
+
+.timeline-gap span {
+  width: 1px;
+  height: 28px;
+  margin: var(--space-4) auto;
+  border-left: 1px dashed var(--text-muted);
+  opacity: 0.8;
+}
+
 .timeline-row {
   display: grid;
   grid-template-columns: 50px 1fr;
