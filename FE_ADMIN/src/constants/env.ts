@@ -15,10 +15,17 @@ const getStorageKey = (
     return envValue;
 };
 
+const DEFAULT_API_BASE_URL = viteEnv.DEV
+    ? 'http://localhost:8000/v1'
+    : 'https://api.b201.kr/v1';
+const DEFAULT_USER_BASE_URL = viteEnv.DEV
+    ? 'http://localhost:5173'
+    : 'https://b201.kr';
+
 export const API_BASE_URL =
-    viteEnv.VITE_API_BASE_URL ?? 'https://api.b201.kr/v1';
+    viteEnv.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
 export const USER_BASE_URL =
-    viteEnv.VITE_USER_BASE_URL ?? 'https://b201.kr';
+    viteEnv.VITE_USER_BASE_URL ?? DEFAULT_USER_BASE_URL;
 export const KAKAO_REST_API_KEY =
     viteEnv.VITE_KAKAO_REST_API_KEY ?? '';
 export const KAKAO_REDIRECT_URI =

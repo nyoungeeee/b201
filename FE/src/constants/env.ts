@@ -17,8 +17,13 @@ const getStorageKey = (
 
 export const API_BASE_URL =
     viteEnv.VITE_API_BASE_URL ?? 'https://api.b201.kr/v1';
+
+const DEFAULT_ADMIN_BASE_URL = viteEnv.DEV
+    ? 'http://localhost:5174'
+    : 'https://admin.b201.kr';
+
 export const ADMIN_BASE_URL =
-    viteEnv.VITE_ADMIN_BASE_URL ?? 'https://admin.b201.kr';
+    viteEnv.VITE_ADMIN_BASE_URL ?? DEFAULT_ADMIN_BASE_URL;
 export const KAKAO_REST_API_KEY =
     viteEnv.VITE_KAKAO_REST_API_KEY ?? '';
 export const KAKAO_REDIRECT_URI =
