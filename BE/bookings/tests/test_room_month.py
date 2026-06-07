@@ -162,3 +162,55 @@ class RoomMonthAPITestCase(BaseBookingAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(all(item["disabled"] for item in response.data["days"]))
+
+    def test_month_booking_view_scope_mine_includes_own_and_active_team_bookings(self):
+        own_date = self.today.replace(day=1)
+        team_date = self.today.replace(day=2)
+        other_date = self.today.replace(day=3)
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=own_date,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=team_date,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            team=self.other_team,
+            booking_type=BookingType.TEAM,
+            reservation_date=other_date,
+            start_time=time(11, 0),
+            end_time=time(12, 0),
+        )
+
+        response = self.client.get(
+            f"/v1/rooms/{self.room.id}/month/"
+            f"?year={self.today.year}&month={self.today.month}&scope=mine"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        days = {item["date"]: item["color"] for item in response.data["days"]}
+        self.assertEqual(days[own_date.isoformat()], ["#DADADA"])
+        self.assertEqual(days[team_date.isoformat()], [self.team.color])
+        self.assertEqual(days[other_date.isoformat()], [])
+
+    def test_month_booking_view_scope_mine_requires_authentication(self):
+        self.client.credentials()
+
+        response = self.client.get(
+            f"/v1/rooms/{self.room.id}/month/"
+            f"?year={self.today.year}&month={self.today.month}&scope=mine"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

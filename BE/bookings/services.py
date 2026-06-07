@@ -223,7 +223,11 @@ class CanceledRepeatOccurrenceList:
 
 class BookingCheckService:
     @staticmethod
-    def check_day_booking(room_id: int, target_date: date) -> DayBookingCheck:
+    def check_day_booking(
+        room_id: int,
+        target_date: date,
+        user=None,
+    ) -> DayBookingCheck:
         room = BookingCheckService._get_room(room_id)
 
         if target_date is None:
@@ -236,6 +240,9 @@ class BookingCheckService:
             )
             .select_related("user", "team", "team__team_color")
             .order_by("start_time")
+        )
+        booking_query = BookingCheckService._filter_bookings_for_user(
+            booking_query, user=user
         )
 
         slots: list[Slot] = []
@@ -297,7 +304,10 @@ class BookingCheckService:
 
     @staticmethod
     def check_month_booking(
-        room_id: int, target_year: int, target_month: int
+        room_id: int,
+        target_year: int,
+        target_month: int,
+        user=None,
     ) -> MonthBookingCheck:
         room = BookingCheckService._get_room(room_id)
 
@@ -318,6 +328,7 @@ class BookingCheckService:
             .select_related("user", "team", "team__team_color")
             .order_by("reservation_date", "start_time")
         )
+        bookings = BookingCheckService._filter_bookings_for_user(bookings, user=user)
         month_last_day = calendar.monthrange(target_date.year, target_date.month)[1]
         month_end_date = date(
             year=target_date.year,
@@ -388,6 +399,14 @@ class BookingCheckService:
             month=target_date.month,
             days=days,
         )
+
+    @staticmethod
+    def _filter_bookings_for_user(queryset, user=None):
+        if user is None:
+            return queryset
+
+        allowed_team_ids = ReservationQueryService._get_allowed_team_ids(user)
+        return queryset.filter(Q(user=user) | Q(team_id__in=allowed_team_ids))
 
     @staticmethod
     def _get_room(room_id: int) -> StudioRoom:

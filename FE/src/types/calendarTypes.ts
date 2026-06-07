@@ -1,4 +1,5 @@
 export type ScheduleState = 'ACTIVE' | 'INACTIVE';
+export type CalendarScope = 'all' | 'mine';
 
 export type SlotReservationStatus =
     | 'PENDING'

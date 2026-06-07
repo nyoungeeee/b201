@@ -136,7 +136,11 @@
 
 /* 우측 영역 */
 .page-header__right {
-  width: var(--header-action-size);
+  min-width: var(--header-action-size);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* ===== 서브 헤더 ===== */

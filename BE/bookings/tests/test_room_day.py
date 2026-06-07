@@ -182,3 +182,69 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
             [item["start_time"] for item in response.data["slot"]],
             ["23:00:00", "01:00:00"],
         )
+
+    def test_day_booking_view_scope_mine_includes_own_and_active_team_bookings(self):
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            team=self.other_team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(11, 0),
+            end_time=time(12, 0),
+        )
+
+        response = self.client.get(
+            f"/v1/rooms/{self.room.id}/day/"
+            f"?date={self.today.isoformat()}&scope=mine"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["start_time"] for item in response.data["slot"]],
+            ["09:00:00", "10:00:00"],
+        )
+
+    def test_day_booking_view_scope_mine_requires_authentication(self):
+        self.client.credentials()
+
+        response = self.client.get(
+            f"/v1/rooms/{self.room.id}/day/"
+            f"?date={self.today.isoformat()}&scope=mine"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_day_booking_view_without_scope_keeps_all_bookings(self):
+        Booking.objects.create(
+            room=self.room,
+            user=self.other_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(9, 0),
+            end_time=time(10, 0),
+        )
+
+        response = self.client.get(
+            f"/v1/rooms/{self.room.id}/day/?date={self.today.isoformat()}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["slot"]), 1)

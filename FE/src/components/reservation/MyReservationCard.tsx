@@ -1,6 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react';
 
 import { ChevronRightIcon } from '../common/icons';
+import { MY_RESERVATION_CARD_TEXT } from '../../domains/reservation/constants';
 import {
     formatAppliedAt,
     getCardStyle,
@@ -69,12 +70,14 @@ const MyReservationCard = ({
                 <h2>{reservation.title}</h2>
                 {reservation.isRepeat && (
                     <span className="my-reservation-card__repeat">
-                        반복 예약
+                        {MY_RESERVATION_CARD_TEXT.repeat}
                     </span>
                 )}
                 {reservation.isRepeat && reservation.conflictCount && (
                     <span className="my-reservation-card__conflict">
-                        충돌 {reservation.conflictCount}건
+                        {MY_RESERVATION_CARD_TEXT.conflictCount(
+                            reservation.conflictCount,
+                        )}
                     </span>
                 )}
             </div>
@@ -104,10 +107,12 @@ const MyReservationCard = ({
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />
                     </svg>
-                    신청자 {reservation.applicant}
+                    {MY_RESERVATION_CARD_TEXT.applicant(reservation.applicant)}
                 </span>
                 <span className="my-reservation-card__applied-at">
-                    신청일 {formatAppliedAt(reservation.appliedAt)}
+                    {MY_RESERVATION_CARD_TEXT.appliedAt(
+                        formatAppliedAt(reservation.appliedAt),
+                    )}
                 </span>
             </div>
         </article>

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { mapReservationListItem } from '../../domains/reservation/mapper';
+import { UPCOMING_RESERVATION_TEXT } from '../../domains/reservation/constants';
 import type { MyReservation } from '../../domains/reservation/types';
 import { useReservations } from '../../hooks/queries/useReservations';
 import { useAuthSession } from '../../hooks/useAuthSession';
@@ -13,8 +14,8 @@ const getReservationDateLabel = (reservation: MyReservation) => {
     const reservationDate = reservation.startAt.slice(0, 10);
     const dateDistance = getDateDistance(getTodayInSeoul(), reservationDate);
 
-    if (dateDistance === 0) return '오늘';
-    if (dateDistance === 1) return '내일';
+    if (dateDistance === 0) return UPCOMING_RESERVATION_TEXT.today;
+    if (dateDistance === 1) return UPCOMING_RESERVATION_TEXT.tomorrow;
 
     const [, month, date] = reservationDate.split('-');
 
@@ -66,7 +67,7 @@ const UpcomingReservationBanner = () => {
             </span>
 
             <span className="upcoming-reservation-banner__label">
-                다가오는 예약
+                {UPCOMING_RESERVATION_TEXT.label}
             </span>
 
             <span className="upcoming-reservation-banner__summary">

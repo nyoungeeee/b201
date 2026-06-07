@@ -21,6 +21,7 @@ docs/
 # Bytecode
 *.py[cod]
 __pycache__/
+.black-cache/
 
 # Virtual environment
 BE/.venv/

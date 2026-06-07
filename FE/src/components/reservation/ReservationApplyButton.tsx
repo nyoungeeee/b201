@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
+import { RESERVATION_COMMON_TEXT } from '../../domains/reservation/constants';
+
 interface ReservationApplyButtonProps {
     selectedDate?: string;
 }
@@ -17,7 +19,7 @@ const ReservationApplyButton = ({ selectedDate }: ReservationApplyButtonProps) =
                 className="reservation-apply-button"
                 onClick={() => navigate(applyPath, { state: { selectedDate } })}
             >
-                예약 신청하기
+                {RESERVATION_COMMON_TEXT.apply}
             </button>
         </div>
     );

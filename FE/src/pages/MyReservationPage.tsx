@@ -6,12 +6,19 @@ import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageRefreshButton from '../components/layout/PageRefreshButton';
 import PageSubHeader from '../components/layout/PageSubHeader';
 import MyReservationCard from '../components/reservation/MyReservationCard';
+import {
+    getReservationTeamFilterBaseOptions,
+    MY_RESERVATION_TEXT,
+    RESERVATION_COMMON_TEXT,
+    RESERVATION_SORT_OPTIONS,
+    RESERVATION_STATE_FILTER_OPTIONS,
+    RESERVATION_STATUS_QUERY,
+} from '../domains/reservation/constants';
 import { mapReservationListItem } from '../domains/reservation/mapper';
 import type {
     MyReservation,
     ReservationListViewState,
     ReservationSort,
-    ReservationState,
     ReservationStateFilter,
     ReservationTab,
     ReservationTeamFilter,
@@ -26,32 +33,6 @@ import { useAuthSession } from '../hooks/useAuthSession';
 import { queryClient } from '../lib/queryClient';
 
 type ReservationFilterSheet = 'sort' | 'state' | 'team';
-
-const RESERVATION_STATUS_QUERY: Record<ReservationState, 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'> = {
-    pending: 'PENDING',
-    approved: 'APPROVED',
-    rejected: 'REJECTED',
-    canceled: 'CANCELED',
-};
-
-const STATE_FILTER_OPTIONS: Array<{
-    label: string;
-    value: ReservationStateFilter;
-}> = [
-        { label: '전체', value: 'all' },
-        { label: '승인대기', value: 'pending' },
-        { label: '승인', value: 'approved' },
-        { label: '거절', value: 'rejected' },
-        { label: '취소', value: 'canceled' },
-    ];
-
-const SORT_OPTIONS: Array<{
-    label: string;
-    value: ReservationSort;
-}> = [
-    { label: '가까운 날짜 순', value: 'upcoming' },
-    { label: '신청일 순', value: 'latest' },
-];
 
 const MyReservationPage = () => {
     const navigate = useNavigate();
@@ -158,8 +139,7 @@ const MyReservationPage = () => {
 
     const teamFilterOptions = useMemo(() => {
         return [
-            { label: '전체', value: 'all' as ReservationTeamFilter },
-            { label: '개인 연습', value: 'personal' as ReservationTeamFilter },
+            ...getReservationTeamFilterBaseOptions(),
             ...(user?.team ?? []).map((team) => ({
                 label: team.name,
                 value: `team:${team.id}` as ReservationTeamFilter,
@@ -184,15 +164,15 @@ const MyReservationPage = () => {
         pastCountQuery.isRefetching ||
         isAuthUserRefreshing
     );
-    const stateFilterLabel = STATE_FILTER_OPTIONS.find(
+    const stateFilterLabel = RESERVATION_STATE_FILTER_OPTIONS.find(
         (option) => option.value === stateFilter,
-    )?.label ?? '예약 상태';
-    const sortLabel = SORT_OPTIONS.find(
+    )?.label ?? MY_RESERVATION_TEXT.stateFilter;
+    const sortLabel = RESERVATION_SORT_OPTIONS.find(
         (option) => option.value === sort,
-    )?.label ?? '가까운 날짜 순';
+    )?.label ?? RESERVATION_SORT_OPTIONS[0].label;
     const teamFilterLabel = teamFilterOptions.find(
         (option) => option.value === teamFilter,
-    )?.label ?? '전체';
+    )?.label ?? RESERVATION_COMMON_TEXT.all;
     const getListViewState = (): ReservationListViewState => ({
         activeTab,
         sort,
@@ -296,14 +276,14 @@ const MyReservationPage = () => {
     };
 
     const filterSheetTitle = activeFilterSheet === 'sort'
-        ? '정렬 기준'
+        ? MY_RESERVATION_TEXT.sortFilter
         : activeFilterSheet === 'state'
-            ? '예약 상태'
-            : '팀 선택';
+            ? MY_RESERVATION_TEXT.stateFilter
+            : MY_RESERVATION_TEXT.teamFilter;
     const filterSheetOptions = activeFilterSheet === 'sort'
-        ? SORT_OPTIONS
+        ? RESERVATION_SORT_OPTIONS
         : activeFilterSheet === 'state'
-            ? STATE_FILTER_OPTIONS
+            ? RESERVATION_STATE_FILTER_OPTIONS
             : teamFilterOptions;
     const selectedFilterValue = activeFilterSheet === 'sort'
         ? draftSort
@@ -317,7 +297,7 @@ const MyReservationPage = () => {
             onRefresh={handleRefresh}
             header={(
                 <PageSubHeader
-                    title="내 예약 현황"
+                    title={MY_RESERVATION_TEXT.headerTitle}
                     rightContent={(
                         <PageRefreshButton
                             isRefreshing={isRefreshing || isManualRefreshing}
@@ -328,13 +308,16 @@ const MyReservationPage = () => {
             )}
         >
             <main ref={pageRef} className="my-reservation-page">
-                <section className="my-reservation-panel" aria-label="예약 목록">
+                <section
+                    className="my-reservation-panel"
+                    aria-label={MY_RESERVATION_TEXT.listAriaLabel}
+                >
                     <div
                         className={[
                             'my-reservation-tabs',
                             `my-reservation-tabs--${activeTab}`,
                         ].join(' ')}
-                        aria-label="예약 구분"
+                        aria-label={MY_RESERVATION_TEXT.tabAriaLabel}
                     >
                         <button
                             type="button"
@@ -346,7 +329,7 @@ const MyReservationPage = () => {
                                 .join(' ')}
                             onClick={() => handleSelectTab('upcoming')}
                         >
-                            예정된 예약
+                            {MY_RESERVATION_TEXT.upcomingTab}
                             <span>{upcomingReservationCount}</span>
                         </button>
 
@@ -360,13 +343,16 @@ const MyReservationPage = () => {
                                 .join(' ')}
                             onClick={() => handleSelectTab('past')}
                         >
-                            지난 예약
+                            {MY_RESERVATION_TEXT.pastTab}
                             <span>{pastReservationCount}</span>
                         </button>
                     </div>
 
                     <div className="my-reservation-content">
-                        <div className="my-reservation-filters" aria-label="예약 필터">
+                        <div
+                            className="my-reservation-filters"
+                            aria-label={MY_RESERVATION_TEXT.filterAriaLabel}
+                        >
                             <button
                                 type="button"
                                 className={sort !== 'upcoming' ? 'is-filtered' : ''}
@@ -388,7 +374,9 @@ const MyReservationPage = () => {
                                     .join(' ')}
                                 onClick={() => openFilterSheet('state')}
                             >
-                                {stateFilter === 'all' ? '예약 상태' : stateFilterLabel}
+                                {stateFilter === 'all'
+                                    ? MY_RESERVATION_TEXT.stateFilter
+                                    : stateFilterLabel}
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="m7 10 5 5 5-5" />
                                 </svg>
@@ -399,7 +387,9 @@ const MyReservationPage = () => {
                                 className={teamFilter !== 'all' ? 'is-filtered' : ''}
                                 onClick={() => openFilterSheet('team')}
                             >
-                                {teamFilter === 'all' ? '팀 선택' : teamFilterLabel}
+                                {teamFilter === 'all'
+                                    ? MY_RESERVATION_TEXT.teamFilter
+                                    : teamFilterLabel}
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="m7 10 5 5 5-5" />
                                 </svg>
@@ -426,20 +416,20 @@ const MyReservationPage = () => {
                                         aria-hidden="true"
                                     />
                                     <p className="my-reservation-empty">
-                                        내 예약 현황을 가져오고 있어요
+                                        {MY_RESERVATION_TEXT.loading}
                                     </p>
                                 </div>
                             )}
 
                             {isReservationsError && (
                                 <p className="my-reservation-empty">
-                                    예약 목록을 불러오지 못했어요.
+                                    {MY_RESERVATION_TEXT.error}
                                 </p>
                             )}
 
                             {!isReservationsListLoading && !isReservationsError && reservations.length === 0 && (
                                 <p className="my-reservation-empty">
-                                    표시할 예약이 없어요.
+                                    {MY_RESERVATION_TEXT.empty}
                                 </p>
                             )}
 
@@ -447,7 +437,9 @@ const MyReservationPage = () => {
                                 <div
                                     ref={loadMoreRef}
                                     className="my-reservation-load-more"
-                                    aria-label={isFetchingNextPage ? '다음 예약을 불러오는 중' : undefined}
+                                    aria-label={isFetchingNextPage
+                                        ? MY_RESERVATION_TEXT.loadingMoreAriaLabel
+                                        : undefined}
                                 >
                                     {isFetchingNextPage && (
                                         <div className="my-reservation-load-more__skeleton" aria-hidden="true">
@@ -462,7 +454,7 @@ const MyReservationPage = () => {
                                             className="my-reservation-load-more__retry"
                                             onClick={() => void fetchNextPage()}
                                         >
-                                            더 불러오지 못했어요. 다시 시도
+                                            {MY_RESERVATION_TEXT.loadMoreError}
                                         </button>
                                     )}
                                 </div>
@@ -470,7 +462,7 @@ const MyReservationPage = () => {
 
                             {!isReservationsListLoading && !isReservationsError && reservations.length > 0 && !hasNextPage && (
                                 <p className="my-reservation-list__end">
-                                    모든 예약 내역을 확인했어요.
+                                    {MY_RESERVATION_TEXT.listEnd}
                                 </p>
                             )}
                         </div>
@@ -489,7 +481,7 @@ const MyReservationPage = () => {
                         <button
                             type="button"
                             className="my-reservation-bottom-sheet__backdrop"
-                            aria-label="필터 닫기"
+                            aria-label={MY_RESERVATION_TEXT.closeFilterAriaLabel}
                             onClick={closeFilterSheet}
                         />
 
@@ -504,7 +496,7 @@ const MyReservationPage = () => {
                                 <button
                                     type="button"
                                     onClick={closeFilterSheet}
-                                    aria-label="닫기"
+                                    aria-label={MY_RESERVATION_TEXT.closeAriaLabel}
                                 >
                                     <svg viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M6 6l12 12M18 6 6 18" />
@@ -558,7 +550,7 @@ const MyReservationPage = () => {
                                 className="my-reservation-bottom-sheet__apply"
                                 onClick={applyFilterSheet}
                             >
-                                적용하기
+                                {MY_RESERVATION_TEXT.applyFilter}
                             </button>
                         </section>
                     </div>

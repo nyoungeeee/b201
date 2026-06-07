@@ -5,6 +5,8 @@ import {
     type PointerEvent,
 } from 'react';
 
+import { RESERVATION_PICKER_TEXT } from '../../domains/reservation/constants';
+
 export interface RepeatOption {
     label: string;
     value: number;
@@ -113,8 +115,13 @@ const ReservationRepeatPicker = ({
     };
 
     return (
-        <section className="reservation-repeat-section" aria-label="반복 여부 선택">
-            <h2 className="reservation-repeat-section__title">반복 여부</h2>
+        <section
+            className="reservation-repeat-section"
+            aria-label={RESERVATION_PICKER_TEXT.repeatSelectAriaLabel}
+        >
+            <h2 className="reservation-repeat-section__title">
+                {RESERVATION_PICKER_TEXT.repeatTitle}
+            </h2>
 
             <div
                 ref={wheelRef}
@@ -124,7 +131,7 @@ const ReservationRepeatPicker = ({
                 onPointerUp={handlePointerEnd}
                 onPointerCancel={handlePointerEnd}
                 role="listbox"
-                aria-label="반복 여부 선택"
+                aria-label={RESERVATION_PICKER_TEXT.repeatSelectAriaLabel}
                 aria-activedescendant={`reservation-repeat-${selectedValue}`}
             >
                 <div className="reservation-repeat-picker__selection" aria-hidden="true" />

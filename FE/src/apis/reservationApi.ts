@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { API_BASE_URL } from '../constants/env';
+import { RESERVATION_API_TEXT } from '../domains/reservation/constants';
 import { authFetch } from './authFetch';
 
 const timeStringSchema = z
@@ -246,7 +247,7 @@ export const checkRepeatReservation = async ({
     throw new Error(
         parseErrorMessage(
             rawData,
-            `반복 예약 확인에 실패했습니다. (status: ${response.status})`,
+            RESERVATION_API_TEXT.repeatCheckError(response.status),
         ),
     );
 };
@@ -284,14 +285,14 @@ export const createReservation = async ({
         throw new Error(
             parseErrorMessage(
                 rawData,
-                `예약 신청에 실패했습니다. (status: ${response.status})`,
+                RESERVATION_API_TEXT.createError(response.status),
             ),
         );
     }
 
     if (!parsedResult.success) {
         console.error('Reservation create API validation failed:', parsedResult.error.format());
-        throw new Error('예약 신청 응답 형식이 올바르지 않습니다.');
+        throw new Error(RESERVATION_API_TEXT.createResponseError);
     }
 
     return parsedResult.data;
@@ -332,7 +333,7 @@ export const getReservations = async ({
         throw new Error(
             parseErrorMessage(
                 rawData,
-                `예약 목록 조회에 실패했습니다. (status: ${response.status})`,
+                RESERVATION_API_TEXT.listError(response.status),
             ),
         );
     }
@@ -341,7 +342,7 @@ export const getReservations = async ({
 
     if (!parsedResult.success) {
         console.error('Reservation list API validation failed:', parsedResult.error.format());
-        throw new Error('예약 목록 응답 형식이 올바르지 않습니다.');
+        throw new Error(RESERVATION_API_TEXT.listResponseError);
     }
 
     return parsedResult.data;
@@ -363,7 +364,7 @@ export const getReservationByNumber = async ({
         throw new Error(
             parseErrorMessage(
                 rawData,
-                `예약 상세 조회에 실패했습니다. (status: ${response.status})`,
+                RESERVATION_API_TEXT.detailError(response.status),
             ),
         );
     }
@@ -372,7 +373,7 @@ export const getReservationByNumber = async ({
 
     if (!parsedResult.success) {
         console.error('Reservation detail API validation failed:', parsedResult.error.format());
-        throw new Error('예약 상세 응답 형식이 올바르지 않습니다.');
+        throw new Error(RESERVATION_API_TEXT.detailResponseError);
     }
 
     return parsedResult.data;
@@ -394,7 +395,7 @@ export const cancelReservation = async ({
         throw new Error(
             parseErrorMessage(
                 rawData,
-                `예약 취소에 실패했습니다. (status: ${response.status})`,
+                RESERVATION_API_TEXT.cancelError(response.status),
             ),
         );
     }

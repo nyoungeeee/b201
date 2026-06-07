@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { RESERVATION_APPLY_TEXT } from '../../domains/reservation/constants';
+
 export type ReservationStepKey = 'date' | 'startTime' | 'endTime' | 'repeat' | 'type';
 
 export interface ReservationStep {
@@ -69,7 +71,10 @@ const ReservationStepTabs = ({
     onSelectStep,
 }: ReservationStepTabsProps) => {
     return (
-        <section className="reservation-step-list" aria-label="예약 조건">
+        <section
+            className="reservation-step-list"
+            aria-label={RESERVATION_APPLY_TEXT.stepListAriaLabel}
+        >
             {steps.map((step, index) => {
                 const isActive = step.key === activeStep;
                 const isCompleted = Boolean(step.completed) && !isActive;

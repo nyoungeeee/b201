@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRoomMonth } from '../../apis/roomApi';
 import { DEFAULT_ROOM_ID } from '../../constants/global';
-import type { MonthSchedule } from '../../types/calendarTypes';
+import { ROOM_API_TEXT } from '../../domains/reservation/constants';
+import type { CalendarScope, MonthSchedule } from '../../types/calendarTypes';
 
 interface UseRoomMonthParams {
     year?: number;
     month?: number;
     roomId?: number;
+    scope?: CalendarScope;
     enabled?: boolean;
 }
 
@@ -16,27 +18,36 @@ export const roomMonthQueryKeys = {
         roomId,
         year,
         month,
+        scope = 'all',
     }: {
         roomId: number;
         year?: number;
         month?: number;
-    }) => ['roomMonth', roomId, year ?? 'currentYear', month ?? 'currentMonth'] as const,
+        scope?: CalendarScope;
+    }) => [
+        'roomMonth',
+        roomId,
+        year ?? 'currentYear',
+        month ?? 'currentMonth',
+        scope,
+    ] as const,
 };
 
 export const useRoomMonth = ({
     year,
     month,
     roomId = DEFAULT_ROOM_ID,
+    scope = 'all',
     enabled = true,
 }: UseRoomMonthParams = {}) => {
     return useQuery<MonthSchedule, Error>({
-        queryKey: roomMonthQueryKeys.detail({ roomId, year, month }),
+        queryKey: roomMonthQueryKeys.detail({ roomId, year, month, scope }),
         queryFn: () => {
             if (!year || !month) {
-                throw new Error('year와 month는 필수입니다.');
+                throw new Error(ROOM_API_TEXT.monthParamsRequired);
             }
 
-            return getRoomMonth({ roomId, year, month });
+            return getRoomMonth({ roomId, year, month, scope });
         },
         enabled: enabled && !!roomId && !!year && !!month,
         staleTime: 0,

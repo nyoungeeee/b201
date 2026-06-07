@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { WEEK_DAYS } from '../../constants/global';
+import { CALENDAR_TEXT } from '../../domains/reservation/constants';
 import { useRoomMonth } from '../../hooks/queries/useRoomMonth';
-import type { MonthSchedule } from '../../types/calendarTypes';
+import type { CalendarScope, MonthSchedule } from '../../types/calendarTypes';
 
 interface CalendarGridDay {
     fullDate: string;
@@ -18,6 +19,7 @@ interface CalendarGridDay {
 
 interface CalendarSectionProps {
     selectedDate: string;
+    scope: CalendarScope;
     onSelectDate: (date: string) => void;
 }
 
@@ -130,6 +132,7 @@ const getCalendarDays = (
 
 const CalendarSection = ({
     selectedDate,
+    scope,
     onSelectDate,
 }: CalendarSectionProps) => {
     const parsedSelectedDate = useMemo(
@@ -144,6 +147,7 @@ const CalendarSection = ({
         roomId: 1,
         year: displayYear,
         month: displayMonth,
+        scope,
     });
 
     const calendarDays = useMemo(() => {
@@ -227,7 +231,7 @@ const CalendarSection = ({
                     type="button"
                     className="calendar-month-header__button"
                     onClick={handlePrevMonth}
-                    aria-label="이전 달"
+                    aria-label={CALENDAR_TEXT.previousMonthAriaLabel}
                 >
                     ◀
                 </button>
@@ -240,7 +244,7 @@ const CalendarSection = ({
                     type="button"
                     className="calendar-month-header__button"
                     onClick={handleNextMonth}
-                    aria-label="다음 달"
+                    aria-label={CALENDAR_TEXT.nextMonthAriaLabel}
                 >
                     ▶
                 </button>
@@ -282,13 +286,17 @@ const CalendarSection = ({
                             .filter(Boolean)
                             .join(' ')}
                         onClick={() => handleSelectDay(day.fullDate)}
-                        aria-label={day.isHoliday ? `${day.date}일, 휴무` : undefined}
+                        aria-label={day.isHoliday
+                            ? CALENDAR_TEXT.holidayAriaLabel(day.date)
+                            : undefined}
                     >
                         <span className="calendar-day__label">{day.date}</span>
 
                         <span className="calendar-day__dots">
                             {day.isHoliday ? (
-                                <span className="calendar-day__holiday">휴무</span>
+                                <span className="calendar-day__holiday">
+                                    {CALENDAR_TEXT.holiday}
+                                </span>
                             ) : (
                                 <>
                                     {day.visibleColors.map((dotColor, dotIndex) => (
