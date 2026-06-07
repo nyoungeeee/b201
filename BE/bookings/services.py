@@ -406,7 +406,13 @@ class BookingCheckService:
             return queryset
 
         allowed_team_ids = ReservationQueryService._get_allowed_team_ids(user)
-        return queryset.filter(Q(user=user) | Q(team_id__in=allowed_team_ids))
+        return queryset.filter(
+            Q(user=user, booking_type=BookingType.PRIVATE)
+            | Q(
+                booking_type=BookingType.TEAM,
+                team_id__in=allowed_team_ids,
+            )
+        )
 
     @staticmethod
     def _get_room(room_id: int) -> StudioRoom:
