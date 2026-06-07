@@ -18,7 +18,7 @@ const getStorageKey = (
 export const API_BASE_URL =
     viteEnv.VITE_API_BASE_URL ?? 'https://api.b201.kr/v1';
 
-const DEFAULT_ADMIN_BASE_URL = import.meta.env.DEV
+const DEFAULT_ADMIN_BASE_URL = viteEnv.DEV
     ? 'http://localhost:5174'
     : 'https://admin.b201.kr';
 
