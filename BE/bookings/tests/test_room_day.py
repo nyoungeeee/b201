@@ -203,7 +203,7 @@ class RoomDayAPITestCase(BaseBookingAPITestCase):
         )
         Booking.objects.create(
             room=self.room,
-            user=self.other_user,
+            user=self.user,
             team=self.other_team,
             booking_type=BookingType.TEAM,
             reservation_date=self.today,
