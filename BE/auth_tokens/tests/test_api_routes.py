@@ -31,4 +31,5 @@ class PublicAPIRouteTestCase(SimpleTestCase):
         spectacular_settings = settings.SPECTACULAR_SETTINGS
 
         self.assertEqual(spectacular_settings["SCHEMA_PATH_PREFIX"], r"/v[0-9]|/auth")
+        self.assertFalse(spectacular_settings["SCHEMA_PATH_PREFIX_TRIM"])
         self.assertEqual(spectacular_settings["SERVERS"][0]["url"], "/")

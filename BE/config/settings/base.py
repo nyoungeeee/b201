@@ -191,7 +191,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for B201 project",
     "VERSION": "1.0.0",
     "SCHEMA_PATH_PREFIX": r"/v[0-9]|/auth",
-    "SCHEMA_PATH_PREFIX_TRIM": True,
+    "SCHEMA_PATH_PREFIX_TRIM": False,
     "SERVERS": [
         {"url": "/", "description": "B201 API"},
     ],
