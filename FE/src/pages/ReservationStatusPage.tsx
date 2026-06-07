@@ -6,8 +6,10 @@ import CalendarSection from '../components/calendar/CalendarSection';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
 import ReservationApplyButton from '../components/reservation/ReservationApplyButton';
+import UpcomingReservationBanner from '../components/reservation/UpcomingReservationBanner';
 import TimelineSection from '../components/timeline/TimelineSection';
 import { DEFAULT_ROOM_ID } from '../constants/global';
+import { reservationQueryKeys } from '../hooks/queries/useReservations';
 import { roomDayQueryKeys } from '../hooks/queries/useRoomDay';
 import { roomMonthQueryKeys } from '../hooks/queries/useRoomMonth';
 import { queryClient } from '../lib/queryClient';
@@ -55,6 +57,9 @@ const ReservationStatusPage = () => {
                 queryClient.invalidateQueries({
                     queryKey: roomMonthQueryKeys.all,
                 }),
+                queryClient.invalidateQueries({
+                    queryKey: reservationQueryKeys.all,
+                }),
             ]);
         } finally {
             setIsRefreshing(false);
@@ -68,6 +73,8 @@ const ReservationStatusPage = () => {
             onRefresh={handleRefresh}
         >
             <div className="reservation-status-page">
+                <UpcomingReservationBanner />
+
                 <CalendarSection
                     key={selectedDate}
                     selectedDate={selectedDate}

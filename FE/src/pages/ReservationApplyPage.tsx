@@ -30,10 +30,12 @@ import {
 } from '../domains/reservation/mapper';
 import { mapCreatedRepeatRounds } from '../domains/reservation/repeatRounds';
 import type { MyReservation } from '../domains/reservation/types';
+import { reservationQueryKeys } from '../hooks/queries/useReservations';
 import { useRoomDay } from '../hooks/queries/useRoomDay';
 import { useRoomMonth } from '../hooks/queries/useRoomMonth';
 import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { queryClient } from '../lib/queryClient';
 import {
     addDays,
     formatDateString,
@@ -982,6 +984,10 @@ const ReservationApplyPage = () => {
             if (!temporaryReservation) {
                 throw new Error('예약 신청 응답에 예약 정보가 없습니다.');
             }
+
+            await queryClient.invalidateQueries({
+                queryKey: reservationQueryKeys.all,
+            });
 
             navigate(`/reservations/${temporaryReservation.id}`, {
                 state: {
