@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import GuestNavContent from "./GuestNavContent";
 import MemberNavContent from "./MemberNavContent";
 import { SIDE_NAV_TEXT } from "./constants";
+import { COFFEE_DONATION_URL } from "../../constants/env";
 
 type Props = {
     isOpen: boolean;
@@ -66,6 +67,17 @@ const SideNavModal = ({
                     />
                 ) : (
                     <GuestNavContent onClose={onClose} />
+                )}
+
+                {COFFEE_DONATION_URL && (
+                    <a
+                        className="side-nav-modal__coffee-link"
+                        href={COFFEE_DONATION_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        {SIDE_NAV_TEXT.coffeeLink}
+                    </a>
                 )}
 
                 <div className="side-nav-modal__divider-bottom" />

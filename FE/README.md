@@ -56,6 +56,16 @@ npm run lint      # 코드 검사
 
 ---
 
+## 🔧 환경 변수
+
+`.env`에 아래 값을 설정하면 사이드 네비 하단에 송금 링크가 표시됩니다.
+
+```env
+VITE_COFFEE_DONATION_URL=https://example.com/pay
+```
+
+---
+
 ## 📁 프로젝트 구조
 
 ```txt
