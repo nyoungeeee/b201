@@ -114,6 +114,27 @@ class BackofficeRoomAPITestCase(BaseBackofficeAPITestCase):
         self.assertTrue(self.room.is_24_hours)
         self.assertEqual(response.data["data"]["description"], "수정된 설명")
 
+    def test_update_all_day_room_uses_open_time_as_next_day_close_time(self):
+        updated_name = f"B201-all-day-{self._suffix()}"
+        response = self.client.put(
+            f"/v1/admin/rooms/{self.room.id}",
+            {
+                "name": updated_name,
+                "description": "24시간 운영",
+                "open_time": "09:00:00",
+                "close_time": "23:30:00",
+                "is_open_all_day": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.room.refresh_from_db()
+        self.assertEqual(self.room.open_time, time(9, 0))
+        self.assertEqual(self.room.close_time, time(9, 0))
+        self.assertTrue(self.room.is_24_hours)
+        self.assertEqual(response.data["data"]["close_time"], "09:00:00")
+
     def test_staff_can_soft_delete_room_and_cancel_active_bookings(self):
         booking = Booking.objects.create(
             room=self.room,

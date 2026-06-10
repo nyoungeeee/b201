@@ -73,6 +73,11 @@ const halfHourTimeOptions = Array.from({ length: 49 }, (_, index) => {
 
 const startTimeSelectOptions = halfHourTimeOptions.slice(0, 48);
 
+const formatRoomOperatingHours = (room: AdminPracticeRoom) =>
+  room.isOpenAllDay
+    ? `${room.openTime}~다음날 ${room.openTime}`
+    : `${room.openTime}~${room.closeTime}`;
+
 const defaultDayOffDraft: AdminRoomDayOffDraft = {
   targetType: "all",
   roomName: "전체 합주실",
@@ -447,9 +452,7 @@ const RoomList = ({
             </header>
             <p className="admin-room-hours">
               <span>운영시간</span>
-              <strong>
-                {room.openTime}~{room.closeTime}
-              </strong>
+              <strong>{formatRoomOperatingHours(room)}</strong>
               <em>24시간 운영</em>
               <i className={room.isOpenAllDay ? "is-open" : "is-closed"}>
                 {room.isOpenAllDay ? "O" : "X"}
@@ -770,7 +773,10 @@ const RoomDetailScreen = ({
           ["합주실 이름", room.name],
           ["설명", room.description],
           ["운영 시작", room.openTime],
-          ["운영 종료", room.closeTime],
+          [
+            "운영 종료",
+            room.isOpenAllDay ? `다음날 ${room.openTime}` : room.closeTime,
+          ],
           ["24시간 운영", room.isOpenAllDay ? "예" : "아니오"],
           ["최근 수정일", room.updatedAt],
         ].map(([label, value]) => (
@@ -962,7 +968,7 @@ const RoomFormScreen = ({
       name: name.trim() || "새 합주실",
       description: description.trim(),
       openTime,
-      closeTime: isOpenAllDay ? "24:00" : closeTime,
+      closeTime: isOpenAllDay ? openTime : closeTime,
       isOpenAllDay,
       isActive,
       sortOrder: initialRoom?.sortOrder ?? 5,
@@ -1017,7 +1023,7 @@ const RoomFormScreen = ({
               <AdminSelect
                 className="admin-room-form-select"
                 value={openTime}
-                options={halfHourTimeOptions}
+                options={startTimeSelectOptions}
                 onChange={setOpenTime}
               />
             </label>
@@ -1027,7 +1033,7 @@ const RoomFormScreen = ({
                 <AdminSelect
                   className="admin-room-form-select"
                   value={closeTime}
-                  options={halfHourTimeOptions}
+                  options={startTimeSelectOptions}
                   onChange={setCloseTime}
                 />
               </label>

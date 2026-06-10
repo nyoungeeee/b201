@@ -38,6 +38,7 @@ import {
     toDayOff,
     toReservation,
     toRoom,
+    toRoomRequest,
     toTeam,
     toUser,
     unwrapAdminResponse,
@@ -256,16 +257,6 @@ const getRoomIdByName = async (roomName: string): Promise<number> => {
 
     return room.id;
 };
-
-const toRoomRequest = (
-    data: Omit<AdminPracticeRoom, 'id' | 'updatedAt'>,
-) => ({
-    name: data.name,
-    description: data.description,
-    open_time: data.openTime,
-    close_time: data.closeTime,
-    is_open_all_day: data.isOpenAllDay,
-});
 
 const toDayOffRequest = async (
     draft: AdminRoomDayOffDraft,
