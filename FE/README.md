@@ -56,6 +56,18 @@ npm run lint      # 코드 검사
 
 ---
 
+## 🔧 환경 변수
+
+사이드 네비의 커피 후원 기능은 아래 송금 링크를 사용합니다.
+
+```env
+VITE_COFFEE_DONATION_URL=https://example.com/pay
+```
+
+모바일 기기에서는 링크로 바로 이동하고, 그 외 기기에서는 `src/assets/kakao_pay_qr.png` QR 이미지를 표시합니다.
+
+---
+
 ## 📁 프로젝트 구조
 
 ```txt

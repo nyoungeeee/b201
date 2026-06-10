@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import kakaoPayQr from "../../assets/kakao_pay_qr.png";
+import { COFFEE_DONATION_URL } from "../../constants/env";
+import { isMobileLikeDevice } from "../../utils/deviceUtils";
 import GuestNavContent from "./GuestNavContent";
 import MemberNavContent from "./MemberNavContent";
 import { SIDE_NAV_TEXT } from "./constants";
@@ -22,6 +25,7 @@ const SideNavModal = ({
     hasAdminAccess = false,
 }: Props) => {
     const [isVisible, setIsVisible] = useState(isOpen);
+    const [isCoffeeQrOpen, setIsCoffeeQrOpen] = useState(false);
 
     useEffect(() => {
         let timer: number;
@@ -33,6 +37,7 @@ const SideNavModal = ({
         } else {
             timer = window.setTimeout(() => {
                 setIsVisible(false);
+                setIsCoffeeQrOpen(false);
             }, ANIMATION_DURATION);
         }
 
@@ -42,6 +47,14 @@ const SideNavModal = ({
     if (!isVisible) return null;
 
     const stateClass = isOpen ? "is-open" : "is-closing";
+    const handleCoffeeClick = () => {
+        if (isMobileLikeDevice()) {
+            window.location.assign(COFFEE_DONATION_URL);
+            return;
+        }
+
+        setIsCoffeeQrOpen(true);
+    };
 
     return (
         <div className={`side-nav-modal ${stateClass}`} onClick={onClose}>
@@ -66,6 +79,49 @@ const SideNavModal = ({
                     />
                 ) : (
                     <GuestNavContent onClose={onClose} />
+                )}
+
+                {COFFEE_DONATION_URL && (
+                    <button
+                        type="button"
+                        className="side-nav-modal__coffee-link"
+                        onClick={handleCoffeeClick}
+                    >
+                        {SIDE_NAV_TEXT.coffeeLink}
+                    </button>
+                )}
+
+                {isCoffeeQrOpen && (
+                    <div
+                        className="side-nav-modal__qr-backdrop"
+                        role="presentation"
+                        onClick={() => setIsCoffeeQrOpen(false)}
+                    >
+                        <section
+                            className="side-nav-modal__qr-dialog"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="coffee-qr-title"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                className="side-nav-modal__qr-close"
+                                aria-label={SIDE_NAV_TEXT.coffeeQrCloseAriaLabel}
+                                onClick={() => setIsCoffeeQrOpen(false)}
+                            >
+                                {SIDE_NAV_TEXT.closeButton}
+                            </button>
+                            <h2 id="coffee-qr-title">
+                                {SIDE_NAV_TEXT.coffeeQrTitle}
+                            </h2>
+                            <img
+                                src={kakaoPayQr}
+                                alt={SIDE_NAV_TEXT.coffeeQrTitle}
+                            />
+                            <p>{SIDE_NAV_TEXT.coffeeQrDescription}</p>
+                        </section>
+                    </div>
                 )}
 
                 <div className="side-nav-modal__divider-bottom" />
