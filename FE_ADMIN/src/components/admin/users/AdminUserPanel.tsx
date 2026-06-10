@@ -122,6 +122,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
   const [isLoadingMoreTeams, setIsLoadingMoreTeams] = useState(false);
   const [teamMemberCache, setTeamMemberCache] = useState<Record<number, AdminTeamMemberEditUser[]>>({});
   const [loadingTeamMemberIds, setLoadingTeamMemberIds] = useState<number[]>([]);
+  const loadingTeamMemberIdSetRef = useRef<Set<number>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -321,12 +322,16 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
 
     const teamId = view.teamId;
 
-    if (teamMemberCache[teamId] || loadingTeamMemberIds.includes(teamId)) {
+    if (
+      Object.prototype.hasOwnProperty.call(teamMemberCache, teamId) ||
+      loadingTeamMemberIdSetRef.current.has(teamId)
+    ) {
       return;
     }
 
     let isActive = true;
 
+    loadingTeamMemberIdSetRef.current.add(teamId);
     setLoadingTeamMemberIds((currentIds) => [...currentIds, teamId]);
     adminApi.getTeamMemberEditList(teamId)
       .then((data) => {
@@ -339,6 +344,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
       })
       .catch(console.error)
       .finally(() => {
+        loadingTeamMemberIdSetRef.current.delete(teamId);
         if (isActive) {
           setLoadingTeamMemberIds((currentIds) => currentIds.filter((id) => id !== teamId));
         }
@@ -347,7 +353,7 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
     return () => {
       isActive = false;
     };
-  }, [loadingTeamMemberIds, teamMemberCache, view]);
+  }, [teamMemberCache, view]);
 
   const loadMoreUsers = useCallback(async () => {
     if (isLoadingUsers || isLoadingMoreUsers || !hasNextUsers) {
