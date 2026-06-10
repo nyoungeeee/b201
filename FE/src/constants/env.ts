@@ -28,8 +28,6 @@ export const KAKAO_REST_API_KEY =
     viteEnv.VITE_KAKAO_REST_API_KEY ?? '';
 export const KAKAO_REDIRECT_URI =
     viteEnv.VITE_KAKAO_REDIRECT_URI ?? '';
-export const COFFEE_DONATION_URL =
-    viteEnv.VITE_COFFEE_DONATION_URL ?? '';
 
 export const ACCESS_TOKEN_KEY = getStorageKey(
     viteEnv.VITE_ACCESS_TOKEN_KEY,

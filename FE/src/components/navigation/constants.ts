@@ -1,7 +1,6 @@
 export const SIDE_NAV_TEXT = {
     closeAriaLabel: '메뉴 닫기',
     closeButton: '×',
-    coffeeLink: '개발자에게 커피사주기',
 } as const;
 
 export const GUEST_NAV_TEXT = {
