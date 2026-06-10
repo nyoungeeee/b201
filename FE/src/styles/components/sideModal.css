@@ -184,24 +184,25 @@
 }
 
 .side-nav-modal__qr-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-24);
-  background-color: rgba(0, 0, 0, 0.46);
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(var(--border-width-sm));
 }
 
 .side-nav-modal__qr-dialog {
   position: relative;
-  width: min(100%, 240px);
+  width: min(100%, 560px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-12);
-  padding: var(--space-24) var(--space-16) var(--space-20);
+  gap: var(--space-16);
+  padding: var(--space-32) var(--space-24) var(--space-24);
   border-radius: var(--radius-lg);
   background-color: var(--bg-secondary);
   box-shadow: var(--shadow-md);
@@ -211,13 +212,14 @@
 .side-nav-modal__qr-dialog h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   font-weight: var(--weight-bold);
 }
 
 .side-nav-modal__qr-dialog img {
-  width: 176px;
-  height: 176px;
+  width: min(100%, 480px);
+  height: auto;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 
