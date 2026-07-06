@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    CsrfTokenView,
     KakaoCallbackView,
     KakaoLoginView,
     LogoutView,
@@ -8,6 +9,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("csrf", CsrfTokenView.as_view(), name="csrf_token"),
     path("kakao/login", KakaoLoginView.as_view(), name="kakao_login"),
     path("kakao/callback", KakaoCallbackView.as_view(), name="kakao_callback"),
     path("refresh", TokenRefreshView.as_view(), name="token_refresh"),

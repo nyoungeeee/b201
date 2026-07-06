@@ -2,12 +2,15 @@ import logging
 from urllib.parse import urljoin
 
 from django.conf import settings
+from django.middleware.csrf import get_token
 from django.shortcuts import redirect
+from django.utils.cache import patch_cache_control
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
@@ -24,6 +27,7 @@ from .exceptions import (
     UserBlockedError,
     UserNotFoundError,
 )
+from .authentication import enforce_csrf
 from .serializers import (
     SigninRequestSerializer,
     SigninResponseSerializer,
@@ -44,11 +48,13 @@ def _set_jwt_cookies(response, token_status):
     response.set_cookie(
         settings.JWT_ACCESS_COOKIE_NAME,
         token_status.access,
+        max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
         **cookie_options,
     )
     response.set_cookie(
         settings.JWT_REFRESH_COOKIE_NAME,
         token_status.refresh,
+        max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
         **cookie_options,
     )
 
@@ -88,6 +94,16 @@ class KakaoLoginView(APIView):
             )
 
         return redirect(authorize_url)
+
+
+class CsrfTokenView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        response = Response({"csrfToken": get_token(request)})
+        patch_cache_control(response, no_store=True)
+        return response
 
 
 class KakaoCallbackView(APIView):
@@ -184,6 +200,7 @@ class SigninView(APIView):
 
 
 class TokenRefreshView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -194,6 +211,7 @@ class TokenRefreshView(APIView):
         },
     )
     def post(self, request):
+        enforce_csrf(request)
         refresh_token = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
         if not refresh_token:
             raise BadRequestException(
@@ -215,6 +233,7 @@ class TokenRefreshView(APIView):
 
 
 class LogoutView(APIView):
+    authentication_classes = [JWTAuthentication]
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -227,6 +246,8 @@ class LogoutView(APIView):
     )
     def post(self, request):
         refresh_token = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
+        if refresh_token or request.COOKIES.get(settings.JWT_ACCESS_COOKIE_NAME):
+            enforce_csrf(request)
         if request.user.is_authenticated:
             try:
                 AuthService.logout(request.user)

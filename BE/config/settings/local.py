@@ -9,6 +9,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",  # Vite Admin
 ]
+CSRF_TRUSTED_ORIGINS = [
+    value.strip()
+    for value in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174",
+    ).split(",")
+    if value.strip()
+]
 
 DATABASES = {
     "default": {

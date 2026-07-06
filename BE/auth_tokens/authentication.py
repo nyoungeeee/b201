@@ -1,6 +1,11 @@
 from django.conf import settings
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
+from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
+def enforce_csrf(request):
+    SessionAuthentication().enforce_csrf(request)
 
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -8,6 +13,7 @@ class CookieJWTAuthentication(JWTAuthentication):
         raw_token = request.COOKIES.get(settings.JWT_ACCESS_COOKIE_NAME)
         if raw_token is not None:
             validated_token = self.get_validated_token(raw_token)
+            enforce_csrf(request)
             return self.get_user(validated_token), validated_token
 
         header = self.get_header(request)
