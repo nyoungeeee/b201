@@ -44,11 +44,13 @@ def _set_jwt_cookies(response, token_status):
     response.set_cookie(
         settings.JWT_ACCESS_COOKIE_NAME,
         token_status.access,
+        max_age=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
         **cookie_options,
     )
     response.set_cookie(
         settings.JWT_REFRESH_COOKIE_NAME,
         token_status.refresh,
+        max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
         **cookie_options,
     )
 
