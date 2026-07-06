@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {
+    toRoomRequest,
     toAffectedReservation,
     toConflict,
     toDayOff,
@@ -173,6 +174,25 @@ assert.deepEqual(
         isActive: true,
         sortOrder: 1,
         updatedAt: '2026.05.22',
+    },
+);
+
+assert.deepEqual(
+    toRoomRequest({
+        name: 'A룸',
+        description: '24시간 운영',
+        openTime: '09:00',
+        closeTime: '23:00',
+        isOpenAllDay: true,
+        isActive: true,
+        sortOrder: 1,
+    }),
+    {
+        name: 'A룸',
+        description: '24시간 운영',
+        open_time: '09:00',
+        close_time: '09:00',
+        is_open_all_day: true,
     },
 );
 

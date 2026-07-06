@@ -698,11 +698,16 @@ class AdminRoomService:
         max_sort_order = StudioRoom.objects.aggregate(max_sort_order=Max("sort_order"))[
             "max_sort_order"
         ]
+        normalized_close_time = AdminRoomService._normalize_close_time(
+            open_time=open_time,
+            close_time=close_time,
+            is_open_all_day=is_open_all_day,
+        )
         room = StudioRoom.objects.create(
             name=name,
             description=description,
             open_time=open_time,
-            close_time=close_time,
+            close_time=normalized_close_time,
             is_24_hours=is_open_all_day,
             status=StudioRoomStatus.ACTIVE,
             sort_order=(max_sort_order or 0) + 1,
@@ -722,10 +727,15 @@ class AdminRoomService:
         room = AdminRoomService._get_room(room_id)
         if StudioRoom.objects.filter(name=name).exclude(id=room.id).exists():
             raise DuplicateRoomNameError()
+        normalized_close_time = AdminRoomService._normalize_close_time(
+            open_time=open_time,
+            close_time=close_time,
+            is_open_all_day=is_open_all_day,
+        )
         room.name = name
         room.description = description
         room.open_time = open_time
-        room.close_time = close_time
+        room.close_time = normalized_close_time
         room.is_24_hours = is_open_all_day
         try:
             room.save(
@@ -760,6 +770,12 @@ class AdminRoomService:
     @staticmethod
     def _get_room(room_id: int) -> StudioRoom:
         return StudioRoom.objects.get(id=room_id)
+
+    @staticmethod
+    def _normalize_close_time(open_time, close_time, is_open_all_day: bool):
+        if is_open_all_day:
+            return open_time
+        return close_time
 
     @staticmethod
     def _build_room_info(room: StudioRoom) -> AdminRoomInfo:

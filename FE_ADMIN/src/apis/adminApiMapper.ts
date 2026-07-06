@@ -3,6 +3,7 @@ import type {
     AdminReservationConflict,
 } from '../components/admin/reservations/types';
 import type {
+    AdminPracticeRoom,
     AdminRoomAffectedReservation,
     AdminRoomDayOff,
 } from '../components/admin/rooms/types';
@@ -239,6 +240,16 @@ export const toRoom = (room: ApiRoom) => ({
     isActive: room.is_active,
     sortOrder: room.sort_order,
     updatedAt: formatDateDots(room.updated_at),
+});
+
+export const toRoomRequest = (
+    data: Omit<AdminPracticeRoom, 'id' | 'updatedAt'>,
+) => ({
+    name: data.name,
+    description: data.description,
+    open_time: data.openTime,
+    close_time: data.isOpenAllDay ? data.openTime : data.closeTime,
+    is_open_all_day: data.isOpenAllDay,
 });
 
 export const toDayOff = (dayOff: ApiDayOff): AdminRoomDayOff => {

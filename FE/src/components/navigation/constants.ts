@@ -1,6 +1,10 @@
 export const SIDE_NAV_TEXT = {
     closeAriaLabel: '메뉴 닫기',
     closeButton: '×',
+    coffeeLink: '개발자에게 커피사주기',
+    coffeeQrTitle: '카카오페이 QR',
+    coffeeQrDescription: '휴대폰 카메라로 QR 코드를 스캔해주세요.',
+    coffeeQrCloseAriaLabel: '커피 후원 QR 닫기',
 } as const;
 
 export const GUEST_NAV_TEXT = {
