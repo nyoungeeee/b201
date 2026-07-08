@@ -28,12 +28,37 @@ globalThis.fetch = (async (
     calls.push({ input, init });
 
     const url = String(input);
+    if (url.endsWith('/auth/csrf')) {
+        return new Response(JSON.stringify({ csrfToken: 'csrf-token' }), {
+            status: 200,
+        });
+    }
+
     if (url.endsWith('/admin/me') && calls.length === 1) {
         return new Response(null, { status: 401 });
     }
 
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
 }) as typeof fetch;
+
+await authFetch('https://api.b201.kr/v1/admin/reservations/161/approve', {
+    method: 'PATCH',
+});
+
+assert.equal(calls.length, 2);
+assert.equal(String(calls[0].input), 'https://api.b201.kr/auth/csrf');
+assert.equal(calls[0].init?.credentials, 'include');
+assert.equal(
+    String(calls[1].input),
+    'https://api.b201.kr/v1/admin/reservations/161/approve',
+);
+assert.equal(calls[1].init?.credentials, 'include');
+assert.equal(
+    new Headers(calls[1].init?.headers).get('X-CSRFToken'),
+    'csrf-token',
+);
+
+calls.length = 0;
 
 const response = await authFetch('https://api.b201.kr/v1/admin/me');
 
@@ -43,6 +68,10 @@ assert.equal(calls[0].init?.credentials, 'include');
 assert.equal(String(calls[1].input), 'https://api.b201.kr/auth/refresh');
 assert.equal(calls[1].init?.method, 'POST');
 assert.equal(calls[1].init?.credentials, 'include');
+assert.equal(
+    new Headers(calls[1].init?.headers).get('X-CSRFToken'),
+    'csrf-token',
+);
 assert.equal(calls[2].init?.credentials, 'include');
 
 calls.length = 0;
