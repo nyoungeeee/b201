@@ -1,7 +1,4 @@
-import { API_BASE_URL } from '../constants/env';
-import { logoutWithCookie } from './authFetch';
-
-const API_ORIGIN_URL = API_BASE_URL.replace(/\/v1\/?$/, '');
+import { logoutWithCookie, refreshWithCookie } from './authFetch';
 
 export type AuthTeam = {
     id: number;
@@ -16,13 +13,6 @@ export type AuthUser = {
     team: AuthTeam[];
 };
 
-export const refreshAuthSession = async (): Promise<boolean> => {
-    const response = await fetch(`${API_ORIGIN_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-    });
-
-    return response.ok;
-};
+export const refreshAuthSession = async (): Promise<boolean> => refreshWithCookie();
 
 export const logout = logoutWithCookie;
