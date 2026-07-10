@@ -527,11 +527,12 @@ class ReservationQueryService:
         current_time = now.time()
         if period == "past":
             queryset = queryset.filter(
-                Q(reservation_date__lt=today)
+                Q(status=BookingStatus.CANCELED)
+                | Q(reservation_date__lt=today)
                 | Q(reservation_date=today, end_time__lt=current_time)
             )
         else:
-            queryset = queryset.filter(
+            queryset = queryset.exclude(status=BookingStatus.CANCELED).filter(
                 Q(reservation_date__gt=today)
                 | Q(reservation_date=today, end_time__gte=current_time)
             )

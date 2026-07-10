@@ -147,6 +147,14 @@ const MyReservationPage = () => {
         ];
     }, [user?.team]);
 
+    const stateFilterOptions = useMemo(() => (
+        activeTab === 'upcoming'
+            ? RESERVATION_STATE_FILTER_OPTIONS.filter(
+                (option) => option.value !== 'canceled',
+            )
+            : RESERVATION_STATE_FILTER_OPTIONS
+    ), [activeTab]);
+
     const upcomingReservationCount = upcomingCountQuery.data?.pagination.total_count ?? 0;
     const pastReservationCount = pastCountQuery.data?.pagination.total_count ?? 0;
     const isReservationsLoading = !!accessToken && visibleReservationsQuery.isPending;
@@ -164,7 +172,7 @@ const MyReservationPage = () => {
         pastCountQuery.isRefetching ||
         isAuthUserRefreshing
     );
-    const stateFilterLabel = RESERVATION_STATE_FILTER_OPTIONS.find(
+    const stateFilterLabel = stateFilterOptions.find(
         (option) => option.value === stateFilter,
     )?.label ?? MY_RESERVATION_TEXT.stateFilter;
     const sortLabel = RESERVATION_SORT_OPTIONS.find(
@@ -283,7 +291,7 @@ const MyReservationPage = () => {
     const filterSheetOptions = activeFilterSheet === 'sort'
         ? RESERVATION_SORT_OPTIONS
         : activeFilterSheet === 'state'
-            ? RESERVATION_STATE_FILTER_OPTIONS
+            ? stateFilterOptions
             : teamFilterOptions;
     const selectedFilterValue = activeFilterSheet === 'sort'
         ? draftSort

@@ -41,7 +41,7 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
 
     # 팀 예약 조회 시 status를 두 개 넘기면 해당 상태의 팀 예약만 반환되는지 검증한다.
     def test_get_team_reservations_filters_multiple_statuses(self):
-        canceled = Booking.objects.create(
+        approved = Booking.objects.create(
             room=self.room,
             user=self.user,
             team=self.team,
@@ -49,7 +49,7 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             reservation_date=self.tomorrow,
             start_time=time(19, 0),
             end_time=time(20, 0),
-            status=BookingStatus.CANCELED,
+            status=BookingStatus.RESERVED,
         )
         pending = Booking.objects.create(
             room=self.room,
@@ -69,21 +69,21 @@ class TeamReservationListAPITestCase(BaseBookingAPITestCase):
             reservation_date=self.tomorrow,
             start_time=time(18, 0),
             end_time=time(19, 0),
-            status=BookingStatus.RESERVED,
+            status=BookingStatus.CANCELED,
         )
 
         response = self.client.get(
-            "/v1/reservations/?type=team&period=upcoming&status=CANCELED&status=PENDING"
+            "/v1/reservations/?type=team&period=upcoming&status=APPROVED&status=PENDING"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [canceled.reservation_number, pending.reservation_number],
+            [approved.reservation_number, pending.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.CANCELED, BookingStatus.PENDING],
+            ["APPROVED", BookingStatus.PENDING],
         )
 
     # 소속되지 않은 팀으로 팀 예약 조회를 시도하면 금지되는지 검증한다.

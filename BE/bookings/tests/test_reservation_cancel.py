@@ -50,7 +50,7 @@ class ReservationCancelAPITestCase(BaseBookingAPITestCase):
         self._authenticate(self.user)
         self.client.delete(f"/v1/reservations/number/{booking.reservation_number}")
 
-        response = self.client.get("/v1/reservations/?period=upcoming")
+        response = self.client.get("/v1/reservations/?period=past")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = response.data["reservations"][0]

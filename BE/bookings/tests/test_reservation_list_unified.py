@@ -10,6 +10,30 @@ from .base import BaseBookingAPITestCase
 
 
 class UnifiedReservationListAPITestCase(BaseBookingAPITestCase):
+    def test_canceled_future_reservation_is_past_not_upcoming(self):
+        canceled_booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.tomorrow,
+            start_time=time(18, 0),
+            end_time=time(19, 0),
+            status=BookingStatus.CANCELED,
+        )
+
+        upcoming_response = self.client.get("/v1/reservations/?period=upcoming")
+        past_response = self.client.get("/v1/reservations/?period=past")
+
+        self.assertEqual(upcoming_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(upcoming_response.data["pagination"]["total_count"], 0)
+        self.assertEqual(past_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(past_response.data["pagination"]["total_count"], 1)
+        self.assertEqual(
+            past_response.data["reservations"][0]["reservation_number"],
+            canceled_booking.reservation_number,
+        )
+        self.assertEqual(past_response.data["reservations"][0]["status"], "CANCELED")
+
     def test_legacy_split_reservation_list_urls_are_removed(self):
         for path in ["/v1/reservations/me", "/v1/reservations/team"]:
             with self.subTest(path=path):
