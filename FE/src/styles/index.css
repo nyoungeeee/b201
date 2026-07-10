@@ -14,6 +14,7 @@
 @import "./pages/calendar.css";
 @import "./pages/kakaoCallback.css";
 @import "./pages/myInfo.css";
+@import "./pages/myInfoExternalCalendar.css";
 @import "./pages/myReservation.css";
 @import "./pages/notFound.css";
 @import "./pages/reservationApply.css";

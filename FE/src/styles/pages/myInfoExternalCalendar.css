@@ -1,0 +1,189 @@
+.external-calendar-page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--page-bg);
+}
+
+.external-calendar-page__content {
+  flex: 1;
+  padding: var(--space-20) var(--space-20) var(--space-24);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.external-calendar-page__logo {
+  width: var(--logo-size-md);
+  height: var(--logo-size-md);
+  margin: var(--space-12) 0 var(--space-20);
+  object-fit: contain;
+}
+
+.external-calendar-page__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-title);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.external-calendar-page__description {
+  margin: var(--space-16) 0 var(--space-20);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--lh-relaxed);
+  text-align: center;
+}
+
+.external-calendar-subscription { width: 100%; }
+
+.external-calendar-subscription__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 18px;
+  line-height: 18px;
+}
+
+.external-calendar-subscription__help {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.external-calendar-subscription__url {
+  flex: none;
+}
+
+.external-calendar-subscription__url button {
+  color: var(--text-secondary);
+}
+
+.external-calendar-subscription__notices { margin-top: var(--space-14); }
+.external-calendar-subscription__warning p { color: var(--text-error); }
+.external-calendar-page__bottom { padding-top: var(--space-12); }
+
+.external-calendar-guide {
+  max-width: var(--modal-panel-width-md);
+  padding: var(--space-28) var(--space-16) var(--space-14);
+  background: var(--bg-secondary);
+}
+
+.external-calendar-guide .action-modal__title {
+  font-size: var(--text-xl);
+}
+
+.external-calendar-guide__steps {
+  margin: var(--space-28) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.external-calendar-guide__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.external-calendar-guide__icon {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.external-calendar-guide__step-content {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: var(--space-8);
+  align-items: start;
+}
+
+.external-calendar-guide__step-content h3 {
+  grid-column: 2;
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  line-height: var(--lh-normal);
+  white-space: pre-line;
+}
+
+.external-calendar-guide__number {
+  grid-column: 1;
+  grid-row: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-mm);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.external-calendar-guide__step-content p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--lh-normal);
+  white-space: pre-line;
+}
+
+.external-calendar-guide__notice {
+  margin-top: var(--space-14);
+  padding: var(--space-14);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-10);
+}
+
+.external-calendar-guide__notice svg {
+  flex-shrink: 0;
+  margin-top: var(--space-2);
+}
+
+.external-calendar-guide__notice p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--lh-relaxed);
+  white-space: pre-line;
+}
+
+.external-calendar-guide .action-modal__actions {
+  margin-top: var(--space-16);
+}
+
+.external-calendar-guide .action-modal__button--primary {
+  background: var(--bg-elevated);
+}
+
+@media (max-height: 650px) {
+  .external-calendar-page__content { padding-top: var(--space-8); }
+  .external-calendar-page__logo { margin: var(--space-4) 0 var(--space-12); }
+  .external-calendar-page__description { margin: var(--space-10) 0 var(--space-14); }
+}
