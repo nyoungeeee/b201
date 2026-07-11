@@ -525,17 +525,25 @@ class ReservationQueryService:
         now = timezone.localtime()
         today = now.date()
         current_time = now.time()
-        if period == "past":
-            queryset = queryset.filter(
-                Q(status=BookingStatus.CANCELED)
-                | Q(reservation_date__lt=today)
-                | Q(reservation_date=today, end_time__lt=current_time)
-            )
-        else:
-            queryset = queryset.exclude(status=BookingStatus.CANCELED).filter(
-                Q(reservation_date__gt=today)
-                | Q(reservation_date=today, end_time__gte=current_time)
-            )
+        has_ended = Q(reservation_date__lt=today) | Q(
+            reservation_date=today,
+            end_time__lt=current_time,
+        )
+        is_upcoming = Q(reservation_date__gt=today) | Q(
+            reservation_date=today,
+            end_time__gte=current_time,
+        )
+        is_canceled = Q(status=BookingStatus.CANCELED)
+
+        # if period == "past":
+        #     queryset = queryset.filter(is_canceled | has_ended)
+        # else:
+        #     queryset = queryset.filter(~is_canceled & is_upcoming)
+
+        period_filter = (
+            is_canceled | has_ended if period == "past" else ~is_canceled & is_upcoming
+        )
+        queryset = queryset.filter(period_filter)
 
         if reservation_type == "private":
             queryset = queryset.filter(booking_type=BookingType.PRIVATE)
