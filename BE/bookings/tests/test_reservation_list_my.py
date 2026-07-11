@@ -8,9 +8,9 @@ from .base import BaseBookingAPITestCase
 
 
 class MyReservationListAPITestCase(BaseBookingAPITestCase):
-    # 내 예약 조회 시 status 미입력이어도 모든 상태가 가까운 예약순으로 반환되는지 검증한다.
-    def test_get_my_reservations_returns_all_statuses_without_filter(self):
-        canceled = Booking.objects.create(
+    # 예정 예약 조회 시 status 미입력이어도 취소 상태는 제외되는지 검증한다.
+    def test_get_upcoming_reservations_excludes_canceled_without_filter(self):
+        Booking.objects.create(
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
@@ -34,11 +34,11 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [canceled.reservation_number, reserved.reservation_number],
+            [reserved.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.CANCELED, "APPROVED"],
+            ["APPROVED"],
         )
 
     # 내 예약 조회 시 status 하나를 지정하면 해당 상태 예약만 반환되는지 검증한다.
@@ -79,14 +79,14 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
 
     # 내 예약 조회 시 status를 두 개 넘기면 둘 다 포함해서 반환되는지 검증한다.
     def test_get_my_reservations_filters_multiple_statuses(self):
-        canceled = Booking.objects.create(
+        approved = Booking.objects.create(
             room=self.room,
             user=self.user,
             booking_type=BookingType.PRIVATE,
             reservation_date=self.tomorrow,
             start_time=time(9, 0),
             end_time=time(10, 0),
-            status=BookingStatus.CANCELED,
+            status=BookingStatus.RESERVED,
         )
         pending = Booking.objects.create(
             room=self.room,
@@ -104,21 +104,21 @@ class MyReservationListAPITestCase(BaseBookingAPITestCase):
             reservation_date=self.tomorrow,
             start_time=time(18, 0),
             end_time=time(19, 0),
-            status=BookingStatus.RESERVED,
+            status=BookingStatus.CANCELED,
         )
 
         response = self.client.get(
-            "/v1/reservations/?type=private&period=upcoming&status=CANCELED&status=PENDING"
+            "/v1/reservations/?type=private&period=upcoming&status=APPROVED&status=PENDING"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [item["reservation_number"] for item in response.data["reservations"]],
-            [canceled.reservation_number, pending.reservation_number],
+            [approved.reservation_number, pending.reservation_number],
         )
         self.assertEqual(
             [item["status"] for item in response.data["reservations"]],
-            [BookingStatus.CANCELED, BookingStatus.PENDING],
+            ["APPROVED", BookingStatus.PENDING],
         )
 
     # 내 예약 조회 시 page/size가 적용되는지 검증한다.
