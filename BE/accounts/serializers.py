@@ -116,3 +116,10 @@ class RandomNicknameResponseSerializer(serializers.Serializer):
         required=True,
         help_text="접두어 + 명사 + 숫자 형식의 랜덤 닉네임",
     )
+
+
+class CalendarSubscriptionResponseSerializer(serializers.Serializer):
+    calendar_url = serializers.URLField(
+        required=True,
+        help_text="외부 캘린더 앱에 등록할 B201 예약 구독 URL",
+    )
