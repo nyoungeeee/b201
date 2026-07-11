@@ -1,12 +1,13 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import RequireAuth from '../components/auth/RequireAuth';
+import KakaoCallbackPage from '../pages/KakaoCallbackPage';
 import MyInfoDetailPage from '../pages/MyInfoDetailPage';
+import MyInfoExternalCalendarPage from '../pages/MyInfoExternalCalendarPage';
 import MyInfoPage from '../pages/MyInfoPage';
 import MyReservationDetailPage from '../pages/MyReservationDetailPage';
 import MyReservationPage from '../pages/MyReservationPage';
 import MyTeamDetailPage from '../pages/MyTeamDetailPage';
-import KakaoCallbackPage from '../pages/KakaoCallbackPage';
 import MyTeamPage from '../pages/MyTeamPage';
 import NicknameEditPage from '../pages/NicknameEditPage';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -31,6 +32,7 @@ const AppRouter = () => {
                     <Route path="/reservations/:reservationId" element={<MyReservationDetailPage />} />
                     <Route path="/my/nickname" element={<NicknameEditPage />} />
                     <Route path="/my/detail" element={<MyInfoDetailPage />} />
+                    <Route path="/my/external-calendar" element={<MyInfoExternalCalendarPage />} />
                     <Route path="/my/detail/withdraw" element={<WithdrawPage />} />
                     <Route path="/team" element={<MyTeamPage />} />
                     <Route path="/team/:id" element={<MyTeamDetailPage />} />

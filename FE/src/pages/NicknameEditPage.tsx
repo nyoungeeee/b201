@@ -62,7 +62,7 @@ const NICKNAME_MESSAGE = {
 const getInputWrapClassName = (checkStatus: NicknameCheckStatus) =>
     [
         'form-input',
-        'nickname-form__input-wrap',
+        'form-input--fill',
         checkStatus === 'unavailable' && 'is-error',
         checkStatus === 'available' && 'is-available',
         checkStatus === 'unavailable' && 'is-unavailable',
@@ -183,7 +183,7 @@ const NicknameEditPage = () => {
                     </h1>
 
                     <section className="nickname-form">
-                        <label className="nickname-form__label">
+                        <label className="form-label">
                             {NICKNAME_TEXT.label}
                         </label>
 

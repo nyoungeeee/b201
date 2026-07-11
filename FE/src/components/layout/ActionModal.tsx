@@ -1,7 +1,7 @@
 // components/modal/ActionModal.tsx
 
 interface ActionModalProps {
-    icon: React.ReactNode;
+    icon?: React.ReactNode;
     title: string;
     description?: React.ReactNode;
     children?: React.ReactNode;
@@ -12,6 +12,8 @@ interface ActionModalProps {
     confirmVariant?: 'primary' | 'danger';
     isCancelDisabled?: boolean;
     isConfirmDisabled?: boolean;
+    showCancelButton?: boolean;
+    panelClassName?: string;
 
     onCancel?: () => void;
     onConfirm?: () => void;
@@ -29,18 +31,22 @@ const ActionModal = ({
     confirmVariant = 'primary',
     isCancelDisabled = false,
     isConfirmDisabled = false,
+    showCancelButton = true,
+    panelClassName = '',
 
     onCancel,
     onConfirm,
 }: ActionModalProps) => {
     return (
         <div className="action-modal">
-            <div className="action-modal__backdrop" />
+            <div className="action-modal__backdrop" onClick={onCancel} />
 
-            <section className="action-modal__panel">
-                <div className="action-modal__icon">
-                    {icon}
-                </div>
+            <section className={`action-modal__panel ${panelClassName}`.trim()}>
+                {icon && (
+                    <div className="action-modal__icon">
+                        {icon}
+                    </div>
+                )}
 
                 <h2 className="action-modal__title">
                     {title}
@@ -55,20 +61,22 @@ const ActionModal = ({
                 {children}
 
                 <div className="action-modal__actions">
-                    <button
-                        type="button"
-                        className="action-modal__button action-modal__button--cancel"
-                        disabled={isCancelDisabled}
-                        onClick={onCancel}
-                    >
-                        {cancelText}
-                    </button>
+                    {showCancelButton && (
+                        <button
+                            type="button"
+                            className="action-modal__button action-modal__button--cancel"
+                            disabled={isCancelDisabled}
+                            onClick={onCancel}
+                        >
+                            {cancelText}
+                        </button>
+                    )}
 
                     <button
                         type="button"
                         className={`action-modal__button ${confirmVariant === 'danger'
-                                ? 'action-modal__button--danger'
-                                : 'action-modal__button--primary'
+                            ? 'action-modal__button--danger'
+                            : 'action-modal__button--primary'
                             }`}
                         disabled={isConfirmDisabled}
                         onClick={onConfirm}

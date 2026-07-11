@@ -170,24 +170,11 @@
   max-width: 100%;
 }
 
-.nickname-form__label {
-  display: block;
-  margin-bottom: var(--space-4);
-  font-size: var(--text-md);
-  color: var(--text-primary);
-}
-
 .nickname-form__row {
   width: 100%;
   display: flex;
   gap: var(--space-8);
   align-items: center;
-}
-
-.nickname-form__input-wrap {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: var(--input-height-sm);
 }
 
 .nickname-form__input {

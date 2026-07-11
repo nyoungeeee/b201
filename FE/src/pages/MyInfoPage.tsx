@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRightIcon } from '../components/common/icons';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
 import PageHeader from '../components/layout/PageHeader';
-import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { useRefreshAuthUser } from '../hooks/useRefreshAuthUser';
 
 const MY_INFO_TEXT = {
     greeting: '안녕하세요. 무엇을 찾으시나요?',
@@ -20,6 +20,10 @@ const MY_INFO_MENU = [
     {
         label: '내 정보 확인',
         path: '/my/detail',
+    },
+    {
+        label: '내 캘린더 연동',
+        path: '/my/external-calendar',
     },
 ] as const;
 

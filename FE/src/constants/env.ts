@@ -30,6 +30,9 @@ export const KAKAO_REDIRECT_URI =
     viteEnv.VITE_KAKAO_REDIRECT_URI ?? '';
 export const COFFEE_DONATION_URL =
     viteEnv.VITE_COFFEE_DONATION_URL ?? '';
+export const USE_EXTERNAL_CALENDAR_MOCK =
+    viteEnv.DEV
+    && viteEnv.VITE_USE_EXTERNAL_CALENDAR_MOCK !== 'false';
 
 export const ACCESS_TOKEN_KEY = getStorageKey(
     viteEnv.VITE_ACCESS_TOKEN_KEY,
