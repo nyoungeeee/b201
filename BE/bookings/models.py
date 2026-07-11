@@ -109,6 +109,37 @@ class Booking(models.Model):
         return f"{self.reservation_number}"
 
 
+class BookingSlot(models.Model):
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="slots",
+    )
+    room = models.ForeignKey(
+        StudioRoom,
+        on_delete=models.PROTECT,
+        related_name="booking_slots",
+    )
+    reservation_date = models.DateField()
+    slot_time = models.TimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reservation_slots"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "reservation_date", "slot_time"],
+                name="unique_reservation_slot",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["booking"]),
+            models.Index(fields=["reservation_date"]),
+            models.Index(fields=["room", "reservation_date"]),
+        ]
+        ordering = ["reservation_date", "slot_time", "id"]
+
+
 class ReservationRepeatGroup(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     room = models.ForeignKey(
