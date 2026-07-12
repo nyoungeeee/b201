@@ -10,13 +10,16 @@ from django.utils import timezone
 
 from accounts.models import UserStatus
 from backoffice.models import AdminActionLog
+from bookings.exceptions import DuplicatedReservationError
 from bookings.models import (
     Booking,
+    BookingSlot,
     BookingStatus,
     BookingType,
     ReservationRepeatOccurrence,
     ReservationRepeatOccurrenceStatus,
 )
+from bookings.services import ReservationCommandService
 from studios.models import ClosureType, RoomClosure, StudioRoom, StudioRoomStatus
 from teams.models import (
     Team,
@@ -758,6 +761,10 @@ class AdminRoomService:
         room = AdminRoomService._get_room(room_id)
         room.status = StudioRoomStatus.INACTIVE
         room.save(update_fields=["status", "updated_at"])
+        BookingSlot.objects.filter(
+            booking__room=room,
+            booking__status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
+        ).delete()
         Booking.objects.filter(
             room=room,
             status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
@@ -927,6 +934,10 @@ class AdminReservationService:
         if unresolved_ids:
             raise ConflictReservationError()
         if forced_ids:
+            BookingSlot.objects.filter(
+                booking_id__in=forced_ids,
+                booking__status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
+            ).delete()
             Booking.objects.filter(
                 reservation_number__in=forced_ids,
                 status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
@@ -948,6 +959,13 @@ class AdminReservationService:
             memo=memo or "",
             status=BookingStatus.RESERVED,
         )
+        try:
+            ReservationCommandService._reserve_booking_slots(
+                booking=booking,
+                room=room,
+            )
+        except DuplicatedReservationError as e:
+            raise ConflictReservationError() from e
         return AdminReservationService._build_reservation_info(booking)
 
     @staticmethod
@@ -990,6 +1008,9 @@ class AdminReservationService:
         booking.canceled_by = admin_user
         booking.save(
             update_fields=["status", "canceled_at", "canceled_by", "updated_at"]
+        )
+        ReservationCommandService._release_booking_slots_by_ids(
+            [booking.reservation_number]
         )
 
     @staticmethod
@@ -1284,6 +1305,10 @@ class AdminDayOffService:
         if conflict_ids - forced_ids:
             raise ReservationConflictError(conflicts)
         if forced_ids:
+            BookingSlot.objects.filter(
+                booking_id__in=forced_ids,
+                booking__status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],
+            ).delete()
             Booking.objects.filter(
                 reservation_number__in=forced_ids,
                 status__in=[BookingStatus.PENDING, BookingStatus.RESERVED],

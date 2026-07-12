@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -24,6 +24,7 @@ from bookings.exceptions import (
 )
 from bookings.models import (
     Booking,
+    BookingSlot,
     BookingStatus,
     BookingType,
     ReservationRepeatGroup,
@@ -1073,19 +1074,22 @@ class ReservationCommandService:
                 end_time=end_time,
             )
 
-            bookings.append(
-                Booking.objects.create(
-                    room=room,
-                    user=user,
-                    booking_type=BookingType.PRIVATE,
-                    reservation_date=target_date,
-                    start_time=start_time,
-                    end_time=end_time,
-                    status=BookingStatus.PENDING,
-                    **repeat_metadata,
-                )
+            booking = Booking.objects.create(
+                room=room,
+                user=user,
+                booking_type=BookingType.PRIVATE,
+                reservation_date=target_date,
+                start_time=start_time,
+                end_time=end_time,
+                status=BookingStatus.PENDING,
+                **repeat_metadata,
             )
+            bookings.append(booking)
 
+        ReservationCommandService._reserve_booking_slots_for_bookings(
+            bookings=bookings,
+            room=room,
+        )
         return ReservationList(
             reservations=[
                 ReservationQueryService._build_reservation_item(booking)
@@ -1122,20 +1126,23 @@ class ReservationCommandService:
                 end_time=end_time,
             )
 
-            bookings.append(
-                Booking.objects.create(
-                    room=room,
-                    user=user,
-                    team=team,
-                    booking_type=BookingType.TEAM,
-                    reservation_date=target_date,
-                    start_time=start_time,
-                    end_time=end_time,
-                    status=BookingStatus.PENDING,
-                    **repeat_metadata,
-                )
+            booking = Booking.objects.create(
+                room=room,
+                user=user,
+                team=team,
+                booking_type=BookingType.TEAM,
+                reservation_date=target_date,
+                start_time=start_time,
+                end_time=end_time,
+                status=BookingStatus.PENDING,
+                **repeat_metadata,
             )
+            bookings.append(booking)
 
+        ReservationCommandService._reserve_booking_slots_for_bookings(
+            bookings=bookings,
+            room=room,
+        )
         return ReservationList(
             reservations=[
                 ReservationQueryService._build_reservation_item(booking)
@@ -1326,6 +1333,9 @@ class ReservationCommandService:
         booking.save(
             update_fields=["status", "canceled_at", "canceled_by", "updated_at"]
         )
+        ReservationCommandService._release_booking_slots_by_ids(
+            [booking.reservation_number]
+        )
 
     @staticmethod
     @transaction.atomic
@@ -1386,6 +1396,7 @@ class ReservationCommandService:
                 status=BookingStatus.CANCELED,
                 canceled_at=canceled_at,
             )
+            ReservationCommandService._release_booking_slots_by_ids(booking_ids)
 
         for occurrence in occurrences:
             occurrence.status = ReservationRepeatOccurrenceStatus.CANCELED
@@ -1444,6 +1455,10 @@ class ReservationCommandService:
             group_booking.status = BookingStatus.CANCELED
             group_booking.canceled_at = canceled_at
             group_booking.save(update_fields=["status", "canceled_at", "updated_at"])
+
+        ReservationCommandService._release_booking_slots_by_ids(
+            [group_booking.reservation_number for group_booking in bookings]
+        )
 
         canceled_by = user.nickname or ""
         return CanceledRepeatOccurrenceList(
@@ -1702,6 +1717,93 @@ class ReservationCommandService:
         return False
 
     @staticmethod
+    def _build_slot_times(
+        room: StudioRoom,
+        target_date: date,
+        start_time: time,
+        end_time: time,
+    ) -> list[time]:
+        start_at = ReservationCommandService._normalize_time(
+            room=room,
+            target_date=target_date,
+            target_time=start_time,
+        )
+        end_at = ReservationCommandService._normalize_end_time(
+            room=room,
+            target_date=target_date,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
+        slot_times: list[time] = []
+        current_at = start_at
+        while current_at < end_at:
+            slot_times.append(current_at.time())
+            current_at += timedelta(minutes=30)
+        return slot_times
+
+    @staticmethod
+    def _reserve_booking_slots(
+        booking: Booking,
+        room: StudioRoom,
+    ) -> None:
+        ReservationCommandService._reserve_booking_slots_for_bookings(
+            bookings=[booking],
+            room=room,
+        )
+
+    @staticmethod
+    def _reserve_booking_slots_for_bookings(
+        bookings: list[Booking],
+        room: StudioRoom,
+    ) -> None:
+        booking_slots: list[BookingSlot] = []
+        for booking in bookings:
+            booking_slots.extend(
+                ReservationCommandService._build_booking_slots(
+                    booking=booking,
+                    room=room,
+                )
+            )
+        if not booking_slots:
+            return
+        try:
+            BookingSlot.objects.bulk_create(booking_slots)
+        except IntegrityError as e:
+            raise DuplicatedReservationError() from e
+
+    @staticmethod
+    def _build_booking_slots(booking: Booking, room: StudioRoom) -> list[BookingSlot]:
+        slot_times = ReservationCommandService._build_slot_times(
+            room=room,
+            target_date=booking.reservation_date,
+            start_time=booking.start_time,
+            end_time=booking.end_time,
+        )
+        return [
+            BookingSlot(
+                booking=booking,
+                room=room,
+                reservation_date=booking.reservation_date,
+                slot_time=slot_time,
+            )
+            for slot_time in slot_times
+        ]
+
+    @staticmethod
+    def _release_booking_slots_by_ids(booking_ids: list[int]) -> None:
+        if not booking_ids:
+            return
+        BookingSlot.objects.filter(booking_id__in=booking_ids).delete()
+
+    @staticmethod
+    def prune_booking_slots_before(cutoff_date: date) -> int:
+        deleted_count, _ = BookingSlot.objects.filter(
+            reservation_date__lt=cutoff_date
+        ).delete()
+        return deleted_count
+
+    @staticmethod
     def _create_repeat_bookings(
         user,
         room: StudioRoom,
@@ -1756,6 +1858,11 @@ class ReservationCommandService:
                 status=ReservationCommandService._to_occurrence_status(booking.status),
                 booking=booking,
             )
+
+        ReservationCommandService._reserve_booking_slots_for_bookings(
+            bookings=bookings,
+            room=room,
+        )
 
         for occurrence in conflict_occurrences:
             ReservationRepeatOccurrence.objects.create(

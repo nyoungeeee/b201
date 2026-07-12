@@ -211,6 +211,22 @@ REFRESH_TOKEN_LIFETIME=7
 python manage.py migrate
 ```
 
+### 오래된 예약 슬롯 정리
+
+예약 중복 방지를 위해 생성되는 `BookingSlot` 데이터는 과거 날짜 기준으로 정리할 수 있습니다. 기본 실행은 dry-run이라 삭제하지 않고 대상 개수만 출력합니다.
+
+```bash
+python manage.py prune_booking_slots --before 2026-01-01
+```
+
+실제로 삭제하려면 `--apply`를 함께 사용합니다.
+
+```bash
+python manage.py prune_booking_slots --before 2026-01-01 --apply
+```
+
+`--before` 날짜보다 오래된 슬롯만 삭제하며, 예약 이력(`Booking`) 자체는 삭제하지 않습니다.
+
 ### 관리자 계정 생성
 
 ```bash
