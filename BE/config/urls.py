@@ -59,6 +59,7 @@ urlpatterns += [
     path("v1/reservations/", include("bookings.reservations_urls")),
     path("v1/teams/", include("teams.urls")),
     path("v1/admin/", include("backoffice.urls")),
+    path("calendar/", include("bookings.calendar_urls")),
 ]
 
 

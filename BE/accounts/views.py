@@ -1,5 +1,6 @@
 import logging
 
+from django.urls import reverse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -19,11 +20,13 @@ from common.api_exceptions import (
 from common.service_exceptions import BaseServiceError
 from common.swagger import openapi_exception_response
 from accounts.serializers import (
+    CalendarSubscriptionResponseSerializer,
     CheckNicknameResponseSerializer,
     PatchUserInfoRequestSerializer,
     RandomNicknameResponseSerializer,
     UserInfoSerializer,
 )
+from accounts.calendar_tokens import CalendarTokenService
 from rest_framework import status
 
 logger = logging.getLogger(__name__)
@@ -124,5 +127,33 @@ class RandomNicknameView(APIView):
 
         return Response(
             RandomNicknameResponseSerializer({"nickname": nickname}).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class CalendarSubscriptionIssueView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=CalendarSubscriptionResponseSerializer,
+                description="캘린더 구독 URL 발급 성공",
+            ),
+        },
+        description="인증된 사용자의 캘린더 구독 URL 발급",
+    )
+    def post(self, request):
+        token = CalendarTokenService.issue(request.user.id)
+        calendar_path = reverse(
+            "calendar-subscription",
+            kwargs={"token": token},
+        )
+        response_data = {
+            "calendar_url": request.build_absolute_uri(calendar_path),
+        }
+        return Response(
+            CalendarSubscriptionResponseSerializer(response_data).data,
             status=status.HTTP_200_OK,
         )
