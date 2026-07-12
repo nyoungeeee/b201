@@ -29,6 +29,7 @@ CACHES = {
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
     "EXCEPTION_HANDLER": "common.exception_handler.prod_exception_handler",
+    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
 }
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
