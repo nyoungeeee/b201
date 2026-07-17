@@ -18,7 +18,7 @@ export const useExternalCalendarSubscription = ({
 }: UseExternalCalendarSubscriptionParams = {}) => {
     return useQuery<ExternalCalendarSubscription, Error>({
         queryKey: externalCalendarSubscriptionQueryKeys.detail(userId ?? 0),
-        queryFn: () => getExternalCalendarSubscription({ userId: userId! }),
+        queryFn: getExternalCalendarSubscription,
         enabled: Number.isFinite(userId) && (userId ?? 0) > 0,
         staleTime: 5 * 60 * 1000,
     });

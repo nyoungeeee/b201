@@ -12,6 +12,7 @@ import {
 } from '../components/common/icons';
 import ActionModal from '../components/layout/ActionModal';
 import MobilePageLayout from '../components/layout/MobilePageLayout';
+import PageRefreshButton from '../components/layout/PageRefreshButton';
 import PageSubHeader from '../components/layout/PageSubHeader';
 import { useExternalCalendarSubscription } from '../hooks/queries/useExternalCalendarSubscription';
 import { useAuthSession } from '../hooks/useAuthSession';
@@ -69,6 +70,10 @@ const CALENDAR_GUIDE_STEPS = [
 
 const NOTICES = [
     {
+        text: '외부 캘린더에 등록한 후, 어느 정도 시간이 지나야 예약이 표시돼요.',
+        color: 'var(--text-error)',
+    },
+    {
         text: '예약 변경이 되더라도 Google Calendar에 바로 반영되지 않을 수 있어요.',
         color: 'var(--text-error)',
     },
@@ -93,6 +98,8 @@ const MyInfoExternalCalendarPage = () => {
     const {
         data: subscription,
         isError: isSubscriptionError,
+        isRefetching: isSubscriptionRefetching,
+        refetch: refetchSubscription,
     } = useExternalCalendarSubscription({
         userId: user?.id,
     });
@@ -126,9 +133,19 @@ const MyInfoExternalCalendarPage = () => {
     };
 
     return (
-        <MobilePageLayout>
+        <MobilePageLayout
+            isRefreshing={isSubscriptionRefetching}
+            onRefresh={() => refetchSubscription()}
+        >
             <div className="external-calendar-page">
-                <PageSubHeader />
+                <PageSubHeader
+                    rightContent={(
+                        <PageRefreshButton
+                            isRefreshing={isSubscriptionRefetching}
+                            onRefresh={() => refetchSubscription()}
+                        />
+                    )}
+                />
 
                 <main className="external-calendar-page__content">
                     <img
