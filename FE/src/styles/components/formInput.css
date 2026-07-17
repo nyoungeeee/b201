@@ -1,3 +1,10 @@
+.form-label {
+  display: block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-md);
+  color: var(--text-primary);
+}
+
 .form-input {
   box-sizing: border-box;
 
@@ -9,6 +16,17 @@
   background-color: var(--input-bg);
 
   transition: var(--transition-input);
+}
+
+.form-input--fill {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--input-height-sm);
+}
+
+.form-input--full {
+  width: 100%;
+  height: var(--input-height-sm);
 }
 
 .form-input.is-invalid,
