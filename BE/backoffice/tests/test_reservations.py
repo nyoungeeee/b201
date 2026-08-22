@@ -346,6 +346,83 @@ class BackofficeReservationAPITestCase(BaseBackofficeAPITestCase):
             response.data["data"]["reserver_name"], self.member_user.nickname
         )
 
+    def test_reservation_list_filters_by_reserver_user(self):
+        matching = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.RESERVED,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.admin_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(12, 0),
+            end_time=time(13, 0),
+            status=BookingStatus.RESERVED,
+        )
+
+        response = self.client.get(
+            f"/v1/admin/reservations?status=approved&user_id={self.member_user.id}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(response.data["data"][0]["id"], matching.reservation_number)
+
+    def test_reservation_list_filters_by_team(self):
+        matching = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            team=self.team,
+            booking_type=BookingType.TEAM,
+            reservation_date=self.today,
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+            status=BookingStatus.PENDING,
+        )
+        Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(12, 0),
+            end_time=time(13, 0),
+            status=BookingStatus.PENDING,
+        )
+
+        response = self.client.get(
+            f"/v1/admin/reservations?status=pending&team_id={self.team.id}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(response.data["data"][0]["id"], matching.reservation_number)
+
+    def test_reservation_history_filter_includes_canceled_reservations(self):
+        canceled = Booking.objects.create(
+            room=self.room,
+            user=self.member_user,
+            booking_type=BookingType.PRIVATE,
+            reservation_date=self.today,
+            start_time=time(14, 0),
+            end_time=time(15, 0),
+            status=BookingStatus.CANCELED,
+        )
+
+        response = self.client.get(
+            f"/v1/admin/reservations?status=all&user_id={self.member_user.id}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_count"], 1)
+        self.assertEqual(response.data["data"][0]["id"], canceled.reservation_number)
+        self.assertEqual(response.data["data"][0]["status"], "canceled")
+
     def test_approved_reservation_list_limits_future_date_range(self):
         in_range_booking = Booking.objects.create(
             room=self.room,

@@ -2408,6 +2408,107 @@
   text-align: right;
 }
 
+.admin-history-link {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border: 1px solid rgba(47, 140, 255, 0.45);
+  border-radius: 14px;
+  color: #ffffff;
+  background: rgba(47, 140, 255, 0.14);
+  font-size: 17px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-history-link span,
+.admin-history-card p,
+.admin-history-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-history-summary span {
+  color: rgba(247, 248, 251, 0.58);
+}
+
+.admin-history-summary > strong {
+  color: #2f8cff;
+  font-size: 22px;
+}
+
+.admin-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-history-card {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-history-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.admin-history-card__header > strong {
+  color: #ffffff;
+  font-size: 19px;
+}
+
+.admin-history-card__header span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #62a8ff;
+  background: rgba(47, 140, 255, 0.16);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+}
+
+.admin-history-card__header span.is-pending {
+  color: #ffc15c;
+  background: rgba(255, 174, 43, 0.14);
+}
+
+.admin-history-card__header span.is-canceled,
+.admin-history-card__header span.is-rejected {
+  color: #ff817a;
+  background: rgba(255, 102, 95, 0.14);
+}
+
+.admin-history-card p {
+  margin: 8px 0 0;
+  color: rgba(247, 248, 251, 0.7);
+  font-size: 14px;
+}
+
+.admin-history-card svg,
+.admin-history-link svg {
+  flex: 0 0 auto;
+}
+
+.admin-sub-actions--single {
+  grid-template-columns: 1fr;
+}
+
 .admin-user-team-info h3 {
   margin: 0 0 14px;
   color: #ffffff;

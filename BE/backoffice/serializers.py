@@ -593,8 +593,8 @@ class AdminReservationCreateRequestSerializer(serializers.Serializer):
 class AdminReservationListQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(
         required=True,
-        choices=["pending", "approved"],
-        help_text="조회할 예약 상태. pending 또는 approved",
+        choices=["pending", "approved", "all"],
+        help_text="조회할 예약 상태. pending, approved 또는 all",
     )
     date_range = serializers.IntegerField(
         required=False,
@@ -610,6 +610,12 @@ class AdminReservationListQuerySerializer(serializers.Serializer):
     )
     room_id = serializers.IntegerField(
         required=False, min_value=1, help_text="합주실 ID 필터"
+    )
+    user_id = serializers.IntegerField(
+        required=False, min_value=1, help_text="예약자 사용자 ID 필터"
+    )
+    team_id = serializers.IntegerField(
+        required=False, min_value=1, help_text="예약 팀 ID 필터"
     )
     page = serializers.IntegerField(
         required=False, min_value=1, default=1, help_text="조회할 페이지 번호"

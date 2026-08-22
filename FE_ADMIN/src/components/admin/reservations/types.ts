@@ -1,4 +1,5 @@
-export type AdminReservationStatus = "pending" | "approved";
+export type AdminReservationStatus = "pending" | "approved" | "canceled" | "rejected";
+export type AdminActiveReservationStatus = Extract<AdminReservationStatus, "pending" | "approved">;
 export type AdminReservationKind = "single" | "repeat";
 export type AdminRoom = string;
 export type AdminReservationRoomOption = {

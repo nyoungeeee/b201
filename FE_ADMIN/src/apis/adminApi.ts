@@ -289,6 +289,8 @@ type AdminReservationListFilters = {
     pendingPage?: number;
     approvedPage?: number;
     pageSize?: number;
+    userId?: number;
+    teamId?: number;
 };
 
 export const getReservations = async ({
@@ -298,6 +300,8 @@ export const getReservations = async ({
     pendingPage = 1,
     approvedPage = 1,
     pageSize = 10,
+    userId,
+    teamId,
 }: AdminReservationListFilters = {}): Promise<AdminReservationListResult> => {
     const roomId =
         roomFilter === 'all' ? undefined : await getRoomIdByName(roomFilter);
@@ -305,6 +309,8 @@ export const getReservations = async ({
         team_type: teamFilter,
         page_size: String(pageSize),
         ...(roomId != null ? { room_id: String(roomId) } : {}),
+        ...(userId != null ? { user_id: String(userId) } : {}),
+        ...(teamId != null ? { team_id: String(teamId) } : {}),
     };
     const [pendingResult, approvedResult] = await Promise.all([
         requestJsonWithPagination<ApiReservation[]>(
@@ -352,6 +358,39 @@ export const getReservations = async ({
         approvedHasNext:
             approvedPage < (approvedResult.pagination?.total_pages ?? 0),
     };
+};
+
+export const getReservationHistory = async (
+    target: { userId: number } | { teamId: number },
+): Promise<AdminReservation[]> => {
+    const searchParams = new URLSearchParams({
+        status: 'all',
+        page_size: '1000',
+    });
+
+    if ('userId' in target) {
+        searchParams.set('user_id', String(target.userId));
+    } else {
+        searchParams.set('team_id', String(target.teamId));
+    }
+
+    const result = await requestJsonWithPagination<ApiReservation[]>(
+        'reservations',
+        { method: 'GET' },
+        searchParams,
+    );
+    const adminUserId = getAdminUserId();
+    const reservations = result.data.map((reservation) =>
+        toReservation(reservation, new Date(), adminUserId),
+    );
+
+    return reservations.sort((left, right) => {
+        if (left.dayOffset !== right.dayOffset) {
+            return right.dayOffset - left.dayOffset;
+        }
+
+        return right.timeLabel.localeCompare(left.timeLabel);
+    });
 };
 
 export const checkAdminAccess = async (): Promise<boolean> => {

@@ -10,8 +10,8 @@ import AdminReservationTabs from "./AdminReservationTabs";
 import * as adminApi from "../../../apis/adminApi";
 import type {
   AdminReservation,
+  AdminActiveReservationStatus,
   AdminReservationRoomOption,
-  AdminReservationStatus,
   AdminRoomFilter,
   AdminTeamFilter,
   NewAdminReservation,
@@ -35,12 +35,12 @@ type AdminReservationPanelProps = {
 const RESERVATION_PAGE_SIZE = 10;
 const CREATE_TEAM_OPTION_PAGE_SIZE = 10;
 
-const INITIAL_PAGE_STATE: Record<AdminReservationStatus, number> = {
+const INITIAL_PAGE_STATE: Record<AdminActiveReservationStatus, number> = {
   pending: 1,
   approved: 1,
 };
 
-const INITIAL_HAS_NEXT_STATE: Record<AdminReservationStatus, boolean> = {
+const INITIAL_HAS_NEXT_STATE: Record<AdminActiveReservationStatus, boolean> = {
   pending: false,
   approved: false,
 };
@@ -103,7 +103,7 @@ const AdminReservationPanel = ({
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
   const [pendingTotalCount, setPendingTotalCount] = useState(0);
   const [approvedTotalCount, setApprovedTotalCount] = useState(0);
-  const [activeStatus, setActiveStatus] = useState<AdminReservationStatus>("pending");
+  const [activeStatus, setActiveStatus] = useState<AdminActiveReservationStatus>("pending");
   const [dateRange, setDateRange] = useState("0");
   const [teamFilter, setTeamFilter] = useState<AdminTeamFilter>("all");
   const [roomFilter, setRoomFilter] = useState<AdminRoomFilter>("all");
@@ -118,9 +118,9 @@ const AdminReservationPanel = ({
   const [isLoadingReservations, setIsLoadingReservations] = useState(true);
   const [isLoadingMoreReservations, setIsLoadingMoreReservations] = useState(false);
   const [loadedPages, setLoadedPages] =
-    useState<Record<AdminReservationStatus, number>>(INITIAL_PAGE_STATE);
+    useState<Record<AdminActiveReservationStatus, number>>(INITIAL_PAGE_STATE);
   const [hasNextPage, setHasNextPage] =
-    useState<Record<AdminReservationStatus, boolean>>(INITIAL_HAS_NEXT_STATE);
+    useState<Record<AdminActiveReservationStatus, boolean>>(INITIAL_HAS_NEXT_STATE);
   const [selectedReservation, setSelectedReservation] = useState<AdminReservation | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const roomOptions = useMemo(

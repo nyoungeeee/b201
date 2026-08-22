@@ -1,10 +1,10 @@
-import type { AdminReservationStatus } from "./types";
+import type { AdminActiveReservationStatus } from "./types";
 
 type AdminReservationTabsProps = {
-  activeStatus: AdminReservationStatus;
+  activeStatus: AdminActiveReservationStatus;
   pendingCount: number;
   approvedCount: number;
-  onChange: (status: AdminReservationStatus) => void;
+  onChange: (status: AdminActiveReservationStatus) => void;
 };
 
 const AdminReservationTabs = ({

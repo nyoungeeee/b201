@@ -29,7 +29,7 @@ export type AdminResponse<T> =
 
 export type ApiReservation = {
     id: number;
-    status: 'pending' | 'approved';
+    status: 'pending' | 'approved' | 'canceled' | 'rejected';
     kind: 'single' | 'repeat';
     room_id: number;
     room_name: string;

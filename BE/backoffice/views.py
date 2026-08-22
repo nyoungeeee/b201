@@ -794,6 +794,8 @@ class AdminReservationListView(APIView):
             date_range=serializer.validated_data["date_range"],
             team_type=serializer.validated_data["team_type"],
             room_id=serializer.validated_data.get("room_id"),
+            user_id=serializer.validated_data.get("user_id"),
+            team_id=serializer.validated_data.get("team_id"),
             page=serializer.validated_data["page"],
             page_size=serializer.validated_data["page_size"],
         )

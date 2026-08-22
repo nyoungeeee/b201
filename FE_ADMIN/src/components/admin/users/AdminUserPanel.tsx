@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 
 import {
   AdminArrowLeftIcon,
+  AdminCalendarIcon,
   AdminChevronDownIcon,
   AdminChevronRightIcon,
+  AdminClockIcon,
   AdminPersonIcon,
   AdminPlusIcon,
+  AdminReservationIcon,
   AdminTeamIcon,
   AdminUserIcon,
   AdminWarningIcon,
@@ -19,12 +22,15 @@ import type {
   AdminTeamMemberEditUser,
   AdminTeamLeaderFilterOption,
 } from "./types";
+import type { AdminReservation } from "../reservations/types";
 
 export type AdminUserView =
   | { name: "list" }
   | { name: "user-detail"; userId: number }
+  | { name: "user-reservations"; userId: number }
   | { name: "block-user"; userId: number }
   | { name: "team-detail"; teamId: number }
+  | { name: "team-reservations"; teamId: number }
   | { name: "team-settings"; teamId: number }
   | { name: "add-members"; teamId: number }
   | { name: "change-leader"; teamId: number }
@@ -39,6 +45,13 @@ type AdminUserPanelProps = {
 
 const USER_PANEL_PAGE_SIZE = 10;
 const USER_SEARCH_DEBOUNCE_MS = 400;
+
+const reservationStatusLabel: Record<AdminReservation["status"], string> = {
+  pending: "승인 대기",
+  approved: "승인 완료",
+  canceled: "취소",
+  rejected: "반려",
+};
 
 const getInitial = (name: string) => name.slice(0, 1);
 
@@ -618,6 +631,23 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
         onBlock={() => navigate({ name: "block-user", userId: user.id })}
         onUnblock={() => handleUnblockUser(user.id)}
         onTeamSelect={(teamId) => navigate({ name: "team-detail", teamId })}
+        onViewReservations={() => navigate({ name: "user-reservations", userId: user.id })}
+      />
+    );
+  }
+
+  if (view.name === "user-reservations") {
+    const user = userById.get(view.userId);
+
+    if (!user) return null;
+
+    return (
+      <ReservationHistoryScreen
+        key={`user-${user.id}`}
+        title="사용자 예약 기록"
+        subjectName={user.nickname}
+        target={{ userId: user.id }}
+        onBack={goBack}
       />
     );
   }
@@ -661,6 +691,23 @@ const AdminUserPanel = ({ initialView, onInitialBack, onToast }: AdminUserPanelP
         onChangeLeader={() => navigate({ name: "change-leader", teamId: team.id })}
         onDelete={() => navigate({ name: "delete-team", teamId: team.id })}
         onUserSelect={(userId) => navigate({ name: "user-detail", userId })}
+        onViewReservations={() => navigate({ name: "team-reservations", teamId: team.id })}
+      />
+    );
+  }
+
+  if (view.name === "team-reservations") {
+    const team = teamById.get(view.teamId);
+
+    if (!team) return null;
+
+    return (
+      <ReservationHistoryScreen
+        key={`team-${team.id}`}
+        title="팀 예약 기록"
+        subjectName={team.name}
+        target={{ teamId: team.id }}
+        onBack={goBack}
       />
     );
   }
@@ -1111,6 +1158,7 @@ const UserDetailScreen = ({
   onBlock,
   onUnblock,
   onTeamSelect,
+  onViewReservations,
 }: {
   user: AdminManagedUser;
   teams: AdminManagedTeam[];
@@ -1119,6 +1167,7 @@ const UserDetailScreen = ({
   onBlock: () => void;
   onUnblock: () => void;
   onTeamSelect: (teamId: number) => void;
+  onViewReservations: () => void;
 }) => {
   const userTeams = user.teams
     .map((teamId) => teams.find((team) => team.id === teamId))
@@ -1144,6 +1193,10 @@ const UserDetailScreen = ({
             ["소속 팀", userTeams.length > 0 ? userTeams.map((team) => team.name).join(", ") : "미소속"],
           ]}
         />
+        <button className="admin-history-link" type="button" onClick={onViewReservations}>
+          <span><AdminReservationIcon /> 예약 기록 보기</span>
+          <AdminChevronRightIcon />
+        </button>
         <section className="admin-user-team-info">
           <h3>팀 정보</h3>
           {userTeams.length > 0 ? (
@@ -1245,6 +1298,7 @@ const TeamDetailScreen = ({
   onChangeLeader,
   onDelete,
   onUserSelect,
+  onViewReservations,
 }: {
   team: AdminManagedTeam;
   users: AdminManagedUser[];
@@ -1257,6 +1311,7 @@ const TeamDetailScreen = ({
   onChangeLeader: () => void;
   onDelete: () => void;
   onUserSelect: (userId: number) => void;
+  onViewReservations: () => void;
 }) => {
   const leaderName = getLeaderName(team.leaderId, users, team.leaderName);
   const memberCount = team.memberCount ?? members.length;
@@ -1281,6 +1336,10 @@ const TeamDetailScreen = ({
             ["최근 수정일", team.updatedAt],
           ]}
         />
+        <button className="admin-history-link" type="button" onClick={onViewReservations}>
+          <span><AdminReservationIcon /> 예약 기록 보기</span>
+          <AdminChevronRightIcon />
+        </button>
         <h3 className="admin-users__section-title">멤버 목록</h3>
         <section className="admin-member-list">
           {isLoadingMembers ? (
@@ -1304,6 +1363,85 @@ const TeamDetailScreen = ({
       <footer className="admin-sub-actions">
         <button className="is-outline-danger" type="button" onClick={onDelete}>팀 삭제</button>
         <button type="button" onClick={onSettings}>팀 설정</button>
+      </footer>
+    </section>
+  );
+};
+
+const ReservationHistoryScreen = ({
+  title,
+  subjectName,
+  target,
+  onBack,
+}: {
+  title: string;
+  subjectName: string;
+  target: { userId: number } | { teamId: number };
+  onBack: () => void;
+}) => {
+  const [reservations, setReservations] = useState<AdminReservation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const userId = "userId" in target ? target.userId : undefined;
+  const teamId = "teamId" in target ? target.teamId : undefined;
+
+  useEffect(() => {
+    let isActive = true;
+
+    adminApi.getReservationHistory(userId != null ? { userId } : { teamId: teamId! })
+      .then((items) => {
+        if (isActive) setReservations(items);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (isActive) setHasError(true);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [teamId, userId]);
+
+  return (
+    <section className="admin-sub-screen">
+      <ScreenHeader title={title} onBack={onBack} />
+      <div className="admin-sub-screen__content">
+        <div className="admin-history-summary">
+          <div>
+            <span>조회 대상</span>
+            <strong>{subjectName}</strong>
+          </div>
+          <strong>{reservations.length}건</strong>
+        </div>
+        <div className="admin-history-list">
+          {isLoading ? (
+            <p className="admin-reservation__empty">예약 기록을 불러오는 중입니다.</p>
+          ) : hasError ? (
+            <p className="admin-reservation__empty">예약 기록을 불러오지 못했습니다.</p>
+          ) : reservations.length === 0 ? (
+            <p className="admin-reservation__empty">예약 기록이 없습니다.</p>
+          ) : reservations.map((reservation) => (
+            <article className="admin-history-card" key={`${reservation.status}-${reservation.id}`}>
+              <div className="admin-history-card__header">
+                <strong>{reservation.dateLabel}</strong>
+                <span className={`is-${reservation.status}`}>
+                  {reservationStatusLabel[reservation.status]}
+                </span>
+              </div>
+              <p><AdminClockIcon /> {reservation.timeLabel}</p>
+              <p><AdminReservationIcon /> {reservation.room}</p>
+              {reservation.periodLabel && <p><AdminCalendarIcon /> {reservation.periodLabel}</p>}
+              {reservation.teamName && <p><AdminTeamIcon /> {reservation.teamName}</p>}
+              <p><AdminPersonIcon /> 예약자 {reservation.reserverName}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <footer className="admin-sub-actions admin-sub-actions--single">
+        <button type="button" onClick={onBack}>닫기</button>
       </footer>
     </section>
   );

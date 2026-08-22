@@ -851,15 +851,18 @@ class AdminReservationService:
         date_range: int,
         team_type: str,
         room_id: int | None,
+        user_id: int | None,
+        team_id: int | None,
         page: int,
         page_size: int,
     ) -> AdminReservationList:
-        booking_status = (
-            BookingStatus.PENDING if status == "pending" else BookingStatus.RESERVED
-        )
-        queryset = Booking.objects.filter(status=booking_status).select_related(
+        queryset = Booking.objects.select_related(
             "room", "user", "team", "team__team_color", "canceled_by"
         )
+        if status == "pending":
+            queryset = queryset.filter(status=BookingStatus.PENDING)
+        elif status == "approved":
+            queryset = queryset.filter(status=BookingStatus.RESERVED)
         today = timezone.localdate()
         if date_range != 0:
             queryset = queryset.filter(
@@ -872,6 +875,10 @@ class AdminReservationService:
             queryset = queryset.filter(booking_type=BookingType.PRIVATE)
         if room_id is not None:
             queryset = queryset.filter(room_id=room_id)
+        if user_id is not None:
+            queryset = queryset.filter(user_id=user_id)
+        if team_id is not None:
+            queryset = queryset.filter(team_id=team_id)
 
         queryset = queryset.order_by(
             "reservation_date", "start_time", "reservation_number"
@@ -1150,6 +1157,8 @@ class AdminReservationService:
             return "approved"
         if booking_status == BookingStatus.CANCELED:
             return "canceled"
+        if booking_status == BookingStatus.REJECTED:
+            return "rejected"
         return "pending"
 
     @staticmethod
