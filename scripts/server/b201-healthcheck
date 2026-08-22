@@ -5,6 +5,34 @@ health_url='https://api.b201.kr/'
 project_dir='/opt/b201'
 lock_file='/run/lock/b201-healthcheck.lock'
 
+send_discord_notification() {
+  local message="$1"
+  local payload
+
+  if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+    /usr/bin/logger -p daemon.warning -t b201-healthcheck \
+      'Discord notification skipped: DISCORD_WEBHOOK_URL is not configured'
+    return 0
+  fi
+
+  payload=$(
+    /usr/bin/python3 -c \
+      'import json, sys; print(json.dumps({"content": sys.argv[1]}, ensure_ascii=False))' \
+      "$message"
+  )
+
+  /usr/bin/curl \
+    --fail \
+    --silent \
+    --show-error \
+    --max-time 30 \
+    --header 'Content-Type: application/json' \
+    --data "$payload" \
+    "$DISCORD_WEBHOOK_URL" || \
+    /usr/bin/logger -p daemon.warning -t b201-healthcheck \
+      'Failed to send Discord notification'
+}
+
 exec 9>"$lock_file"
 /usr/bin/flock -n 9 || exit 0
 
@@ -27,6 +55,8 @@ fi
 
 /usr/bin/logger -p daemon.warning -t b201-healthcheck \
   "unhealthy: curl_status=$curl_status http_code=$http_code; running docker compose recovery"
+send_discord_notification \
+  "⚠️ B201 API 헬스체크에 실패했습니다. (curl 상태: $curl_status, HTTP 상태: $http_code) 재배포를 시도합니다."
 
 cd "$project_dir" || exit 1
 /usr/bin/docker compose up -d --build
@@ -47,9 +77,13 @@ retry_status=$?
 if [ "$retry_status" -eq 0 ] && [ "$retry_code" = '200' ]; then
   /usr/bin/logger -t b201-healthcheck \
     'recovery succeeded: api.b201.kr returned 200'
+  send_discord_notification \
+    '✅ B201 API 재배포 후 복구되었습니다. api.b201.kr에서 HTTP 200 응답을 확인했습니다.'
   exit 0
 fi
 
 /usr/bin/logger -p daemon.err -t b201-healthcheck \
   "recovery failed: curl_status=$retry_status http_code=$retry_code"
+send_discord_notification \
+  "🚨 B201 API 재배포 후에도 복구되지 않았습니다. (curl 상태: $retry_status, HTTP 상태: $retry_code) 서버 확인이 필요합니다."
 exit 1
