@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+: "${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL is required}"
+
+message='서버가 다시 켜졌어요. 기지개 쭉 켜고 대기 중입니다 🌞'
+payload=$(
+  /usr/bin/python3 -c \
+    'import json, sys; print(json.dumps({"content": sys.argv[1]}, ensure_ascii=False))' \
+    "$message"
+)
+
+/usr/bin/curl \
+  --fail \
+  --silent \
+  --show-error \
+  --max-time 30 \
+  --header 'Content-Type: application/json' \
+  --data "$payload" \
+  "$DISCORD_WEBHOOK_URL"

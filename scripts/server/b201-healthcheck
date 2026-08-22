@@ -1,0 +1,55 @@
+#!/bin/bash
+set -u
+
+health_url='https://api.b201.kr/'
+project_dir='/opt/b201'
+lock_file='/run/lock/b201-healthcheck.lock'
+
+exec 9>"$lock_file"
+/usr/bin/flock -n 9 || exit 0
+
+http_code=$(
+  /usr/bin/curl \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --connect-timeout 10 \
+    --max-time 30 \
+    --write-out '%{http_code}' \
+    "$health_url"
+)
+curl_status=$?
+
+if [ "$curl_status" -eq 0 ] && [ "$http_code" = '200' ]; then
+  /usr/bin/logger -t b201-healthcheck 'healthy: api.b201.kr returned 200'
+  exit 0
+fi
+
+/usr/bin/logger -p daemon.warning -t b201-healthcheck \
+  "unhealthy: curl_status=$curl_status http_code=$http_code; running docker compose recovery"
+
+cd "$project_dir" || exit 1
+/usr/bin/docker compose up -d --build
+sleep 20
+
+retry_code=$(
+  /usr/bin/curl \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --connect-timeout 10 \
+    --max-time 30 \
+    --write-out '%{http_code}' \
+    "$health_url"
+)
+retry_status=$?
+
+if [ "$retry_status" -eq 0 ] && [ "$retry_code" = '200' ]; then
+  /usr/bin/logger -t b201-healthcheck \
+    'recovery succeeded: api.b201.kr returned 200'
+  exit 0
+fi
+
+/usr/bin/logger -p daemon.err -t b201-healthcheck \
+  "recovery failed: curl_status=$retry_status http_code=$retry_code"
+exit 1

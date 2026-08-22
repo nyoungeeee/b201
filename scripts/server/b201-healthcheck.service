@@ -1,0 +1,9 @@
+[Unit]
+Description=B201 API health check and Docker Compose recovery
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/b201-healthcheck
+TimeoutStartSec=15min

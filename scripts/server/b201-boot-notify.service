@@ -1,0 +1,14 @@
+[Unit]
+Description=B201 Discord boot notification
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/etc/b201-monitor.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/b201-monitor.env
+ExecStart=/usr/local/sbin/b201-boot-notify
+TimeoutStartSec=45
+
+[Install]
+WantedBy=multi-user.target

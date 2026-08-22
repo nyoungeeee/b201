@@ -1,0 +1,12 @@
+[Unit]
+Description=Run B201 API health check hourly
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1h
+AccuracySec=1min
+Persistent=true
+Unit=b201-healthcheck.service
+
+[Install]
+WantedBy=timers.target
